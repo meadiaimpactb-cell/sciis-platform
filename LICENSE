@@ -1,0 +1,15 @@
+SCIIS Platform — License placeholder
+
+ملكية المجلس/وادي الأثر — تُحدد لاحقًا
+
+The ownership of this code base (the Saudi Council for Impact Investors platform)
+rests with the Council and/or Impact Valley Capital (وادي الأثر المالية). The final
+license text, IP assignment and any third-party components schedule will be
+determined by the parties and inserted here before the first production release.
+
+Until then: All rights reserved. No part of this repository may be copied,
+distributed or used outside the engagement without written permission.
+
+Third-party open-source components retain their own licenses (see api/composer.lock,
+web/package-lock.json, mobile/pubspec.lock and the OFL notice for IBM Plex Sans Arabic
+in mobile/assets/fonts/README.md).

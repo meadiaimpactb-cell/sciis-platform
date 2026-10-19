@@ -1,0 +1,4471 @@
+openapi: 3.1.0
+info:
+  title: SCIIS Platform API
+  version: 1.0.0
+  summary: منصة المجلس السعودي للمستثمرين الاجتماعيين — REST API v1
+  description: |
+    The single JSON contract consumed by the Nuxt web app **and** the Flutter mobile app
+    (SPEC §6). Derived from "الوثيقة التطويرية 2.0"; every operation carries an
+    `x-requirement` list with the requirement codes it implements.
+
+    العقد الموحّد الذي يستهلكه الموقع وتطبيق الجوال معًا. كل عملية تحمل `x-requirement`
+    بأكواد المتطلبات التي تنفّذها.
+
+    ## Conventions / الاصطلاحات
+    * Base path `/api/v1`; JSON only; `snake_case` keys.
+    * `Accept-Language: ar|en` selects taxonomy labels and message language (default `ar`).
+    * Pagination: `?page=&per_page=` (max 100) → `{data, links, meta}`.
+    * Filtering on list endpoints: `?filter[sector]=&filter[region]=&filter[stage]=&filter[type]=&sort=newest|impact|need&search=`.
+    * Errors are RFC-7807-ish `{message, errors{field:[...]}, code}`.
+    * `X-Request-Id` is echoed back on every response and written to `audit_logs`.
+    * All mutating requests are audited (AUD-01).
+
+    ## Authentication / المصادقة
+    * **Web (SPA)**: Laravel Sanctum cookie session (`sanctum` scheme). Requires `GET /sanctum/csrf-cookie`
+      first and `X-XSRF-TOKEN` on mutations.
+    * **Mobile**: Sanctum personal access token returned by `POST /auth/login` with `device_name`,
+      sent as `Authorization: Bearer <token>` (`bearerAuth` scheme).
+    * Staff accounts must complete TOTP 2FA (ACC-05) — a `423` with `code=two_factor_required`
+      is returned until `POST /auth/2fa/challenge` succeeds.
+
+    ## Rate limiting / تحديد المعدل
+    | Group | Limit |
+    |---|---|
+    | `/auth/login`, `/auth/forgot-password`, `/auth/resend-otp` | 5 / minute / IP + email |
+    | `/auth/verify-*`, `/auth/2fa/challenge` | 10 / minute / user |
+    | `/public/contact` | 3 / 10 minutes / IP (+ honeypot) |
+    | `/public/*` | 60 / minute / IP |
+    | authenticated routes | 120 / minute / user |
+    | `/admin/reports/*/export.xlsx` | 10 / hour / user |
+    | `/webhooks/moyasar` | not rate-limited; signature-verified |
+
+    Exceeding a limit returns `429` with `Retry-After`.
+  contact:
+    name: SCIIS Engineering
+    email: engineering@sciis.sa
+  license:
+    name: Proprietary — ملكية المجلس/وادي الأثر — تُحدد لاحقًا
+    identifier: LicenseRef-Proprietary
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local (docker compose)
+  - url: https://api-test.sciis.sa/api/v1
+    description: Test (KSA)
+  - url: https://api.sciis.sa/api/v1
+    description: Production (KSA)
+
+security:
+  - bearerAuth: []
+  - sanctum: []
+
+tags:
+  - name: Auth
+    description: التسجيل والدخول والتحقق (ACC-01..05)
+  - name: Me
+    description: الحساب الحالي، أجهزة الدفع، التفضيلات، طلبات البيانات
+  - name: Taxonomies
+    description: التصنيفات القابلة للتحرير بدون كود (FRM-04)
+  - name: Settings
+    description: الإعدادات العامة
+  - name: Investor
+    description: مسار المستثمر (INV / OPP / MAT)
+  - name: Opportunities
+    description: الفرص كما يراها المستثمر وفق مستوى الوصول (§5)
+  - name: Documents
+    description: الروابط الموقّعة المؤقتة (DOC-02)
+  - name: Entrepreneur
+    description: مسار صاحب المشروع (ENT)
+  - name: Admin
+    description: فريق المجلس (ADM / EVL / MAT / MTG / RPT / AUD)
+  - name: Public
+    description: الموقع العام (CMS)
+  - name: Payments
+    description: خلف FEATURE_PAYMENTS — رسوم العضوية والخدمات فقط
+  - name: System
+    description: الصحة والإصدار
+
+paths:
+  # ───────────────────────────── Auth ─────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      operationId: authRegister
+      summary: إنشاء حساب جديد وإرسال رموز التحقق
+      security: []
+      x-requirement: [ACC-01, ACC-02, PRV-01, PRV-02]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: User created; email + SMS OTPs sent. Mobile clients also receive a token.
+          headers: { X-Request-Id: { $ref: '#/components/headers/X-Request-Id' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      operationId: authVerifyEmail
+      summary: تأكيد البريد الإلكتروني برمز OTP
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpCodeRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/verify-phone:
+    post:
+      tags: [Auth]
+      operationId: authVerifyPhone
+      summary: تأكيد رقم الجوال برمز OTP
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpCodeRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/resend-otp:
+    post:
+      tags: [Auth]
+      operationId: authResendOtp
+      summary: إعادة إرسال رمز التحقق
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                channel: { type: string, enum: [email, sms] }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: authLogin
+      summary: تسجيل الدخول (جلسة كوكي للويب، رمز Bearer للجوال)
+      security: []
+      x-requirement: [ACC-01, ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated. `token` is present only when `device_name` was sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '423':
+          description: Password accepted, TOTP challenge required (staff / 2FA-enabled accounts).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      code: { type: string, const: two_factor_required }
+                      token:
+                        type: string
+                        description: Short-lived pre-auth token (mobile only) to use on `/auth/2fa/challenge`.
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/2fa/challenge:
+    post:
+      tags: [Auth]
+      operationId: authTwoFactorChallenge
+      summary: التحقق من رمز TOTP بعد كلمة المرور
+      x-requirement: [ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpCodeRequest' }
+      responses:
+        '200':
+          description: Fully authenticated; mobile receives the final token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/2fa/enable:
+    post:
+      tags: [Auth]
+      operationId: authTwoFactorEnable
+      summary: توليد سر TOTP ورمز QR
+      x-requirement: [ACC-05]
+      responses:
+        '200':
+          description: Secret generated (not yet confirmed).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [secret, qr_svg, otpauth_url]
+                properties:
+                  secret: { type: string }
+                  qr_svg: { type: string, description: Inline SVG }
+                  otpauth_url: { type: string, format: uri }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auth/2fa/confirm:
+    post:
+      tags: [Auth]
+      operationId: authTwoFactorConfirm
+      summary: تأكيد تفعيل TOTP برمز صحيح
+      x-requirement: [ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpCodeRequest' }
+      responses:
+        '200':
+          description: 2FA confirmed; recovery codes returned once.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recovery_codes:
+                    type: array
+                    items: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/2fa:
+    delete:
+      tags: [Auth]
+      operationId: authTwoFactorDisable
+      summary: تعطيل TOTP (غير مسموح لحسابات staff)
+      x-requirement: [ACC-05]
+      responses:
+        '204': { description: Disabled }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: authLogout
+      summary: إنهاء الجلسة / إبطال الرمز الحالي
+      x-requirement: [ACC-01]
+      responses:
+        '204': { description: Logged out }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      operationId: authForgotPassword
+      summary: طلب رابط إعادة تعيين كلمة المرور
+      security: []
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Always 200 (no account enumeration).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      operationId: authResetPassword
+      summary: إعادة تعيين كلمة المرور بالرمز المرسل
+      security: []
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, email, password]
+              properties:
+                token: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8 }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Me ─────────────────────────────
+  /me:
+    get:
+      tags: [Me]
+      operationId: getMe
+      summary: المستخدم الحالي + النوع + الأدوار + حالة العضوية + الاكتمال
+      x-requirement: [ACC-01, ACC-03, INV-01]
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [Me]
+      operationId: updateMe
+      summary: تحديث الاسم واللغة ووسيلة التواصل المفضلة
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120 }
+                locale: { $ref: '#/components/schemas/Locale' }
+                preferred_contact: { type: string, enum: [email, phone, whatsapp] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/device-tokens:
+    post:
+      tags: [Me]
+      operationId: registerDeviceToken
+      summary: تسجيل رمز جهاز للإشعارات (idempotent)
+      x-requirement: [NTF-01, NTF-02]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, token]
+              properties:
+                platform: { type: string, enum: [ios, android, web] }
+                token: { type: string, maxLength: 4096 }
+      responses:
+        '201': { description: Registered or refreshed (`last_seen_at`) }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/device-tokens/{token}:
+    delete:
+      tags: [Me]
+      operationId: deleteDeviceToken
+      summary: إزالة رمز جهاز (عند الخروج)
+      x-requirement: [NTF-01]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /me/notifications:
+    get:
+      tags: [Me]
+      operationId: listMyNotifications
+      summary: إشعارات داخل المنصة (database channel)
+      x-requirement: [NTF-01]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Notification' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /me/notifications/{id}/read:
+    post:
+      tags: [Me]
+      operationId: markNotificationRead
+      summary: تعليم إشعار كمقروء
+      x-requirement: [NTF-01]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Marked read }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /me/notification-preferences:
+    get:
+      tags: [Me]
+      operationId: getNotificationPreferences
+      summary: تفضيلات الإشعارات حسب القناة والفئة
+      x-requirement: [NTF-02]
+      responses:
+        '200':
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/NotificationPreference' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    put:
+      tags: [Me]
+      operationId: putNotificationPreferences
+      summary: استبدال التفضيلات
+      x-requirement: [NTF-02]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preferences]
+              properties:
+                preferences:
+                  type: array
+                  items: { $ref: '#/components/schemas/NotificationPreference' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/NotificationPreference' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/data-requests:
+    post:
+      tags: [Me]
+      operationId: createDataRequest
+      summary: طلب حقوق صاحب البيانات (اطلاع/تصحيح/حذف) — PDPL
+      x-requirement: [PRV-01, PRV-03]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [access, rectify, erase] }
+                note: { type: string, maxLength: 2000 }
+      responses:
+        '201':
+          description: Request logged; handled by super_admin within the PDPL deadline.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reference_no: { type: string, example: DR-2026-0042 }
+                  due_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Taxonomies & settings ─────────────────────────────
+  /taxonomies:
+    get:
+      tags: [Taxonomies]
+      operationId: listTaxonomies
+      summary: كل المجموعات النشطة
+      security: []
+      x-requirement: [FRM-04]
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Map of group → terms (labels localised by Accept-Language)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items: { $ref: '#/components/schemas/TaxonomyTerm' }
+                    example:
+                      sectors: [{ key: education, label: التعليم }]
+                      regions: [{ key: riyadh, label: الرياض }]
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /taxonomies/{group}:
+    get:
+      tags: [Taxonomies]
+      operationId: getTaxonomyGroup
+      summary: مجموعة واحدة
+      security: []
+      x-requirement: [FRM-04]
+      parameters:
+        - $ref: '#/components/parameters/TaxonomyGroup'
+      responses:
+        '200':
+          description: Terms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TaxonomyTerm' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /settings/public:
+    get:
+      tags: [Settings]
+      operationId: getPublicSettings
+      summary: الإعدادات العامة غير الحساسة
+      security: []
+      x-requirement: [ADM-03, CMS-01]
+      responses:
+        '200':
+          description: Public settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicSettings' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  # ───────────────────────────── Investor ─────────────────────────────
+  /investor/profile:
+    get:
+      tags: [Investor]
+      operationId: getInvestorProfile
+      summary: الملف الاستثماري بأقسامه + نسبة الاكتمال
+      x-requirement: [INV-01, ACC-03]
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvestorProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Investor]
+      operationId: putInvestorProfile
+      summary: حفظ قسم أو أكثر من الملف الاستثماري
+      x-requirement: [INV-01, ACC-03]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InvestorProfileInput' }
+      responses:
+        '200':
+          description: Saved; returns the profile with recomputed `completion_percent`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvestorProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /investor/membership:
+    get:
+      tags: [Investor]
+      operationId: getMembership
+      summary: حالة العضوية
+      x-requirement: [ACC-03, ACC-06]
+      responses:
+        '200':
+          description: Membership
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Membership' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/membership/submit:
+    post:
+      tags: [Investor]
+      operationId: submitMembership
+      summary: تقديم طلب العضوية للمراجعة (registered → under_review)
+      x-requirement: [ACC-03, ACC-06]
+      responses:
+        '200':
+          description: Submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Membership' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Profile incomplete or already submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /investor/dashboard:
+    get:
+      tags: [Investor]
+      operationId: getInvestorDashboard
+      summary: لوحة المستثمر — عدادات، مقترحات، تحديثات، الاجتماع القادم
+      x-requirement: [INV-01, OPP-06, MAT-01]
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvestorDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/saved:
+    get:
+      tags: [Investor]
+      operationId: listSavedOpportunities
+      summary: الفرص المحفوظة
+      x-requirement: [OPP-04]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/OpportunityCardPage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/interests:
+    get:
+      tags: [Investor]
+      operationId: listInterests
+      summary: اهتماماتي
+      x-requirement: [INV-02, OPP-06]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/interests/{id}:
+    get:
+      tags: [Investor]
+      operationId: getInterest
+      summary: تفاصيل اهتمام
+      x-requirement: [INV-02]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Interest
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /investor/interests/{id}/close:
+    post:
+      tags: [Investor]
+      operationId: closeInterest
+      summary: إغلاق الاهتمام مع سبب من التصنيف
+      x-requirement: [INV-02, MSG-02]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason_id]
+              properties:
+                reason_id: { type: string, description: 'taxonomy key from group decline_reasons' }
+                note: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /investor/info-requests:
+    get:
+      tags: [Investor]
+      operationId: listMyInfoRequests
+      summary: طلبات المعلومات التي أرسلتها
+      x-requirement: [OPP-05, MSG-01]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Info requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/InfoRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/nominations:
+    get:
+      tags: [Investor]
+      operationId: listNominations
+      summary: الترشيحات المرسلة إليّ مع سبب الترشيح والمعايير المطابقة
+      x-requirement: [MAT-01, MAT-02, MAT-03]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Nominations
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Nomination' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /investor/nominations/{id}/respond:
+    post:
+      tags: [Investor]
+      operationId: respondNomination
+      summary: الرد على ترشيح (مهتم / غير مهتم)
+      x-requirement: [MAT-01, MAT-03]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [response]
+              properties:
+                response: { type: string, enum: [interested, declined] }
+                decline_reason_id: { type: string }
+                note: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Responded. `interested` auto-creates an Interest (status `sent`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Nomination' }
+                  interest: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /investor/meetings:
+    get:
+      tags: [Investor]
+      operationId: listInvestorMeetings
+      summary: اجتماعاتي
+      x-requirement: [MTG-01, MTG-02]
+      responses:
+        '200':
+          description: Meetings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Meeting' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ───────────────────────────── Opportunities (investor view) ─────────────────────────────
+  /opportunities:
+    get:
+      tags: [Opportunities]
+      operationId: listOpportunities
+      summary: بطاقات الفرص (للأعضاء المعتمدين فقط، وفق سياسة الوصول)
+      description: |
+        Returns `OpportunityCard` resources only. Visible set is governed by
+        `settings.opportunity.access_policy` (`nomination_only` → only nominated opportunities;
+        `browse_all` → all `eligible` with approved teaser; `both`). Statuses
+        `draft,new,under_review,needs_completion,not_eligible` are never returned.
+      x-requirement: [OPP-01, OPP-03, MAT-05, MSG-01]
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/FilterSector'
+        - $ref: '#/components/parameters/FilterRegion'
+        - $ref: '#/components/parameters/FilterStage'
+        - $ref: '#/components/parameters/FilterType'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200': { $ref: '#/components/responses/OpportunityCardPage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: Membership not approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /opportunities/{uuid}:
+    get:
+      tags: [Opportunities]
+      operationId: getOpportunity
+      summary: تفاصيل الفرصة وفق مستوى وصول المستدعي (تبويبات)
+      description: |
+        Shaped by `OpportunityDetailResource($accessLevel)` per SPEC §5. Confidential groups
+        (`use_of_funds` detail, `risks.full`, `documents.items`, `funding_amount` exact) appear
+        only at `granted`/`connected`; `owner_contact` only at `connected`.
+      x-requirement: [OPP-02, INV-03, MSG-01, DOC-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OpportunityDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /opportunities/{uuid}/save:
+    post:
+      tags: [Opportunities]
+      operationId: saveOpportunity
+      summary: حفظ الفرصة
+      x-requirement: [OPP-04]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '204': { description: Saved (idempotent) }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Opportunities]
+      operationId: unsaveOpportunity
+      summary: إزالة من المحفوظة
+      x-requirement: [OPP-04]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /opportunities/{uuid}/interest:
+    post:
+      tags: [Opportunities]
+      operationId: expressInterest
+      summary: إبداء الاهتمام (sent → awaiting_owner_approval)
+      x-requirement: [INV-02, ENT-06, MSG-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, maxLength: 500 }
+      responses:
+        '201':
+          description: Interest created; owner notified (identity withheld until connected).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: An open interest already exists for this opportunity
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /opportunities/{uuid}/info-requests:
+    post:
+      tags: [Opportunities]
+      operationId: createInfoRequest
+      summary: طلب معلومات إضافية عبر المجلس (دون كشف هوية المستثمر)
+      x-requirement: [OPP-05, MSG-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, body]
+              properties:
+                subject: { type: string, maxLength: 200 }
+                body: { type: string, maxLength: 2000 }
+      responses:
+        '201':
+          description: Created (status `sent`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/InfoRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /opportunities/{uuid}/nda-accept:
+    post:
+      tags: [Opportunities]
+      operationId: acceptNda
+      summary: قبول اتفاقية عدم الإفصاح (شرط للملف الكامل)
+      x-requirement: [ENT-06, DOC-02, PRV-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version: { type: string, description: NDA text version shown to the user }
+      responses:
+        '201':
+          description: Consent row inserted (never updated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  consent_id: { type: integer }
+                  accepted_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /opportunities/{uuid}/documents:
+    get:
+      tags: [Opportunities]
+      operationId: listOpportunityDocuments
+      summary: مستندات الفرصة (للممنوحين فقط)
+      x-requirement: [INV-03, DOC-02, ENT-06]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Documents (no download links; use `/documents/{uuid}/download-url`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Document' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: No active file_access_grant or NDA not accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /documents/{uuid}/download-url:
+    get:
+      tags: [Documents]
+      operationId: getDocumentDownloadUrl
+      summary: رابط موقّع مؤقت + تسجيل الوصول
+      x-requirement: [DOC-02, INV-04, AUD-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Signed URL (≤ 10 minutes). A `document_access_logs` row is written.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expires_at]
+                properties:
+                  url: { type: string, format: uri }
+                  expires_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '423':
+          description: Document scan pending or infected
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ───────────────────────────── Entrepreneur ─────────────────────────────
+  /entrepreneur/dashboard:
+    get:
+      tags: [Entrepreneur]
+      operationId: getEntrepreneurDashboard
+      summary: لوحة صاحب المشروع — الفرص، المطلوب الآن، طلبات الوصول، الاكتمال
+      x-requirement: [ENT-01, ENT-04, ENT-06, ADM-04]
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntrepreneurDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/opportunities:
+    get:
+      tags: [Entrepreneur]
+      operationId: listOwnedOpportunities
+      summary: فرصي
+      x-requirement: [ENT-01]
+      responses:
+        '200':
+          description: Owned opportunities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/OwnedOpportunity' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Entrepreneur]
+      operationId: createOpportunityDraft
+      summary: إنشاء مسودة فرصة
+      x-requirement: [ENT-01, ENT-02]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 160 }
+      responses:
+        '201':
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OpportunityFull' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/opportunities/{uuid}:
+    get:
+      tags: [Entrepreneur]
+      operationId: getOwnedOpportunity
+      summary: الملف الكامل لفرصتي
+      x-requirement: [ENT-01, ENT-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Full file (owner view)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OpportunityFull' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Entrepreneur]
+      operationId: updateOwnedOpportunity
+      summary: تحديث قسم (basics / organization / impact / financials / disclosures)
+      description: Sections are locked per status (ENT-05); a locked section returns `409`.
+      x-requirement: [ENT-02, ENT-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpportunityInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OpportunityFull' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Section locked for the current status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /entrepreneur/opportunities/{uuid}/checklist:
+    get:
+      tags: [Entrepreneur]
+      operationId: getOpportunityChecklist
+      summary: الحقول والمستندات الناقصة قبل التقديم
+      x-requirement: [ENT-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Checklist
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Checklist' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/opportunities/{uuid}/submit:
+    post:
+      tags: [Entrepreneur]
+      operationId: submitOpportunity
+      summary: تقديم الفرصة (draft → new) وتوليد الرقم المرجعي
+      x-requirement: [ENT-03, ADM-01, PRV-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data_accuracy_declared]
+              properties:
+                data_accuracy_declared: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Submitted; `reference_no` assigned; confirmation email sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reference_no: { type: string, example: A-2026-0007 }
+                  status: { $ref: '#/components/schemas/OpportunityStatus' }
+                  review_due_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Checklist incomplete
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      checklist: { $ref: '#/components/schemas/Checklist' }
+
+  /entrepreneur/opportunities/{uuid}/withdraw:
+    post:
+      tags: [Entrepreneur]
+      operationId: withdrawOpportunity
+      summary: سحب الفرصة (قبل الربط)
+      x-requirement: [ENT-07, ADM-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Not withdrawable in current status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /entrepreneur/opportunities/{uuid}/indicators:
+    get:
+      tags: [Entrepreneur]
+      operationId: listOwnedIndicators
+      summary: مؤشرات الأثر
+      x-requirement: [ENT-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Indicators
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ImpactIndicator' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Entrepreneur]
+      operationId: createIndicator
+      summary: إضافة مؤشر أثر
+      x-requirement: [ENT-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ImpactIndicatorInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ImpactIndicator' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /entrepreneur/opportunities/{uuid}/indicators/{id}:
+    delete:
+      tags: [Entrepreneur]
+      operationId: deleteIndicator
+      summary: حذف مؤشر (قبل التقديم فقط)
+      x-requirement: [ENT-02, ENT-05]
+      parameters:
+        - $ref: '#/components/parameters/Uuid'
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Locked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /entrepreneur/opportunities/{uuid}/documents:
+    post:
+      tags: [Entrepreneur]
+      operationId: uploadOpportunityDocument
+      summary: رفع مستند (multipart) → pending_review + فحص فيروسات في الطابور
+      x-requirement: [DOC-01, DOC-03, ENT-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kind, file]
+              properties:
+                kind: { $ref: '#/components/schemas/DocumentKind' }
+                title: { type: string, maxLength: 160 }
+                file:
+                  type: string
+                  format: binary
+                  description: Max `documents.max_size_mb`; mimes per `documents.allowed_mimes`.
+                supersedes_document_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Stored; `scan_result=pending` until the ClamAV job finishes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Document' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '413': { description: File too large }
+        '415': { description: Mime not allowed }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /entrepreneur/opportunities/{uuid}/preview:
+    get:
+      tags: [Entrepreneur]
+      operationId: previewOpportunity
+      summary: المعاينة كما سيراها المستثمر (بطاقة + تفاصيل)
+      x-requirement: [ENT-09, MAT-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Preview at `approved_member` level
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  card: { $ref: '#/components/schemas/OpportunityCard' }
+                  detail: { $ref: '#/components/schemas/OpportunityDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/opportunities/{uuid}/teaser/approve:
+    post:
+      tags: [Entrepreneur]
+      operationId: ownerApproveTeaser
+      summary: موافقة صاحب المشروع على الملخص التعريفي (نشر)
+      x-requirement: [MAT-05, ENT-09, PRV-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teaser_version]
+              properties:
+                teaser_version: { type: integer }
+      responses:
+        '200':
+          description: "`teasers.approved_by_owner_at` set; consent `teaser_publication` inserted."
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Teaser' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409':
+          description: Teaser version changed since viewed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /entrepreneur/access-requests:
+    get:
+      tags: [Entrepreneur]
+      operationId: listAccessRequests
+      summary: طلبات الاطلاع على الملف الكامل (هوية المستثمر محجوبة)
+      x-requirement: [ENT-06, MSG-01]
+      responses:
+        '200':
+          description: Pending requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AccessRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/access-requests/{interestId}/decide:
+    post:
+      tags: [Entrepreneur]
+      operationId: decideAccessRequest
+      summary: الموافقة أو الرفض على مشاركة الملف الكامل (الموافقة المزدوجة)
+      x-requirement: [ENT-06, MSG-02, PRV-02]
+      parameters:
+        - name: interestId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approve, decline] }
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: |
+            `approve` → `file_access_grants` row + consent `full_file_share`, interest → `shared`.
+            `decline` → interest → `closed` with reason.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Interest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /entrepreneur/info-requests:
+    get:
+      tags: [Entrepreneur]
+      operationId: listOwnerInfoRequests
+      summary: طلبات المعلومات المحوّلة إليّ
+      x-requirement: [OPP-05, MSG-01]
+      responses:
+        '200':
+          description: Info requests (investor identity omitted)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/InfoRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /entrepreneur/info-requests/{id}/answer:
+    post:
+      tags: [Entrepreneur]
+      operationId: answerInfoRequest
+      summary: الإجابة على طلب معلومات
+      x-requirement: [OPP-05]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: { type: string, maxLength: 4000 }
+      responses:
+        '200':
+          description: Answered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/InfoRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /entrepreneur/meetings:
+    get:
+      tags: [Entrepreneur]
+      operationId: listOwnerMeetings
+      summary: اجتماعاتي
+      x-requirement: [MTG-01]
+      responses:
+        '200':
+          description: Meetings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Meeting' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ───────────────────────────── Admin ─────────────────────────────
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      operationId: adminDashboard
+      summary: عدادات اليوم، خط الأنابيب بالحالة، المتأخرات، مهامي
+      x-requirement: [ADM-02, ADM-06]
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities:
+    get:
+      tags: [Admin]
+      operationId: adminListOpportunities
+      summary: كل الفرص مع عوامل تصفية إدارية
+      x-requirement: [ADM-02, ACC-04]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[status]
+          in: query
+          schema: { $ref: '#/components/schemas/OpportunityStatus' }
+        - $ref: '#/components/parameters/FilterSector'
+        - name: filter[overdue]
+          in: query
+          schema: { type: boolean }
+        - name: filter[assignee]
+          in: query
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Opportunities (evaluators see only assigned ones — ACC-04)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/OpportunityAdminRow' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}:
+    get:
+      tags: [Admin]
+      operationId: adminGetOpportunity
+      summary: الملف الكامل + الخط الزمني + الملاحظات الداخلية
+      x-requirement: [ADM-02, ADM-05, AUD-03]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Full admin view
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OpportunityFull' }
+                  timeline:
+                    type: array
+                    items: { $ref: '#/components/schemas/StatusTransition' }
+                  notes:
+                    type: array
+                    items: { $ref: '#/components/schemas/InternalNote' }
+                  documents:
+                    type: array
+                    items: { $ref: '#/components/schemas/Document' }
+                  completion_requests:
+                    type: array
+                    items: { $ref: '#/components/schemas/CompletionRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/opportunities/{uuid}/assign:
+    post:
+      tags: [Admin]
+      operationId: adminAssignReviewer
+      summary: إسناد مراجع
+      x-requirement: [ADM-02]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reviewer_user_id]
+              properties:
+                reviewer_user_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/opportunities/{uuid}/transition:
+    post:
+      tags: [Admin]
+      operationId: adminTransitionOpportunity
+      summary: نقل الحالة عبر آلة الحالات (OpportunityStateMachine)
+      x-requirement: [ADM-01, AUD-01, NTF-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to: { $ref: '#/components/schemas/OpportunityStatus' }
+                reason: { type: string, maxLength: 2000, description: 'Required for `not_eligible` and `closed`' }
+      responses:
+        '200':
+          description: Transitioned; row written to `opportunity_status_transitions` and `audit_logs`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatusTransition' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Transition not allowed from current status / preconditions unmet
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      code: { type: string, example: invalid_transition }
+                      from: { $ref: '#/components/schemas/OpportunityStatus' }
+                      allowed:
+                        type: array
+                        items: { $ref: '#/components/schemas/OpportunityStatus' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/opportunities/{uuid}/completion-requests:
+    post:
+      tags: [Admin]
+      operationId: adminCreateCompletionRequest
+      summary: طلب استكمال (→ needs_completion) مع قائمة البنود والموعد
+      x-requirement: [ADM-04, ENT-04]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, due_at]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/CompletionItem' }
+                due_at: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CompletionRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/opportunities/{uuid}/notes:
+    post:
+      tags: [Admin]
+      operationId: adminAddNote
+      summary: ملاحظة داخلية (لا تُعرض خارجيًا أبدًا)
+      x-requirement: [ADM-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 4000 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InternalNote' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}/documents/{docUuid}/review:
+    post:
+      tags: [Admin]
+      operationId: adminReviewDocument
+      summary: قبول/رفض/طلب مستند
+      x-requirement: [DOC-03, ADM-04]
+      parameters:
+        - $ref: '#/components/parameters/Uuid'
+        - name: docUuid
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/DocumentStatus' }
+                note: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Reviewed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Document' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}/evaluation/assign:
+    post:
+      tags: [Admin]
+      operationId: adminAssignEvaluators
+      summary: إسناد مقيّمَين اثنين بالضبط
+      x-requirement: [EVL-02, ACC-04]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evaluator_ids]
+              properties:
+                evaluator_ids:
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items: { type: integer }
+      responses:
+        '201':
+          description: Assignments created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EvaluationAssignment' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/evaluation-assignments/{id}/coi:
+    post:
+      tags: [Admin]
+      operationId: evaluatorDeclareCoi
+      summary: إقرار تعارض المصالح قبل التقييم
+      x-requirement: [EVL-02, MAT-04]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [has_conflict]
+              properties:
+                has_conflict: { type: boolean }
+                note: { type: string }
+      responses:
+        '200':
+          description: Declared; `has_conflict=true` withdraws the assignment.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvaluationAssignment' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/evaluation-assignments/{id}/score:
+    get:
+      tags: [Admin]
+      operationId: getEvaluationScore
+      summary: نموذج التقييم مع المعايير (نسخة مجمّدة)
+      x-requirement: [EVL-01]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Criteria + existing scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  criteria:
+                    type: array
+                    items: { $ref: '#/components/schemas/EvaluationCriterion' }
+                  evaluation: { $ref: '#/components/schemas/Evaluation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: submitEvaluationScore
+      summary: حفظ/تقديم الدرجات والتوصية
+      x-requirement: [EVL-01, EVL-02]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scores, recommendation]
+              properties:
+                scores:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    required: [score]
+                    properties:
+                      score: { type: integer, minimum: 1, maximum: 5 }
+                      note: { type: string }
+                recommendation: { $ref: '#/components/schemas/EvaluationResult' }
+                comment: { type: string, maxLength: 4000 }
+                submit: { type: boolean, default: false, description: false = draft save }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evaluation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: COI not declared or conflict declared
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/opportunities/{uuid}/evaluation:
+    get:
+      tags: [Admin]
+      operationId: adminGetEvaluations
+      summary: التقييمان جنبًا إلى جنب مع الفروقات
+      x-requirement: [EVL-03]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Side-by-side
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evaluations:
+                    type: array
+                    items: { $ref: '#/components/schemas/Evaluation' }
+                  diffs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        criterion_key: { type: string }
+                        scores: { type: array, items: { type: integer } }
+                        delta: { type: integer }
+                  decision: { $ref: '#/components/schemas/EvaluationDecision' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}/evaluation/decide:
+    post:
+      tags: [Admin]
+      operationId: adminDecideEvaluation
+      summary: قرار الأهلية
+      x-requirement: [EVL-03, ADM-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [result]
+              properties:
+                result: { $ref: '#/components/schemas/EvaluationResult' }
+                conditions: { type: string }
+                reasons: { type: string }
+      responses:
+        '200':
+          description: Decided
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvaluationDecision' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Both evaluations not yet submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /admin/opportunities/{uuid}/teaser:
+    post:
+      tags: [Admin]
+      operationId: adminUpsertTeaser
+      summary: إنشاء/تحديث الملخص التعريفي (حقول عامة فقط)
+      x-requirement: [MAT-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [summary_ar]
+              properties:
+                summary_ar: { type: string, maxLength: 600 }
+                summary_en: { type: string, maxLength: 600 }
+                highlights:
+                  type: array
+                  maxItems: 5
+                  items: { type: string, maxLength: 120 }
+      responses:
+        '200':
+          description: Saved as a new version (owner approval reset)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Teaser' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/opportunities/{uuid}/teaser/approve:
+    post:
+      tags: [Admin]
+      operationId: adminApproveTeaser
+      summary: اعتماد المجلس للملخص
+      x-requirement: [MAT-05]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Teaser' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}/candidates:
+    get:
+      tags: [Admin]
+      operationId: adminListCandidates
+      summary: المستثمرون المرتبون بدرجة التطابق (مع استبعاد تعارض المصالح)
+      x-requirement: [MAT-02, MAT-04]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Ranked candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Candidate' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/opportunities/{uuid}/nominations:
+    post:
+      tags: [Admin]
+      operationId: adminCreateNominations
+      summary: ترشيح مستثمرين (حتى max_nominations_per_opportunity)
+      x-requirement: [MAT-01, MAT-03]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [investor_user_ids, rationale]
+              properties:
+                investor_user_ids:
+                  type: array
+                  minItems: 1
+                  items: { type: integer }
+                rationale: { type: string, maxLength: 1000 }
+      responses:
+        '201':
+          description: Nominations sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Nomination' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Max nominations reached or teaser not approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /admin/interests:
+    get:
+      tags: [Admin]
+      operationId: adminListInterests
+      summary: كل الاهتمامات
+      x-requirement: [INV-02, ADM-02]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[status]
+          in: query
+          schema: { $ref: '#/components/schemas/InterestStatus' }
+      responses:
+        '200':
+          description: Interests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Interest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/interests/{id}/transition:
+    post:
+      tags: [Admin]
+      operationId: adminTransitionInterest
+      summary: نقل حالة الاهتمام (shared → connected → meeting → closed)
+      x-requirement: [INV-02, MSG-02, ADM-01]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to: { $ref: '#/components/schemas/InterestStatus' }
+                closed_reason: { type: string }
+      responses:
+        '200':
+          description: Transitioned (`connected` also transitions the opportunity when needed)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Interest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Invalid transition
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /admin/info-requests:
+    get:
+      tags: [Admin]
+      operationId: adminListInfoRequests
+      summary: طلبات المعلومات
+      x-requirement: [OPP-05]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Info requests (with investor identity — staff only)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/InfoRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/info-requests/{id}/forward:
+    post:
+      tags: [Admin]
+      operationId: adminForwardInfoRequest
+      summary: تحويل الطلب لصاحب المشروع (بدون هوية المستثمر)
+      x-requirement: [OPP-05, MSG-01]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/info-requests/{id}/reply:
+    post:
+      tags: [Admin]
+      operationId: adminReplyInfoRequest
+      summary: الرد المباشر من المجلس
+      x-requirement: [OPP-05]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: { type: string, maxLength: 4000 }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/meetings:
+    get:
+      tags: [Admin]
+      operationId: adminListMeetings
+      summary: الاجتماعات
+      x-requirement: [MTG-01]
+      responses:
+        '200':
+          description: Meetings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Meeting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateMeeting
+      summary: جدولة اجتماع + إرسال ICS
+      x-requirement: [MTG-01, NTF-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeetingInput' }
+      responses:
+        '201':
+          description: Scheduled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/meetings/{id}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateMeeting
+      summary: تعديل اجتماع
+      x-requirement: [MTG-01]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeetingInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/meetings/{id}/minutes:
+    post:
+      tags: [Admin]
+      operationId: adminMeetingMinutes
+      summary: محضر الاجتماع والإجراءات
+      x-requirement: [MTG-02]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [minutes]
+              properties:
+                minutes: { type: string }
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    required: [description]
+                    properties:
+                      description: { type: string }
+                      owner_user_id: { type: integer }
+                      due_at: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Saved (status → held)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/memberships:
+    get:
+      tags: [Admin]
+      operationId: adminListMemberships
+      summary: طلبات العضوية
+      x-requirement: [ACC-06, ACC-07]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[status]
+          in: query
+          schema: { $ref: '#/components/schemas/MembershipStatus' }
+      responses:
+        '200':
+          description: Memberships
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MembershipAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/memberships/{id}:
+    get:
+      tags: [Admin]
+      operationId: adminGetMembership
+      summary: طلب عضوية مع الملف الاستثماري
+      x-requirement: [ACC-06]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Membership + profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/MembershipAdmin' }
+                  profile: { $ref: '#/components/schemas/InvestorProfile' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/memberships/{id}/transition:
+    post:
+      tags: [Admin]
+      operationId: adminTransitionMembership
+      summary: نقل حالة العضوية
+      x-requirement: [ACC-06, ACC-07, AUD-01]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to: { $ref: '#/components/schemas/MembershipStatus' }
+                note: { type: string, description: Internal decision note }
+                items:
+                  type: array
+                  description: For `needs_completion`
+                  items: { type: string }
+      responses:
+        '200':
+          description: Transitioned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MembershipAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Invalid transition
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      operationId: adminListUsers
+      summary: المستخدمون
+      x-requirement: [ACC-02]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[type]
+          in: query
+          schema: { $ref: '#/components/schemas/UserType' }
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/UserAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateStaff
+      summary: إنشاء حساب موظف بأدوار
+      x-requirement: [ACC-02, ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, roles]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                roles:
+                  type: array
+                  items: { $ref: '#/components/schemas/StaffRole' }
+      responses:
+        '201':
+          description: Created; invitation email sent; 2FA enforced on first login.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/users/{id}:
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateUser
+      summary: تعديل الأدوار والحالة
+      x-requirement: [ACC-02, ACC-07]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roles:
+                  type: array
+                  items: { $ref: '#/components/schemas/StaffRole' }
+                status: { type: string, enum: [active, suspended] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/settings:
+    get:
+      tags: [Admin]
+      operationId: adminGetSettings
+      summary: كل الإعدادات
+      x-requirement: [ADM-03]
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Setting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Admin]
+      operationId: adminPutSettings
+      summary: تحديث إعدادات (super_admin)
+      x-requirement: [ADM-03, AUD-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [settings]
+              properties:
+                settings:
+                  type: array
+                  items:
+                    type: object
+                    required: [key, value]
+                    properties:
+                      key: { type: string }
+                      value: {}
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /admin/taxonomies/{group}:
+    get:
+      tags: [Admin]
+      operationId: adminListTaxonomy
+      summary: مصطلحات مجموعة (بما فيها غير النشطة)
+      x-requirement: [FRM-04]
+      parameters: [{ $ref: '#/components/parameters/TaxonomyGroup' }]
+      responses:
+        '200':
+          description: Terms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TaxonomyTermAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateTaxonomyTerm
+      summary: إضافة مصطلح
+      x-requirement: [FRM-04]
+      parameters: [{ $ref: '#/components/parameters/TaxonomyGroup' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaxonomyTermInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyTermAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateTaxonomyTerm
+      summary: تعديل مصطلح (بالمفتاح في الجسم)
+      x-requirement: [FRM-04]
+      parameters: [{ $ref: '#/components/parameters/TaxonomyGroup' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/TaxonomyTermInput'
+                - type: object
+                  required: [key]
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxonomyTermAdmin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Admin]
+      operationId: adminDeactivateTaxonomyTerm
+      summary: تعطيل مصطلح (لا حذف فعلي إذا كان مستخدمًا)
+      x-requirement: [FRM-04]
+      parameters:
+        - $ref: '#/components/parameters/TaxonomyGroup'
+        - name: key
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deactivated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/evaluation-criteria:
+    get:
+      tags: [Admin]
+      operationId: adminListCriteria
+      summary: معايير التقييم
+      x-requirement: [EVL-01, FRM-03]
+      responses:
+        '200':
+          description: Criteria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EvaluationCriterion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateCriterion
+      summary: إضافة معيار (ينشئ نسخة جديدة)
+      x-requirement: [EVL-01, FRM-03]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EvaluationCriterionInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvaluationCriterion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateCriterion
+      summary: تعديل معيار (ينشئ نسخة جديدة؛ التقييمات القديمة تحتفظ بنسختها)
+      x-requirement: [EVL-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/EvaluationCriterionInput'
+                - type: object
+                  required: [key]
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EvaluationCriterion' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/reports/{key}:
+    get:
+      tags: [Admin]
+      operationId: adminGetReport
+      summary: تقرير محسوب من قاعدة البيانات
+      x-requirement: [RPT-01]
+      parameters:
+        - $ref: '#/components/parameters/ReportKey'
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/reports/{key}/export.xlsx:
+    get:
+      tags: [Admin]
+      operationId: adminExportReport
+      summary: تصدير Excel (مُدقَّق)
+      x-requirement: [RPT-02, AUD-01]
+      parameters:
+        - $ref: '#/components/parameters/ReportKey'
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: XLSX stream; `audit_logs.action=report.export`.
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /admin/audit-logs:
+    get:
+      tags: [Admin]
+      operationId: adminListAuditLogs
+      summary: سجل التدقيق (قراءة فقط)
+      x-requirement: [AUD-01, AUD-02, AUD-03]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[user]
+          in: query
+          schema: { type: integer }
+        - name: filter[action]
+          in: query
+          schema: { type: string, example: opportunity.transition }
+        - name: filter[type]
+          in: query
+          schema: { type: string, example: opportunity }
+        - name: filter[from]
+          in: query
+          schema: { type: string, format: date }
+        - name: filter[to]
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Audit entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AuditLog' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/content/{type}:
+    get:
+      tags: [Admin]
+      operationId: adminListContent
+      summary: محتوى الموقع العام (صفحات، أسئلة، أخبار، فعاليات)
+      x-requirement: [CMS-02]
+      parameters: [{ $ref: '#/components/parameters/ContentType' }]
+      responses:
+        '200':
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Admin]
+      operationId: adminCreateContent
+      summary: إنشاء عنصر محتوى
+      x-requirement: [CMS-02]
+      parameters: [{ $ref: '#/components/parameters/ContentType' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContentItemInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContentItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    patch:
+      tags: [Admin]
+      operationId: adminUpdateContent
+      summary: تحديث عنصر (بالمعرّف في الجسم)
+      x-requirement: [CMS-02]
+      parameters: [{ $ref: '#/components/parameters/ContentType' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ContentItemInput'
+                - type: object
+                  required: [id]
+                  properties:
+                    id: { type: integer }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContentItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/contact-messages:
+    get:
+      tags: [Admin]
+      operationId: adminListContactMessages
+      summary: رسائل التواصل
+      x-requirement: [CMS-05]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Messages
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ContactMessage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/payments:
+    get:
+      tags: [Admin, Payments]
+      operationId: adminListPayments
+      summary: المدفوعات
+      x-requirement: [RPT-01]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: filter[status]
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentStatus' }
+      responses:
+        '200':
+          description: Payments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Payment' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/FeatureDisabled' }
+
+  /admin/payments/export.xlsx:
+    get:
+      tags: [Admin, Payments]
+      operationId: adminExportPayments
+      summary: تصدير المدفوعات
+      x-requirement: [RPT-02, AUD-01]
+      responses:
+        '200':
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/payments/{uuid}/refund:
+    post:
+      tags: [Admin, Payments]
+      operationId: adminRefundPayment
+      summary: استرداد (كامل أو جزئي) عبر البوابة
+      x-requirement: [AUD-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, description: Omit for full refund }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Refund requested; final status arrives via webhook.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Not refundable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ───────────────────────────── Public ─────────────────────────────
+  /public/pages/{slug}:
+    get:
+      tags: [Public]
+      operationId: publicGetPage
+      summary: صفحة ثابتة (من نحن، الخصوصية، الشروط…)
+      security: []
+      x-requirement: [CMS-01, CMS-02, PRV-01]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9-]+$' }
+      responses:
+        '200':
+          description: Page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ContentItem' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/faqs:
+    get:
+      tags: [Public]
+      operationId: publicListFaqs
+      summary: الأسئلة الشائعة
+      security: []
+      x-requirement: [CMS-03]
+      responses:
+        '200':
+          description: FAQs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/news:
+    get:
+      tags: [Public]
+      operationId: publicListNews
+      summary: الأخبار
+      security: []
+      x-requirement: [CMS-04]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: News
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/events:
+    get:
+      tags: [Public]
+      operationId: publicListEvents
+      summary: الفعاليات
+      security: []
+      x-requirement: [CMS-04]
+      responses:
+        '200':
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/stats:
+    get:
+      tags: [Public]
+      operationId: publicStats
+      summary: إحصاءات مجمّعة غير شخصية
+      security: []
+      x-requirement: [CMS-01, BRD-02]
+      responses:
+        '200':
+          description: Aggregates (cached 1h)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investors_approved: { type: integer }
+                  opportunities_eligible: { type: integer }
+                  connections: { type: integer }
+                  sectors: { type: integer }
+                  computed_at: { type: string, format: date-time }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/contact:
+    post:
+      tags: [Public]
+      operationId: publicContact
+      summary: نموذج تواصل (honeypot + rate limit)
+      security: []
+      x-requirement: [CMS-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, name, email, message]
+              properties:
+                category: { type: string, enum: [investor, entrepreneur, partnership, media, other] }
+                name: { type: string, maxLength: 120 }
+                email: { type: string, format: email }
+                phone: { type: string }
+                message: { type: string, maxLength: 3000 }
+                website:
+                  type: string
+                  description: Honeypot — must be empty.
+      responses:
+        '201':
+          description: Received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reference_no: { type: string, example: C-2026-0123 }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /public/featured-opportunities:
+    get:
+      tags: [Public]
+      operationId: publicFeaturedOpportunities
+      summary: بطاقات تعريفية إن كان settings.featured_public=true وإلا []
+      security: []
+      x-requirement: [CMS-01, MAT-05]
+      responses:
+        '200':
+          description: Teaser cards (public fields only)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/OpportunityCard' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  # ───────────────────────────── Payments ─────────────────────────────
+  /payments/intents:
+    post:
+      tags: [Payments]
+      operationId: createPaymentIntent
+      summary: إنشاء نية دفع (المبلغ يحدده الخادم من الإعدادات)
+      description: |
+        Only `membership_fee | service_fee | training | sponsorship`. The platform never
+        collects deal money (doc §16.1). Disabled unless `features.payments=true`.
+      x-requirement: [SEC-01, AUD-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose, idempotency_key]
+              properties:
+                purpose: { $ref: '#/components/schemas/PaymentPurpose' }
+                amount: { type: number, description: Ignored for membership_fee (server-side) }
+                idempotency_key: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Intent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [payment_uuid, gateway, publishable_key, callback_url, amount, currency]
+                properties:
+                  payment_uuid: { type: string, format: uuid }
+                  gateway: { type: string, enum: [moyasar] }
+                  publishable_key: { type: string }
+                  callback_url: { type: string, format: uri }
+                  amount: { type: number }
+                  currency: { type: string, const: SAR }
+        '200':
+          description: Same idempotency key → existing intent returned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/FeatureDisabled' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /payments/{uuid}:
+    get:
+      tags: [Payments]
+      operationId: getPayment
+      summary: حالة الدفع
+      x-requirement: [AUD-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Payment
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /payments/{uuid}/cancel:
+    post:
+      tags: [Payments]
+      operationId: cancelPayment
+      summary: إلغاء نية دفع معلقة
+      x-requirement: [AUD-01]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '409':
+          description: Not cancellable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /webhooks/moyasar:
+    post:
+      tags: [Payments]
+      operationId: moyasarWebhook
+      summary: Webhook من Moyasar (توقيع مُتحقق، idempotent)
+      description: |
+        Verified with the shared secret; idempotent on `gateway_payment_id`; every delivery is
+        logged to `payment_events` with `signature_valid`; emits `PaymentPaid`.
+      security: []
+      x-requirement: [SEC-01, AUD-01]
+      parameters:
+        - name: X-Moyasar-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Raw Moyasar event payload
+              additionalProperties: true
+      responses:
+        '200': { description: Processed or already processed }
+        '400': { description: 'Invalid signature (logged, not retried)' }
+
+  # ───────────────────────────── System ─────────────────────────────
+  /health:
+    get:
+      tags: [System]
+      operationId: health
+      summary: فحص الصحة لمراقبي التوافر
+      security: []
+      x-requirement: [BKP-03]
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Degraded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /version:
+    get:
+      tags: [System]
+      operationId: version
+      summary: إصدار الـ API والتزام git
+      security: []
+      x-requirement: [SCL-03]
+      responses:
+        '200':
+          description: Version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api: { type: string, example: v1 }
+                  version: { type: string, example: 1.0.0 }
+                  commit: { type: string }
+                  built_at: { type: string, format: date-time }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+# ═══════════════════════════════════════════════════════════════════
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum personal access token
+      description: Mobile clients. Obtained from `POST /auth/login` with `device_name`.
+    sanctum:
+      type: apiKey
+      in: cookie
+      name: sciis_session
+      description: |
+        Web SPA cookie session (Laravel Sanctum stateful domains). Call `GET /sanctum/csrf-cookie`
+        first and send `X-XSRF-TOKEN` on every mutating request.
+
+  headers:
+    X-Request-Id:
+      description: Echo of the request id (generated server-side if absent); stored in audit_logs.
+      schema: { type: string, format: uuid }
+    Retry-After:
+      description: Seconds to wait before retrying.
+      schema: { type: integer }
+
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      schema: { type: string, enum: [ar, en], default: ar }
+      description: Selects localised labels and messages.
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+    Uuid:
+      name: uuid
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FilterSector:
+      name: filter[sector]
+      in: query
+      schema: { type: string }
+      description: taxonomy key from `sectors`
+    FilterRegion:
+      name: filter[region]
+      in: query
+      schema: { type: string }
+      description: taxonomy key from `regions`
+    FilterStage:
+      name: filter[stage]
+      in: query
+      schema: { $ref: '#/components/schemas/ProjectStage' }
+    FilterType:
+      name: filter[type]
+      in: query
+      schema: { $ref: '#/components/schemas/InvestmentType' }
+    Sort:
+      name: sort
+      in: query
+      schema: { type: string, enum: [newest, impact, need], default: newest }
+    Search:
+      name: search
+      in: query
+      schema: { type: string, maxLength: 120 }
+    TaxonomyGroup:
+      name: group
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [sectors, regions, investment_types, beneficiary_groups, sdgs, project_stages, investment_ranges, decline_reasons, how_heard]
+    ReportKey:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - registrations_by_type
+          - memberships_by_status
+          - opportunities_funnel
+          - opportunities_by_sector_stage_region
+          - first_time_completion_rate
+          - avg_review_time
+          - avg_evaluation_time
+          - overdue_items
+          - eligibility_rate
+          - interest_rate
+          - connection_rate
+          - acquisition_channels
+          - agreement_conversion
+          - execution_status
+          - impact_aggregates
+          - meeting_attendance
+    ContentType:
+      name: type
+      in: path
+      required: true
+      schema: { type: string, enum: [pages, faqs, news, events] }
+
+  responses:
+    OkMessage:
+      description: OK
+      headers: { X-Request-Id: { $ref: '#/components/headers/X-Request-Id' } }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Message' }
+    Unauthenticated:
+      description: Missing or invalid token / session
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Unauthenticated., code: unauthenticated }
+    Forbidden:
+      description: Authenticated but not allowed (role, record-level policy, or access level)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: هذا الإجراء غير مصرح به., code: forbidden }
+    NotFound:
+      description: Not found (also returned instead of 403 for resources the caller must not know exist)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            message: البيانات المدخلة غير صالحة.
+            code: validation_failed
+            errors: { email: ['البريد الإلكتروني مستخدم مسبقًا'] }
+    RateLimited:
+      description: Too many requests
+      headers: { Retry-After: { $ref: '#/components/headers/Retry-After' } }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    FeatureDisabled:
+      description: Feature flag off (`features.payments=false`)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Not found., code: feature_disabled }
+    OpportunityCardPage:
+      description: Paginated teaser cards
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PaginatedEnvelope'
+              - type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/OpportunityCard' }
+
+  schemas:
+    # ── Enums (SPEC §2) ──
+    UserType:
+      type: string
+      enum: [investor_individual, investor_institutional, entrepreneur_individual, entrepreneur_entity, staff]
+    StaffRole:
+      type: string
+      enum: [super_admin, membership_officer, reviewer, evaluator, matching_officer, agreements_officer, impact_officer, advisory_member, reports_viewer]
+    AccessLevel:
+      type: string
+      enum: [visitor, registered, approved_member, granted, connected]
+    Locale:
+      type: string
+      enum: [ar, en]
+    OpportunityStatus:
+      type: string
+      enum: [draft, new, under_review, needs_completion, not_eligible, eligible, connected, negotiating, in_execution, operating, withdrawn, closed]
+    MembershipStatus:
+      type: string
+      enum: [registered, under_review, needs_completion, approved, suspended, rejected]
+    InterestStatus:
+      type: string
+      enum: [sent, awaiting_owner_approval, shared, connected, meeting, closed]
+    InfoRequestStatus:
+      type: string
+      enum: [sent, processing, answered, closed]
+    Sensitivity:
+      type: string
+      enum: [public, internal, confidential, sensitive_personal]
+      description: ع / د / س / ح
+    EvaluationAxis:
+      type: string
+      enum: [readiness, feasibility, impact]
+    EvaluationResult:
+      type: string
+      enum: [eligible, eligible_with_conditions, not_eligible_now]
+    AssignmentStatus:
+      type: string
+      enum: [assigned, coi_declared, scored, withdrawn]
+    DocumentKind:
+      type: string
+      enum: [pitch_deck, commercial_register, license, financial_statements, business_plan, team_cv, impact_evidence, authorization_letter, financial_projections, agreement, progress_evidence, other]
+    DocumentStatus:
+      type: string
+      enum: [pending_review, accepted, required, rejected]
+    IndicatorValueStatus:
+      type: string
+      enum: [entered, verified, needs_clarification]
+    ExecutionStatus:
+      type: string
+      enum: [on_track, delayed, stalled]
+    MeetingStatus:
+      type: string
+      enum: [scheduled, held, cancelled]
+    AgreementStatus:
+      type: string
+      enum: [draft, legal_review, approved, signed, archived]
+    ConsentType:
+      type: string
+      enum: [privacy_policy, terms, teaser_publication, full_file_share, nda, data_accuracy]
+    NotificationChannel:
+      type: string
+      enum: [database, mail, sms]
+    PaymentStatus:
+      type: string
+      enum: [pending, authorized, paid, failed, refunded, cancelled]
+    PaymentPurpose:
+      type: string
+      enum: [membership_fee, service_fee, training, sponsorship]
+    InvestmentType:
+      type: string
+      enum: [equity, debt, pay_for_results, grant, guarantee, patient_capital, convertible, revenue_share, blended]
+    ProjectStage:
+      type: string
+      enum: [idea, prototype, pre_seed, seed, early_stage, later_stage]
+    RiskAppetite:
+      type: string
+      enum: [high, medium, low]
+    RevenueState:
+      type: string
+      enum: [none, early, regular]
+    LegalForm:
+      type: string
+      enum: [company, establishment, nonprofit, other]
+    InstitutionType:
+      type: string
+      enum: [company, fund, family_office, donor, nonprofit, other]
+
+    # ── Envelopes & errors ──
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    Error:
+      type: object
+      required: [message]
+      description: RFC-7807-ish error body
+      properties:
+        message: { type: string }
+        code: { type: string, description: 'machine code, e.g. validation_failed, invalid_transition, two_factor_required' }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+        request_id: { type: string, format: uuid }
+    PaginatedEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: {} }
+        links:
+          type: object
+          properties:
+            first: { type: [string, 'null'], format: uri }
+            last: { type: [string, 'null'], format: uri }
+            prev: { type: [string, 'null'], format: uri }
+            next: { type: [string, 'null'], format: uri }
+        meta:
+          type: object
+          required: [current_page, last_page, per_page, total]
+          properties:
+            current_page: { type: integer }
+            last_page: { type: integer }
+            per_page: { type: integer }
+            total: { type: integer }
+
+    # ── Auth / me ──
+    RegisterRequest:
+      type: object
+      required: [type, name, email, phone, password, locale, consents]
+      properties:
+        type:
+          allOf: [{ $ref: '#/components/schemas/UserType' }]
+          description: '`staff` cannot self-register.'
+        name: { type: string, minLength: 3, maxLength: 120 }
+        email: { type: string, format: email }
+        phone: { type: string, pattern: '^\+[1-9]\d{7,14}$', description: E.164 }
+        password: { type: string, format: password, minLength: 8 }
+        locale: { $ref: '#/components/schemas/Locale' }
+        consents:
+          type: array
+          minItems: 2
+          items: { $ref: '#/components/schemas/ConsentType' }
+          description: Must include `privacy_policy` and `terms`.
+        organization_name: { type: string, description: Required for institutional / entity types }
+        how_heard_id: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+        device_name:
+          type: string
+          maxLength: 60
+          description: When present a personal access token is issued (mobile); absent → cookie session (web).
+    OtpCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, pattern: '^[0-9]{6}$' }
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        token: { type: string, description: Present for mobile (device_name) only }
+        two_factor_required: { type: boolean, default: false }
+        user: { $ref: '#/components/schemas/User' }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/StaffRole' }
+        membership: { $ref: '#/components/schemas/Membership' }
+        access_level: { $ref: '#/components/schemas/AccessLevel' }
+        completion_percent: { type: integer, minimum: 0, maximum: 100 }
+    User:
+      type: object
+      required: [uuid, name, email, type, locale]
+      properties:
+        uuid: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        type: { $ref: '#/components/schemas/UserType' }
+        locale: { $ref: '#/components/schemas/Locale' }
+        email_verified_at: { type: [string, 'null'], format: date-time }
+        phone_verified_at: { type: [string, 'null'], format: date-time }
+        two_factor_confirmed_at: { type: [string, 'null'], format: date-time }
+        status: { type: string, enum: [active, suspended] }
+        organization: { $ref: '#/components/schemas/OrganizationSummary' }
+        last_login_at: { type: [string, 'null'], format: date-time }
+    Me:
+      type: object
+      required: [user, roles, permissions, access_level, completion_percent]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        roles:
+          type: array
+          items: { $ref: '#/components/schemas/StaffRole' }
+        permissions:
+          type: array
+          items: { type: string, example: opportunities.view }
+        membership: { $ref: '#/components/schemas/Membership' }
+        access_level: { $ref: '#/components/schemas/AccessLevel' }
+        completion_percent: { type: integer, minimum: 0, maximum: 100 }
+        unread_notifications: { type: integer }
+    OrganizationSummary:
+      type: object
+      properties:
+        uuid: { type: string, format: uuid }
+        name: { type: string }
+        legal_form: { $ref: '#/components/schemas/LegalForm' }
+        institution_type: { $ref: '#/components/schemas/InstitutionType' }
+        region: { $ref: '#/components/schemas/TaxonomyTerm' }
+        city: { type: string }
+        founded_on: { type: [string, 'null'], format: date }
+        website: { type: [string, 'null'], format: uri }
+    UserAdmin:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            id: { type: integer }
+            roles:
+              type: array
+              items: { $ref: '#/components/schemas/StaffRole' }
+            created_at: { type: string, format: date-time }
+    Notification:
+      type: object
+      required: [id, data, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, example: OpportunityStatusChanged }
+        data:
+          type: object
+          properties:
+            title: { type: string }
+            body: { type: string }
+            route: { type: string, example: /opportunities/3f1c… }
+        read_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    NotificationPreference:
+      type: object
+      required: [category, channel, enabled]
+      properties:
+        category:
+          type: string
+          enum: [status_changes, nominations, interests, info_requests, meetings, membership, reminders, system]
+        channel: { $ref: '#/components/schemas/NotificationChannel' }
+        enabled: { type: boolean }
+
+    # ── Taxonomies & settings ──
+    TaxonomyTerm:
+      type: object
+      required: [key, label]
+      properties:
+        key: { type: string }
+        label: { type: string, description: Localised by Accept-Language }
+        group: { type: string }
+        sort: { type: integer }
+    TaxonomyTermAdmin:
+      type: object
+      required: [key, label_ar, label_en, is_active, sort]
+      properties:
+        id: { type: integer }
+        group: { type: string }
+        key: { type: string }
+        label_ar: { type: string }
+        label_en: { type: string }
+        sort: { type: integer }
+        is_active: { type: boolean }
+        meta: { type: object, additionalProperties: true }
+    TaxonomyTermInput:
+      type: object
+      required: [label_ar]
+      properties:
+        key: { type: string, pattern: '^[a-z0-9_]+$' }
+        label_ar: { type: string }
+        label_en: { type: string }
+        sort: { type: integer }
+        is_active: { type: boolean }
+        meta: { type: object, additionalProperties: true }
+    Setting:
+      type: object
+      required: [key, value, group]
+      properties:
+        key: { type: string, example: sla.review_days }
+        value: {}
+        group: { type: string, example: sla }
+        description: { type: string }
+        updated_by: { type: [integer, 'null'] }
+        updated_at: { type: string, format: date-time }
+    PublicSettings:
+      type: object
+      properties:
+        platform:
+          type: object
+          properties:
+            name_ar: { type: string }
+            name_en: { type: string }
+            short_name: { type: string }
+            official_email: { type: string, format: email }
+            official_phone: { type: string }
+            whatsapp: { type: [string, 'null'] }
+        opportunity:
+          type: object
+          properties:
+            access_policy: { type: string, enum: [nomination_only, browse_all, both] }
+            funding_display: { type: string, enum: [band, exact, hidden] }
+        features:
+          type: object
+          properties:
+            payments: { type: boolean }
+            english: { type: boolean }
+            browse_all: { type: boolean }
+            watermark: { type: boolean }
+            dark_mode: { type: boolean }
+        supported_locales:
+          type: array
+          items: { $ref: '#/components/schemas/Locale' }
+        legal_versions:
+          type: object
+          properties:
+            privacy_policy: { type: string }
+            terms: { type: string }
+            nda: { type: string }
+        documents:
+          type: object
+          properties:
+            max_size_mb: { type: integer }
+            allowed_mimes:
+              type: array
+              items: { type: string }
+
+    # ── Investor ──
+    InvestorProfile:
+      type: object
+      required: [completion_percent, sections]
+      properties:
+        completion_percent: { type: integer, minimum: 0, maximum: 100 }
+        missing:
+          type: array
+          items: { type: string }
+        sections:
+          type: object
+          properties:
+            basics:
+              type: object
+              properties:
+                country: { type: string }
+                city: { type: string }
+                employer: { type: string }
+                job_title: { type: string }
+                linkedin_url: { type: [string, 'null'], format: uri }
+                preferred_contact: { type: string }
+                how_heard: { $ref: '#/components/schemas/TaxonomyTerm' }
+            interests:
+              type: object
+              properties:
+                sectors: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+                stages: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+                investment_types: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+                regions: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+                causes: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+                risk_appetite: { $ref: '#/components/schemas/RiskAppetite' }
+                investment_range: { $ref: '#/components/schemas/TaxonomyTerm' }
+                mentoring_available: { type: boolean }
+                mentoring_areas: { type: string }
+            experience:
+              type: object
+              properties:
+                experience_years: { type: integer }
+                experience_desc: { type: string }
+                prior_investments_count: { type: integer }
+                prior_investments_desc: { type: string }
+                has_social_investments: { type: boolean }
+                social_investments_desc: { type: string }
+                cv_document: { $ref: '#/components/schemas/Document' }
+            declarations:
+              type: object
+              properties:
+                conflicts_disclosure: { type: string }
+                commit_meetings: { type: boolean }
+                accredited_declaration:
+                  type: object
+                  description: Kept but not shown (status pending_legal — doc §7.5)
+                  additionalProperties: true
+    InvestorProfileInput:
+      type: object
+      description: Any subset of the sections above, with taxonomy keys instead of term objects.
+      properties:
+        basics: { type: object, additionalProperties: true }
+        interests:
+          type: object
+          properties:
+            sectors: { type: array, items: { type: string } }
+            stages: { type: array, items: { $ref: '#/components/schemas/ProjectStage' } }
+            investment_types: { type: array, items: { $ref: '#/components/schemas/InvestmentType' } }
+            regions: { type: array, items: { type: string } }
+            causes: { type: array, items: { type: string } }
+            risk_appetite: { $ref: '#/components/schemas/RiskAppetite' }
+            investment_range_id: { type: string }
+            annual_investment_band_id: { type: string }
+            mentoring_available: { type: boolean }
+            mentoring_areas: { type: string }
+        experience: { type: object, additionalProperties: true }
+        declarations: { type: object, additionalProperties: true }
+    Membership:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/MembershipStatus' }
+        submitted_at: { type: [string, 'null'], format: date-time }
+        approved_at: { type: [string, 'null'], format: date-time }
+        terms_accepted_at: { type: [string, 'null'], format: date-time }
+        suspended_reason: { type: [string, 'null'] }
+        needs_completion_items:
+          type: array
+          items: { type: string }
+    MembershipAdmin:
+      allOf:
+        - $ref: '#/components/schemas/Membership'
+        - type: object
+          properties:
+            id: { type: integer }
+            user: { $ref: '#/components/schemas/User' }
+            reviewed_by: { type: [integer, 'null'] }
+            reviewed_at: { type: [string, 'null'], format: date-time }
+            approved_by: { type: [integer, 'null'] }
+            decision_note: { type: [string, 'null'], description: Internal }
+            prior_investments_count: { type: integer }
+    InvestorDashboard:
+      type: object
+      required: [counters, completion_percent]
+      properties:
+        counters:
+          type: object
+          required: [saved, interests, info_requests, meetings]
+          properties:
+            saved: { type: integer }
+            interests: { type: integer }
+            info_requests: { type: integer }
+            meetings: { type: integer }
+        completion_percent: { type: integer }
+        suggested:
+          type: array
+          description: Rule-based (match_score) — only when access_policy allows browsing
+          items: { $ref: '#/components/schemas/OpportunityCard' }
+        updates:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              at: { type: string, format: date-time }
+              opportunity_uuid: { type: [string, 'null'], format: uuid }
+        next_meeting:
+          oneOf:
+            - $ref: '#/components/schemas/Meeting'
+            - type: 'null'
+    Interest:
+      type: object
+      required: [id, status, opportunity, created_at]
+      properties:
+        id: { type: integer }
+        opportunity: { $ref: '#/components/schemas/OpportunityRef' }
+        investor:
+          allOf: [{ $ref: '#/components/schemas/User' }]
+          description: Present for staff only; never for the owner before `connected` (MSG-01).
+        nomination_id: { type: [integer, 'null'] }
+        status: { $ref: '#/components/schemas/InterestStatus' }
+        owner_decision: { type: [string, 'null'], enum: [approved, declined, null] }
+        owner_decided_at: { type: [string, 'null'], format: date-time }
+        note: { type: [string, 'null'] }
+        closed_reason: { type: [string, 'null'] }
+        closed_at: { type: [string, 'null'], format: date-time }
+        next_meeting_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    Nomination:
+      type: object
+      required: [id, opportunity, matched_criteria, match_score, rationale, sent_at]
+      properties:
+        id: { type: integer }
+        opportunity: { $ref: '#/components/schemas/OpportunityRef' }
+        matched_criteria:
+          type: array
+          items: { type: string, enum: [sector, stage, region, type, range] }
+        match_score: { type: integer, minimum: 0, maximum: 5, description: count of matched criteria (MAT-02) }
+        rationale: { type: string }
+        teaser_version: { type: integer }
+        sent_at: { type: string, format: date-time }
+        response: { type: [string, 'null'], enum: [interested, declined, null] }
+        decline_reason: { $ref: '#/components/schemas/TaxonomyTerm' }
+        decline_note: { type: [string, 'null'] }
+        responded_at: { type: [string, 'null'], format: date-time }
+    Candidate:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        match_score: { type: integer }
+        matched_criteria:
+          type: array
+          items: { type: string }
+        already_nominated: { type: boolean }
+        coi_excluded: { type: boolean, const: false, description: COI candidates are not returned at all (MAT-04) }
+    InfoRequest:
+      type: object
+      required: [id, opportunity, subject, body, status, created_at]
+      properties:
+        id: { type: integer }
+        opportunity: { $ref: '#/components/schemas/OpportunityRef' }
+        investor:
+          allOf: [{ $ref: '#/components/schemas/User' }]
+          description: Staff view only — never forwarded to the owner (OPP-05, MSG-01).
+        subject: { type: string }
+        body: { type: string }
+        status: { $ref: '#/components/schemas/InfoRequestStatus' }
+        forwarded_to_owner_at: { type: [string, 'null'], format: date-time }
+        owner_answer: { type: [string, 'null'] }
+        answered_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    Meeting:
+      type: object
+      required: [id, title, starts_at, status]
+      properties:
+        id: { type: integer }
+        opportunity: { $ref: '#/components/schemas/OpportunityRef' }
+        interest_id: { type: [integer, 'null'] }
+        title: { type: string }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: [string, 'null'], format: date-time }
+        location: { type: [string, 'null'] }
+        video_url: { type: [string, 'null'], format: uri }
+        status: { $ref: '#/components/schemas/MeetingStatus' }
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id: { type: integer }
+              name: { type: string }
+              role: { type: string, enum: [investor, owner, council] }
+              attended: { type: [boolean, 'null'] }
+        minutes: { type: [string, 'null'], description: Staff + participants after held }
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              description: { type: string }
+              owner_user_id: { type: [integer, 'null'] }
+              due_at: { type: [string, 'null'], format: date-time }
+              done_at: { type: [string, 'null'], format: date-time }
+        ics_sent_at: { type: [string, 'null'], format: date-time }
+    MeetingInput:
+      type: object
+      properties:
+        opportunity_uuid: { type: string, format: uuid }
+        interest_id: { type: integer }
+        title: { type: string }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
+        location: { type: string }
+        video_url: { type: string, format: uri }
+        participant_user_ids:
+          type: array
+          items: { type: integer }
+        status: { $ref: '#/components/schemas/MeetingStatus' }
+
+    # ── Opportunities ──
+    OpportunityRef:
+      type: object
+      required: [uuid, name]
+      properties:
+        uuid: { type: string, format: uuid }
+        reference_no: { type: string }
+        name: { type: string }
+        teaser_summary: { type: string }
+    OpportunityCard:
+      type: object
+      description: Teaser — public-sensitivity fields only (SPEC §5 column "teaser/card").
+      required: [uuid, name, teaser_summary, sector, stage, status]
+      properties:
+        uuid: { type: string, format: uuid }
+        reference_no: { type: string, example: A-2026-0003 }
+        name: { type: string }
+        organization_name: { type: [string, 'null'] }
+        teaser_summary: { type: string, maxLength: 280 }
+        highlights:
+          type: array
+          items: { type: string }
+        sector: { $ref: '#/components/schemas/TaxonomyTerm' }
+        stage: { $ref: '#/components/schemas/ProjectStage' }
+        status: { $ref: '#/components/schemas/OpportunityStatus' }
+        regions: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+        investment_types: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+        beneficiary_groups: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+        founded_year: { type: [integer, 'null'] }
+        beneficiaries_target: { type: [integer, 'null'] }
+        funding_display:
+          type: [string, 'null']
+          description: Band / exact / null per `settings.opportunity.funding_display`
+        is_saved: { type: boolean }
+        published_at: { type: [string, 'null'], format: date-time }
+    OpportunityDetail:
+      allOf:
+        - $ref: '#/components/schemas/OpportunityCard'
+        - type: object
+          description: Shaped by caller access level; confidential groups omitted/summarised below `granted`.
+          required: [access_level, problem_statement, solution, expected_change, indicators, documents]
+          properties:
+            access_level: { $ref: '#/components/schemas/AccessLevel' }
+            problem_statement: { type: string }
+            solution: { type: string }
+            expected_change: { type: string }
+            beneficiaries_desc: { type: string }
+            beneficiaries_current: { type: [integer, 'null'] }
+            website: { type: [string, 'null'], format: uri }
+            sdgs: { type: array, items: { $ref: '#/components/schemas/TaxonomyTerm' } }
+            indicators:
+              type: array
+              description: Primary + disclosed only before grant; all after.
+              items: { $ref: '#/components/schemas/ImpactIndicator' }
+            revenue_state: { $ref: '#/components/schemas/RevenueState' }
+            revenue_model_desc: { type: [string, 'null'] }
+            funding_amount:
+              type: [number, 'null']
+              description: Exact SAR only at granted+ (confidential)
+            use_of_funds:
+              oneOf:
+                - type: object
+                  description: Before grant
+                  properties:
+                    summary: { type: string }
+                - type: array
+                  description: After grant
+                  items:
+                    type: object
+                    properties:
+                      item: { type: string }
+                      percent: { type: number }
+            risks:
+              type: object
+              properties:
+                summary: { type: [string, 'null'] }
+                full: { type: [string, 'null'], description: granted+ only }
+            license_status: { type: [string, 'null'] }
+            documents:
+              type: object
+              required: [locked]
+              properties:
+                locked: { type: boolean }
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/Document' }
+            interest_status:
+              oneOf:
+                - $ref: '#/components/schemas/InterestStatus'
+                - type: 'null'
+            info_request_open: { type: boolean }
+            nda_accepted: { type: boolean }
+            owner_contact:
+              type: [object, 'null']
+              description: sensitive_personal — only when interest = connected
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+            updated_at: { type: string, format: date-time }
+    OpportunityFull:
+      allOf:
+        - $ref: '#/components/schemas/OpportunityDetail'
+        - type: object
+          description: Owner / staff view — all fields including internal.
+          properties:
+            short_description: { type: string }
+            social_links: { type: object, additionalProperties: { type: string } }
+            revenue_model_type: { type: string }
+            last_year_revenue_band: { $ref: '#/components/schemas/TaxonomyTerm' }
+            prior_funding: { type: boolean }
+            prior_funding_desc: { type: [string, 'null'] }
+            legal_disputes: { type: boolean }
+            legal_disputes_desc: { type: [string, 'null'] }
+            license_required: { type: boolean }
+            operational_risks: { type: [string, 'null'] }
+            council_relationship: { type: boolean }
+            council_relationship_desc: { type: [string, 'null'], description: internal }
+            organization: { $ref: '#/components/schemas/OrganizationSummary' }
+            is_listed: { type: boolean }
+            data_accuracy_declared_at: { type: [string, 'null'], format: date-time }
+            submitted_at: { type: [string, 'null'], format: date-time }
+            assigned_reviewer: { type: [object, 'null'], properties: { id: { type: integer }, name: { type: string } } }
+            review_due_at: { type: [string, 'null'], format: date-time }
+            completion_due_at: { type: [string, 'null'], format: date-time }
+            evaluation_due_at: { type: [string, 'null'], format: date-time }
+            evaluation_result:
+              oneOf:
+                - $ref: '#/components/schemas/EvaluationResult'
+                - type: 'null'
+            execution_status:
+              oneOf:
+                - $ref: '#/components/schemas/ExecutionStatus'
+                - type: 'null'
+            teaser: { $ref: '#/components/schemas/Teaser' }
+            agreement:
+              type: [object, 'null']
+              description: P2 — modelled now, stubbed behind feature flag
+              properties:
+                id: { type: integer }
+                status: { $ref: '#/components/schemas/AgreementStatus' }
+                council_is_party: { type: boolean }
+            completion_percent: { type: integer }
+            locked_sections:
+              type: array
+              items: { type: string, enum: [basics, organization, impact, financials, disclosures] }
+    OpportunityInput:
+      type: object
+      description: Partial update keyed by section (ENT-05 locking applies).
+      properties:
+        basics:
+          type: object
+          properties:
+            name: { type: string, maxLength: 160 }
+            short_description: { type: string, maxLength: 280 }
+            sector_id: { type: string }
+            stage: { $ref: '#/components/schemas/ProjectStage' }
+            regions: { type: array, items: { type: string } }
+            investment_types: { type: array, items: { $ref: '#/components/schemas/InvestmentType' } }
+            website: { type: string, format: uri }
+            social_links: { type: object, additionalProperties: { type: string } }
+        organization:
+          type: object
+          properties:
+            name: { type: string }
+            legal_form: { $ref: '#/components/schemas/LegalForm' }
+            cr_number: { type: string }
+            unified_number: { type: string }
+            license_number: { type: string }
+            founded_on: { type: string, format: date }
+            employees_count: { type: integer }
+            region_id: { type: string }
+            city: { type: string }
+        impact:
+          type: object
+          properties:
+            problem_statement: { type: string }
+            solution: { type: string }
+            expected_change: { type: string }
+            beneficiaries_desc: { type: string }
+            beneficiaries_current: { type: integer }
+            beneficiaries_target: { type: integer }
+            beneficiary_groups: { type: array, items: { type: string } }
+            sdgs: { type: array, items: { type: string } }
+        financials:
+          type: object
+          properties:
+            revenue_model_type: { type: string }
+            revenue_model_desc: { type: string }
+            revenue_state: { $ref: '#/components/schemas/RevenueState' }
+            last_year_revenue_band_id: { type: string }
+            funding_amount: { type: number, minimum: 0 }
+            use_of_funds:
+              type: array
+              items:
+                type: object
+                required: [item, percent]
+                properties:
+                  item: { type: string }
+                  percent: { type: number, minimum: 0, maximum: 100 }
+            prior_funding: { type: boolean }
+            prior_funding_desc: { type: string }
+        disclosures:
+          type: object
+          properties:
+            legal_disputes: { type: boolean }
+            legal_disputes_desc: { type: string }
+            license_required: { type: boolean }
+            license_status: { type: string }
+            operational_risks: { type: string }
+            council_relationship: { type: boolean }
+            council_relationship_desc: { type: string }
+    OwnedOpportunity:
+      type: object
+      required: [uuid, name, status, completion_percent]
+      properties:
+        uuid: { type: string, format: uuid }
+        reference_no: { type: [string, 'null'] }
+        name: { type: string }
+        status: { $ref: '#/components/schemas/OpportunityStatus' }
+        completion_percent: { type: integer }
+        submitted_at: { type: [string, 'null'], format: date-time }
+        review_due_at: { type: [string, 'null'], format: date-time }
+        completion_due_at: { type: [string, 'null'], format: date-time }
+        is_overdue: { type: boolean }
+        interests_count: { type: integer }
+    OpportunityAdminRow:
+      allOf:
+        - $ref: '#/components/schemas/OwnedOpportunity'
+        - type: object
+          properties:
+            owner: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+            sector: { $ref: '#/components/schemas/TaxonomyTerm' }
+            assigned_reviewer: { type: [object, 'null'], properties: { id: { type: integer }, name: { type: string } } }
+            evaluation_result:
+              oneOf:
+                - $ref: '#/components/schemas/EvaluationResult'
+                - type: 'null'
+            due_at: { type: [string, 'null'], format: date-time }
+    EntrepreneurDashboard:
+      type: object
+      required: [opportunities, required_now, access_requests, completion]
+      properties:
+        opportunities:
+          type: array
+          items: { $ref: '#/components/schemas/OwnedOpportunity' }
+        required_now:
+          type: array
+          items: { $ref: '#/components/schemas/RequiredNowItem' }
+        access_requests:
+          type: array
+          items: { $ref: '#/components/schemas/AccessRequest' }
+        completion: { type: integer }
+    RequiredNowItem:
+      type: object
+      required: [opportunity_uuid, opportunity_name, label]
+      properties:
+        opportunity_uuid: { type: string, format: uuid }
+        opportunity_name: { type: string }
+        label: { type: string }
+        field: { type: [string, 'null'] }
+        document_kind:
+          oneOf:
+            - $ref: '#/components/schemas/DocumentKind'
+            - type: 'null'
+        note: { type: [string, 'null'] }
+        due_at: { type: [string, 'null'], format: date-time }
+    AccessRequest:
+      type: object
+      required: [interest_id, opportunity_uuid, opportunity_name, requested_at]
+      properties:
+        interest_id: { type: integer }
+        opportunity_uuid: { type: string, format: uuid }
+        opportunity_name: { type: string }
+        investor_type:
+          allOf: [{ $ref: '#/components/schemas/UserType' }]
+          description: Only the type — identity withheld (MSG-01)
+        requested_at: { type: string, format: date-time }
+        due_at: { type: [string, 'null'], format: date-time, description: sla.owner_decision_days }
+    Checklist:
+      type: object
+      required: [complete, missing_fields, missing_documents]
+      properties:
+        complete: { type: boolean }
+        completion_percent: { type: integer }
+        missing_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              section: { type: string }
+              field: { type: string }
+              label: { type: string }
+        missing_documents:
+          type: array
+          items:
+            type: object
+            properties:
+              kind: { $ref: '#/components/schemas/DocumentKind' }
+              label: { type: string }
+              required: { type: boolean }
+    CompletionItem:
+      type: object
+      properties:
+        field: { type: string }
+        document_kind: { $ref: '#/components/schemas/DocumentKind' }
+        note: { type: string }
+    CompletionRequest:
+      type: object
+      properties:
+        id: { type: integer }
+        requested_by: { type: integer }
+        due_at: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CompletionItem' }
+        resolved_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    StatusTransition:
+      type: object
+      required: [from_status, to_status, actor, created_at]
+      properties:
+        id: { type: integer }
+        from_status: { $ref: '#/components/schemas/OpportunityStatus' }
+        to_status: { $ref: '#/components/schemas/OpportunityStatus' }
+        actor: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        reason: { type: [string, 'null'] }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+    InternalNote:
+      type: object
+      properties:
+        id: { type: integer }
+        author: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        body: { type: string }
+        created_at: { type: string, format: date-time }
+    Teaser:
+      type: object
+      properties:
+        summary_ar: { type: string }
+        summary_en: { type: [string, 'null'] }
+        highlights: { type: array, items: { type: string } }
+        version: { type: integer }
+        approved_by_owner_at: { type: [string, 'null'], format: date-time }
+        approved_by_council_at: { type: [string, 'null'], format: date-time }
+    ImpactIndicator:
+      type: object
+      required: [id, name, unit, is_primary, is_disclosed]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        definition: { type: [string, 'null'] }
+        unit: { type: string }
+        baseline: { type: [number, 'null'] }
+        target: { type: [number, 'null'] }
+        latest_value: { type: [number, 'null'] }
+        latest_status:
+          oneOf:
+            - $ref: '#/components/schemas/IndicatorValueStatus'
+            - type: 'null'
+        data_source: { type: [string, 'null'] }
+        frequency: { type: string, enum: [monthly, quarterly, semiannual, annual] }
+        verification_method: { type: [string, 'null'] }
+        iris_code: { type: [string, 'null'] }
+        sdg: { $ref: '#/components/schemas/TaxonomyTerm' }
+        is_primary: { type: boolean }
+        is_disclosed: { type: boolean }
+    ImpactIndicatorInput:
+      type: object
+      required: [name, unit, frequency]
+      properties:
+        name: { type: string }
+        definition: { type: string }
+        unit: { type: string }
+        baseline: { type: number }
+        target: { type: number }
+        data_source: { type: string }
+        frequency: { type: string, enum: [monthly, quarterly, semiannual, annual] }
+        verification_method: { type: string }
+        sdg_id: { type: string }
+        is_primary: { type: boolean }
+        is_disclosed: { type: boolean }
+    Document:
+      type: object
+      required: [uuid, kind, title, sensitivity, status, version]
+      properties:
+        uuid: { type: string, format: uuid }
+        kind: { $ref: '#/components/schemas/DocumentKind' }
+        title: { type: string }
+        mime: { type: string }
+        size_bytes: { type: integer }
+        sha256: { type: string }
+        sensitivity: { $ref: '#/components/schemas/Sensitivity' }
+        status: { $ref: '#/components/schemas/DocumentStatus' }
+        reviewer_note: { type: [string, 'null'] }
+        version: { type: integer }
+        supersedes_document_id: { type: [string, 'null'], format: uuid }
+        scan_result: { type: string, enum: [clean, infected, pending] }
+        created_at: { type: string, format: date-time }
+
+    # ── Evaluation ──
+    EvaluationCriterion:
+      type: object
+      required: [key, axis, label_ar, weight, version, is_active]
+      properties:
+        id: { type: integer }
+        axis: { $ref: '#/components/schemas/EvaluationAxis' }
+        key: { type: string }
+        label_ar: { type: string }
+        label_en: { type: [string, 'null'] }
+        weight: { type: number }
+        scale_descriptions:
+          type: object
+          description: '{ "1": "...", … "5": "..." }'
+          additionalProperties: { type: string }
+        version: { type: integer }
+        is_active: { type: boolean }
+    EvaluationCriterionInput:
+      type: object
+      properties:
+        key: { type: string }
+        axis: { $ref: '#/components/schemas/EvaluationAxis' }
+        label_ar: { type: string }
+        label_en: { type: string }
+        weight: { type: number, minimum: 0 }
+        scale_descriptions:
+          type: object
+          additionalProperties: { type: string }
+        is_active: { type: boolean }
+    EvaluationAssignment:
+      type: object
+      properties:
+        id: { type: integer }
+        opportunity_uuid: { type: string, format: uuid }
+        evaluator: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        status: { $ref: '#/components/schemas/AssignmentStatus' }
+        coi_declared_at: { type: [string, 'null'], format: date-time }
+        coi_has_conflict: { type: [boolean, 'null'] }
+    Evaluation:
+      type: object
+      properties:
+        assignment_id: { type: integer }
+        evaluator: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        criteria_version: { type: integer }
+        scores:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              score: { type: integer, minimum: 1, maximum: 5 }
+              note: { type: string }
+        axis_totals:
+          type: object
+          additionalProperties: { type: number }
+        overall: { type: number }
+        recommendation: { $ref: '#/components/schemas/EvaluationResult' }
+        comment: { type: [string, 'null'] }
+        submitted_at: { type: [string, 'null'], format: date-time }
+    EvaluationDecision:
+      type: object
+      properties:
+        result: { $ref: '#/components/schemas/EvaluationResult' }
+        conditions: { type: [string, 'null'] }
+        reasons: { type: [string, 'null'] }
+        decided_by: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        decided_at: { type: string, format: date-time }
+
+    # ── Admin misc ──
+    AdminDashboard:
+      type: object
+      properties:
+        today:
+          type: object
+          properties:
+            new_registrations: { type: integer }
+            new_opportunities: { type: integer }
+            new_interests: { type: integer }
+            pending_memberships: { type: integer }
+        pipeline:
+          type: object
+          description: Count per OpportunityStatus
+          additionalProperties: { type: integer }
+        overdue:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [review, completion, evaluation, owner_decision] }
+              opportunity_uuid: { type: string, format: uuid }
+              name: { type: string }
+              due_at: { type: string, format: date-time }
+              days_overdue: { type: integer }
+        my_tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              route: { type: string }
+              due_at: { type: [string, 'null'], format: date-time }
+    Report:
+      type: object
+      required: [key, computed_at, data]
+      properties:
+        key: { type: string }
+        from: { type: [string, 'null'], format: date }
+        to: { type: [string, 'null'], format: date }
+        computed_at: { type: string, format: date-time }
+        data:
+          description: Shape depends on key (rows of label/value, or a matrix); never personal data for reports_viewer.
+          oneOf:
+            - type: array
+              items: { type: object, additionalProperties: true }
+            - type: object
+              additionalProperties: true
+    AuditLog:
+      type: object
+      required: [uuid, action, created_at]
+      properties:
+        uuid: { type: string, format: uuid }
+        user: { type: [object, 'null'], properties: { id: { type: integer }, name: { type: string } } }
+        action: { type: string, example: opportunity.transition }
+        auditable_type: { type: string }
+        auditable_id: { type: integer }
+        before: { type: [object, 'null'], additionalProperties: true }
+        after: { type: [object, 'null'], additionalProperties: true }
+        ip: { type: string }
+        user_agent: { type: string }
+        request_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    ContentItem:
+      type: object
+      required: [id, slug, title]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        title: { type: string, description: Localised }
+        body: { type: string, description: Localised Markdown/HTML }
+        title_ar: { type: string }
+        title_en: { type: [string, 'null'] }
+        body_ar: { type: string }
+        body_en: { type: [string, 'null'] }
+        version: { type: string, description: 'Legal pages: version string referenced by consents' }
+        is_published: { type: boolean }
+        published_at: { type: [string, 'null'], format: date-time }
+        starts_at: { type: [string, 'null'], format: date-time, description: events }
+        location: { type: [string, 'null'], description: events }
+    ContentItemInput:
+      type: object
+      properties:
+        slug: { type: string, pattern: '^[a-z0-9-]+$' }
+        title_ar: { type: string }
+        title_en: { type: string }
+        body_ar: { type: string }
+        body_en: { type: string }
+        is_published: { type: boolean }
+        published_at: { type: string, format: date-time }
+        starts_at: { type: string, format: date-time }
+        location: { type: string }
+    ContactMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        reference_no: { type: string }
+        category: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: [string, 'null'] }
+        message: { type: string }
+        assigned_to: { type: [integer, 'null'] }
+        status: { type: string, enum: [new, in_progress, closed] }
+        created_at: { type: string, format: date-time }
+
+    # ── Payments ──
+    Payment:
+      type: object
+      required: [uuid, purpose, amount, currency, status, gateway]
+      properties:
+        uuid: { type: string, format: uuid }
+        purpose: { $ref: '#/components/schemas/PaymentPurpose' }
+        amount: { type: number }
+        currency: { type: string, const: SAR }
+        status: { $ref: '#/components/schemas/PaymentStatus' }
+        gateway: { type: string, enum: [moyasar] }
+        gateway_payment_id: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        invoice:
+          type: [object, 'null']
+          properties:
+            number: { type: string }
+            vat_rate: { type: number, example: 0.15 }
+            vat_amount: { type: number }
+            total: { type: number }
+            issued_at: { type: string, format: date-time }
+            pdf_document_uuid: { type: [string, 'null'], format: uuid }
+        paid_at: { type: [string, 'null'], format: date-time }
+        failed_reason: { type: [string, 'null'] }
+        refunded_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    # ── System ──
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok, degraded, down] }
+        db: { type: string, enum: [ok, fail] }
+        redis: { type: string, enum: [ok, fail] }
+        storage: { type: string, enum: [ok, fail] }
+        queue_lag: { type: integer, description: seconds since oldest pending job }
+        version: { type: string }
+        checked_at: { type: string, format: date-time }

@@ -1,0 +1,16 @@
+# Redocly CLI configuration — `make lint-openapi` / CI job `openapi`
+apis:
+  sciis@v1:
+    root: docs/openapi.yaml
+extends:
+  - recommended
+rules:
+  # Local docker-compose server is intentionally plain http
+  no-server-example.com: off  # localhost is the documented docker-compose dev server
+  no-unused-components: error
+  operation-4xx-response: error
+  operation-operationId-unique: error
+  operation-description: off
+  no-server-trailing-slash: error
+  security-defined: error
+  spec-strict-refs: off

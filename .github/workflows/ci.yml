@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  TZ: Asia/Riyadh
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      openapi: ${{ steps.filter.outputs.openapi }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+              - 'docs/SPEC.md'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - 'docs/SPEC.md'
+              - '.github/workflows/ci.yml'
+            openapi:
+              - 'docs/openapi.yaml'
+              - 'redocly.yaml'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
+
+  # ──────────────────────────────────────────────────────────────
+  api:
+    name: API · PHP 8.3 · Pint · Pest · audit
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, intl, pdo_sqlite, sqlite3, bcmath, gd, zip, redis, pcntl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('api/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment (sqlite in-memory, array cache/queue)
+        run: |
+          cp -n .env.example .env || true
+          php artisan key:generate --force
+          {
+            echo "APP_ENV=testing"
+            echo "DB_CONNECTION=sqlite"
+            echo "DB_DATABASE=:memory:"
+            echo "CACHE_STORE=array"
+            echo "QUEUE_CONNECTION=sync"
+            echo "SESSION_DRIVER=array"
+            echo "MAIL_MAILER=array"
+            echo "FILESYSTEM_DISK=local"
+            echo "SMS_DRIVER=log"
+            echo "FEATURE_PAYMENTS=false"
+          } >> .env
+
+      - name: Pint (PSR-12)
+        run: ./vendor/bin/pint --test
+
+      - name: Pest
+        run: php artisan test --parallel --compact
+
+      - name: Composer audit (SEC-02)
+        run: composer audit --format=summary
+
+  # ──────────────────────────────────────────────────────────────
+  web:
+    name: Web · Node 22 · build · typecheck · audit
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint (if configured)
+        run: npm run lint --if-present
+
+      - name: Typecheck
+        run: npx nuxi typecheck
+
+      - name: Build
+        env:
+          NUXT_PUBLIC_API_BASE: https://api-test.sciis.sa/api/v1
+          NUXT_PUBLIC_SITE_URL: https://test.sciis.sa
+        run: npm run build
+
+      - name: Unit tests (if configured)
+        run: npm run test --if-present
+
+      - name: npm audit (SEC-02)
+        run: npm audit --audit-level=high
+
+  # ──────────────────────────────────────────────────────────────
+  openapi:
+    name: OpenAPI · Redocly lint
+    needs: changes
+    if: needs.changes.outputs.openapi == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint docs/openapi.yaml
+        run: npx -y @redocly/cli@latest lint docs/openapi.yaml --format=github-actions
+      - name: Build static reference (artifact)
+        run: npx -y @redocly/cli@latest build-docs docs/openapi.yaml -o build/openapi.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi-reference
+          path: build/openapi.html
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────
+  mobile:
+    name: Mobile · flutter analyze (advisory until app is activated)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    continue-on-error: true   # TODO: remove once fonts + l10n generation are wired in CI
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.x'
+          cache: true
+      - name: Placeholder fonts (OFL files are not committed)
+        run: |
+          mkdir -p assets/fonts
+          for w in Regular Medium SemiBold Bold; do
+            [ -f "assets/fonts/IBMPlexSansArabic-$w.ttf" ] || touch "assets/fonts/IBMPlexSansArabic-$w.ttf"
+          done
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  # ──────────────────────────────────────────────────────────────
+  gate:
+    name: CI gate
+    if: always()
+    needs: [api, web, openapi, mobile]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed (mobile is advisory)
+        run: |
+          echo "api=${{ needs.api.result }} web=${{ needs.web.result }} openapi=${{ needs.openapi.result }} mobile=${{ needs.mobile.result }}"
+          for r in "${{ needs.api.result }}" "${{ needs.web.result }}" "${{ needs.openapi.result }}"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then exit 1; fi
+          done

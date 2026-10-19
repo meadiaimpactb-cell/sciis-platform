@@ -1,0 +1,59 @@
+name: sciis_mobile
+description: >-
+  تطبيق منصة المجلس السعودي للمستثمرين الاجتماعيين (SCIIS) — iOS و Android من
+  قاعدة كود واحدة، يستهلك نفس واجهة /api/v1 التي يستهلكها الموقع.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.5.0
+  flutter: ^3.24.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # HTTP client with interceptors (bearer token, Accept-Language, request id, 401 handling)
+  dio: ^5.7.0
+  # State management
+  flutter_riverpod: ^2.6.1
+  # Declarative routing
+  go_router: ^14.6.2
+  # Encrypted storage for Sanctum token (Keychain / EncryptedSharedPreferences)
+  flutter_secure_storage: ^9.2.2
+  # Localised dates & numbers (Arabic-safe formatting)
+  intl: ^0.19.0
+  # JSON models
+  json_annotation: ^4.9.0
+  # Unique request ids (X-Request-Id)
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  json_serializable: ^6.8.0
+
+flutter:
+  uses-material-design: true
+  generate: true # enables gen-l10n from lib/l10n/*.arb (see l10n.yaml)
+
+  assets:
+    - assets/fonts/
+
+  # SPEC §10: "IBM Plex Sans Arabic" (OFL) for ar / en / digits.
+  # Drop the OFL .ttf files in assets/fonts/ — see assets/fonts/README.md
+  fonts:
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700

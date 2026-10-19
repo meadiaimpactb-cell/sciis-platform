@@ -1,0 +1,40 @@
+/* SCIIS brand tokens — SPEC §10 (doc §8). Mirrored in the Flutter theme. BRD-01..03 */
+:root {
+  --ink: #0A1020;
+  --navy: #101B33;
+  --blue: #1F5BFF;
+  --blue-hover: #1548D6;
+  --blue-soft: #E8EEFF;
+  --bg: #F4F6FA;
+  --surface: #FFFFFF;
+  --text: #0A1020;
+  --muted: #5B6478;
+  --border: #E3E7EF;
+
+  /* Opportunity status colors (OpportunityStatus) */
+  --status-draft: #94A3B8;
+  --status-new: #1F5BFF;
+  --status-under_review: #B45309;
+  --status-needs_completion: #D97706;
+  --status-not_eligible: #B91C1C;
+  --status-eligible: #047857;
+  --status-connected: #0F766E;
+  --status-negotiating: #6D28D9;
+  --status-in_execution: #1D4ED8;
+  --status-operating: #065F46;
+  --status-withdrawn: #6B7280;
+  --status-closed: #374151;
+
+  /* Semantic */
+  --success: #047857;
+  --warning: #B45309;
+  --danger: #B91C1C;
+  --info: #1F5BFF;
+
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --shadow-card: 0 1px 2px rgba(10, 16, 32, 0.04), 0 1px 1px rgba(10, 16, 32, 0.02);
+  --shadow-pop: 0 12px 32px -12px rgba(10, 16, 32, 0.25);
+}

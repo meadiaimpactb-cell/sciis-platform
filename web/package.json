@@ -1,0 +1,42 @@
+{
+  "name": "sciis-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "منصة المجلس السعودي للمستثمرين الاجتماعيين — واجهة الويب (Nuxt 3)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxi typecheck",
+    "lint": "eslint .",
+    "i18n:check": "node scripts/check-i18n.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans-arabic": "^5.2.0",
+    "@nuxtjs/i18n": "^9.5.0",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@pinia/nuxt": "^1.0.0",
+    "@vueuse/core": "^15.0.0",
+    "@vueuse/nuxt": "^15.0.0",
+    "nuxt": "^3.21.0",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.6.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@typescript-eslint/parser": "^8.71.2",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "typescript": "^5.9.0",
+    "vue-eslint-parser": "^10.0.0",
+    "vue-tsc": "^3.3.0"
+  }
+}

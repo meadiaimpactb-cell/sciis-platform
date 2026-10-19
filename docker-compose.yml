@@ -1,0 +1,228 @@
+# SCIIS platform — local development stack (SPEC §0 "Dev env", SEC-04)
+#
+#   make up        → builds and starts everything
+#   make migrate   → php artisan migrate --seed (synthetic data only)
+#
+# Services:
+#   postgres  PostgreSQL 16         (5432, volume, healthcheck)
+#   redis     Redis 7               (queues, cache, sessions, rate limiting)
+#   minio     S3-compatible storage (9000 API / 9001 console) + createbuckets init
+#   clamav    upload scanning       (DOC-01)
+#   mailpit   SMTP sink + web UI    (8025)
+#   api       Laravel 12 API        (php-fpm + nginx in one image, :8000)
+#   horizon   queue workers         (php artisan horizon)
+#   scheduler cron-style runner     (php artisan schedule:work)
+#   web       Nuxt 3                (:3000, NUXT_PUBLIC_API_BASE)
+#
+# All environment values come from ./.env (copy from .env.example).
+
+name: ${COMPOSE_PROJECT_NAME:-sciis}
+
+x-api-image: &api-image
+  build:
+    context: .
+    dockerfile: infra/docker/api/Dockerfile
+    target: dev
+  image: sciis/api:dev
+  env_file: .env
+  environment:
+    APP_ENV: ${APP_ENV:-local}
+    DB_HOST: postgres
+    REDIS_HOST: redis
+    AWS_ENDPOINT: http://minio:9000
+    MAIL_HOST: mailpit
+    CLAMAV_HOST: clamav
+  volumes:
+    - ./api:/var/www/html:cached
+    - api_vendor:/var/www/html/vendor
+    - api_storage:/var/www/html/storage
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+  networks: [sciis]
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-sciis}
+      POSTGRES_USER: ${DB_USERNAME:-sciis}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-local}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+      TZ: Asia/Riyadh
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=200
+      - -c
+      - log_min_duration_statement=500
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sciis} -d ${DB_DATABASE:-sciis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [sciis]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [sciis]
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-sciis}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-change-me-local-minio}
+      MINIO_REGION: ${AWS_DEFAULT_REGION:-me-south-1}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [sciis]
+    restart: unless-stopped
+
+  # One-shot: creates the documents bucket (private) and the backups bucket (versioned)
+  createbuckets:
+    image: minio/mc:RELEASE.2024-10-08T09-37-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:-sciis} ${AWS_SECRET_ACCESS_KEY:-change-me-local-minio} &&
+        mc mb --ignore-existing local/${AWS_BUCKET:-sciis-documents} &&
+        mc anonymous set none local/${AWS_BUCKET:-sciis-documents} &&
+        mc version enable local/${AWS_BUCKET:-sciis-documents} &&
+        mc mb --ignore-existing local/sciis-backups &&
+        mc version enable local/sciis-backups &&
+        echo 'buckets ready'
+      "
+    networks: [sciis]
+
+  clamav:
+    image: clamav/clamav:1.3
+    environment:
+      CLAMAV_NO_FRESHCLAMD: "false"
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks: [sciis]
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.20
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+    networks: [sciis]
+    restart: unless-stopped
+
+  api:
+    <<: *api-image
+    container_name: sciis-api
+    ports:
+      - "${API_PORT:-8000}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  horizon:
+    <<: *api-image
+    container_name: sciis-horizon
+    command: ["php", "artisan", "horizon"]
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  scheduler:
+    <<: *api-image
+    container_name: sciis-scheduler
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web/Dockerfile
+      target: dev
+    image: sciis/web:dev
+    container_name: sciis-web
+    env_file: .env
+    environment:
+      NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:8000/api/v1}
+      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 3000
+      NODE_ENV: development
+    volumes:
+      - ./web:/app:cached
+      - web_node_modules:/app/node_modules
+      - web_nuxt:/app/.nuxt
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [sciis]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  clamav_db:
+  api_vendor:
+  api_storage:
+  web_node_modules:
+  web_nuxt:
+
+networks:
+  sciis:
+    driver: bridge

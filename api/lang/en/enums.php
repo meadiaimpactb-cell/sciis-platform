@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'opportunity_status' => [
+        'draft' => 'Draft', 'new' => 'New', 'under_review' => 'Under review', 'needs_completion' => 'Needs completion',
+        'not_eligible' => 'Not eligible', 'eligible' => 'Eligible', 'connected' => 'Connected', 'negotiating' => 'Negotiating',
+        'in_execution' => 'In execution', 'operating' => 'Operating', 'withdrawn' => 'Withdrawn', 'closed' => 'Closed',
+    ],
+    'membership_status' => [
+        'registered' => 'Registered', 'under_review' => 'Under review', 'needs_completion' => 'Needs completion',
+        'approved' => 'Approved', 'suspended' => 'Suspended', 'rejected' => 'Rejected',
+    ],
+    'interest_status' => [
+        'sent' => 'Sent', 'awaiting_owner_approval' => 'Awaiting owner approval', 'shared' => 'Shared',
+        'connected' => 'Connected', 'meeting' => 'Meeting', 'closed' => 'Closed',
+    ],
+    'info_request_status' => ['sent' => 'Sent', 'processing' => 'Processing', 'answered' => 'Answered', 'closed' => 'Closed'],
+    'sensitivity' => ['public' => 'Public', 'internal' => 'Internal', 'confidential' => 'Confidential', 'sensitive_personal' => 'Sensitive personal'],
+    'evaluation_axis' => ['readiness' => 'Readiness', 'feasibility' => 'Feasibility', 'impact' => 'Impact'],
+    'evaluation_result' => ['eligible' => 'Eligible', 'eligible_with_conditions' => 'Eligible with conditions', 'not_eligible_now' => 'Not eligible now'],
+    'assignment_status' => ['assigned' => 'Assigned', 'coi_declared' => 'COI declared', 'scored' => 'Scored', 'withdrawn' => 'Withdrawn'],
+    'document_kind' => [
+        'pitch_deck' => 'Pitch deck', 'commercial_register' => 'Commercial register', 'license' => 'License',
+        'financial_statements' => 'Financial statements', 'business_plan' => 'Business plan', 'team_cv' => 'Team CVs',
+        'impact_evidence' => 'Impact evidence', 'authorization_letter' => 'Authorization letter',
+        'financial_projections' => 'Financial projections', 'agreement' => 'Agreement', 'progress_evidence' => 'Progress evidence', 'other' => 'Other',
+    ],
+    'document_status' => ['pending_review' => 'Pending review', 'accepted' => 'Accepted', 'required' => 'Required', 'rejected' => 'Rejected'],
+    'indicator_value_status' => ['entered' => 'Entered', 'verified' => 'Verified', 'needs_clarification' => 'Needs clarification'],
+    'execution_status' => ['on_track' => 'On track', 'delayed' => 'Delayed', 'stalled' => 'Stalled'],
+    'meeting_status' => ['scheduled' => 'Scheduled', 'held' => 'Held', 'cancelled' => 'Cancelled'],
+    'agreement_status' => ['draft' => 'Draft', 'legal_review' => 'Legal review', 'approved' => 'Approved', 'signed' => 'Signed', 'archived' => 'Archived'],
+    'consent_type' => [
+        'privacy_policy' => 'Privacy policy', 'terms' => 'Terms', 'teaser_publication' => 'Teaser publication',
+        'full_file_share' => 'Full file share', 'nda' => 'NDA', 'data_accuracy' => 'Data accuracy declaration',
+    ],
+    'notification_channel' => ['database' => 'In-app', 'mail' => 'Email', 'sms' => 'SMS'],
+    'payment_status' => ['pending' => 'Pending', 'authorized' => 'Authorized', 'paid' => 'Paid', 'failed' => 'Failed', 'refunded' => 'Refunded', 'cancelled' => 'Cancelled'],
+    'payment_purpose' => ['membership_fee' => 'Membership fee', 'service_fee' => 'Service fee', 'training' => 'Training', 'sponsorship' => 'Sponsorship'],
+    'investment_type' => [
+        'equity' => 'Equity', 'debt' => 'Debt', 'pay_for_results' => 'Pay for results', 'grant' => 'Grant', 'guarantee' => 'Guarantee',
+        'patient_capital' => 'Patient capital', 'convertible' => 'Convertible', 'revenue_share' => 'Revenue share', 'blended' => 'Blended',
+    ],
+    'project_stage' => ['idea' => 'Idea', 'prototype' => 'Prototype', 'pre_seed' => 'Pre-seed', 'seed' => 'Seed', 'early_stage' => 'Early stage', 'later_stage' => 'Later stage'],
+    'risk_appetite' => ['high' => 'High', 'medium' => 'Medium', 'low' => 'Low'],
+    'revenue_state' => ['none' => 'No revenue', 'early' => 'Early revenue', 'regular' => 'Regular revenue'],
+    'legal_form' => ['company' => 'Company', 'establishment' => 'Establishment', 'nonprofit' => 'Non-profit', 'other' => 'Other'],
+    'institution_type' => ['company' => 'Company', 'fund' => 'Fund', 'family_office' => 'Family office', 'donor' => 'Donor', 'nonprofit' => 'Non-profit', 'other' => 'Other'],
+    'user_type' => [
+        'investor_individual' => 'Individual investor', 'investor_institutional' => 'Institutional investor',
+        'entrepreneur_individual' => 'Entrepreneur (individual)', 'entrepreneur_entity' => 'Entrepreneur (entity)', 'staff' => 'Council staff',
+    ],
+    'user_status' => ['active' => 'Active', 'suspended' => 'Suspended'],
+    'scan_result' => ['pending' => 'Pending scan', 'clean' => 'Clean', 'infected' => 'Infected'],
+    'owner_decision' => ['approved' => 'Approved', 'declined' => 'Declined'],
+    'nomination_response' => ['interested' => 'Interested', 'declined' => 'Declined'],
+    'meeting_participant_role' => ['investor' => 'Investor', 'owner' => 'Project owner', 'council' => 'Council'],
+    'otp_channel' => ['email' => 'Email', 'sms' => 'SMS'],
+    'device_platform' => ['ios' => 'iOS', 'android' => 'Android', 'web' => 'Web'],
+    'contact_category' => ['investor' => 'Investor', 'entrepreneur' => 'Entrepreneur', 'partnership' => 'Partnership', 'media' => 'Media', 'other' => 'Other'],
+    'data_request_type' => ['access' => 'Access', 'rectify' => 'Rectify', 'erase' => 'Erase'],
+    'funding_display' => ['exact' => 'Exact', 'band' => 'Band', 'hidden' => 'Hidden'],
+    'access_policy' => ['nomination_only' => 'Nomination only', 'browse_all' => 'Browse all', 'both' => 'Both'],
+    'indicator_frequency' => ['monthly' => 'Monthly', 'quarterly' => 'Quarterly', 'semiannual' => 'Semi-annual', 'annual' => 'Annual'],
+    'document_access_action' => ['view' => 'View', 'download' => 'Download'],
+    'investor_access_level' => ['visitor' => 'Visitor', 'registered' => 'Registered', 'approved_member' => 'Approved member', 'granted' => 'Granted', 'connected' => 'Connected'],
+    'match_criteria' => ['sector' => 'Sector', 'stage' => 'Stage', 'region' => 'Region', 'investment_type' => 'Investment type', 'funding_range' => 'Funding range'],
+];
