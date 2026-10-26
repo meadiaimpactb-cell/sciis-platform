@@ -91,6 +91,8 @@ html[data-theme='light'] {
   color: var(--fg);
   letter-spacing: 0;
   margin: 0;
+  /* the base `balance` re-runs line breaking per heading — costly with Arabic shaping on slow phones */
+  text-wrap: wrap;
 }
 
 /* Section eyebrow label */
@@ -179,6 +181,13 @@ html[data-theme='light'] {
   color: var(--fg);
 }
 .site-checks svg { flex: none; margin-top: 3px; }
+
+/* Sections below the first screen: laid out and painted only when they near the viewport, which keeps the first
+   paint fast on slow phones. `auto` makes the browser remember the real height after the first render. */
+.site-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
 
 /* Star field (decorative) */
 .site-stars {

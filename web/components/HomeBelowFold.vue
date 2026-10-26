@@ -33,7 +33,7 @@ const paths = computed(() => [
 <template>
   <div>
     <!-- What we mean by impact -->
-    <section class="impact" aria-labelledby="home-impact">
+    <section class="impact site-deferred" aria-labelledby="home-impact">
       <div class="site-wrap impact__inner">
         <div class="impact__copy">
           <span class="site-label">{{ text('impact_label', 'landing.impact.label') }}</span>
@@ -70,7 +70,7 @@ const paths = computed(() => [
     </section>
 
     <!-- How the platform works -->
-    <section class="how-section" aria-labelledby="home-how">
+    <section class="how-section site-deferred" aria-labelledby="home-how">
       <div class="site-wrap how-section__inner">
         <div class="how-section__head">
           <span class="site-label">{{ text('how_label', 'landing.how.label') }}</span>
@@ -82,7 +82,7 @@ const paths = computed(() => [
     </section>
 
     <!-- Membership benefits + call to join -->
-    <section id="join" class="join" aria-labelledby="home-benefits">
+    <section id="join" class="join site-deferred" aria-labelledby="home-benefits">
       <div class="site-stars join__stars" aria-hidden="true" />
       <svg class="join__rings" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs>
@@ -121,7 +121,7 @@ const paths = computed(() => [
     </section>
 
     <!-- Latest news (one line) -->
-    <section v-if="news" id="news" class="news" aria-labelledby="home-news">
+    <section v-if="news" id="news" class="news site-deferred" aria-labelledby="home-news">
       <div class="site-wrap news__inner">
         <h2 id="home-news" class="site-label news__label">{{ $t('landing.news.label') }}</h2>
         <div class="news__item">
@@ -135,7 +135,7 @@ const paths = computed(() => [
 </template>
 
 <style scoped>
-.section-heading { font: 800 clamp(30px, 4vw, 44px)/1.35 var(--fd); text-wrap: pretty; }
+.section-heading { font: 800 clamp(30px, 4vw, 44px)/1.35 var(--fd); }
 
 /* ------------------------------------------------------------------------------------------------ impact */
 .impact { position: relative; overflow: hidden; background: var(--bg0); }
@@ -147,7 +147,7 @@ const paths = computed(() => [
   align-items: center;
 }
 .impact__copy { display: flex; flex-direction: column; gap: 26px; }
-.impact__title { font: 800 clamp(30px, 4.4vw, 50px)/1.35 var(--fd); text-wrap: pretty; }
+.impact__title { font: 800 clamp(30px, 4.4vw, 50px)/1.35 var(--fd); }
 .impact__text { margin: 0; max-width: 560px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
 .impact__criteria { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
 .impact__criteria li {
@@ -202,7 +202,7 @@ const paths = computed(() => [
 .paths__half--project { background: linear-gradient(180deg, var(--tint2), rgba(32, 48, 104, 0) 60%) var(--bg1); }
 .paths__num { font: 800 15px var(--fd); color: var(--accent-text); }
 .paths__half--project .paths__num { color: var(--t2); }
-.paths__title { font: 800 clamp(30px, 3.4vw, 40px)/1.3 var(--fd); text-wrap: balance; }
+.paths__title { font: 800 clamp(30px, 3.4vw, 40px)/1.3 var(--fd); }
 .paths__text { margin: 0; max-width: 520px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
 .paths__points { margin-top: 8px; }
 .paths__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 28px; margin-top: 18px; }
@@ -246,7 +246,7 @@ const paths = computed(() => [
 .join__inner { position: relative; padding-block: 120px 136px; display: flex; flex-direction: column; gap: 80px; }
 .join__benefits { display: flex; flex-direction: column; gap: 32px; }
 .join__head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
-.join__title { font: 800 clamp(28px, 3.4vw, 40px)/1.4 var(--fd); text-wrap: pretty; }
+.join__title { font: 800 clamp(28px, 3.4vw, 40px)/1.4 var(--fd); }
 .join__tiles {
   list-style: none;
   margin: 0;

@@ -138,7 +138,7 @@ const onKey = (e: KeyboardEvent) => {
 .how__body { display: flex; flex-direction: column; gap: 14px; }
 .how__num { font: 800 64px/1 var(--fd); color: var(--accent-text); }
 .how__title { font: 800 30px/1.35 var(--fd); }
-.how__text { margin: 0; font: 400 17px/1.85 var(--fb); color: var(--t2); text-wrap: pretty; }
+.how__text { margin: 0; font: 400 17px/1.85 var(--fb); color: var(--t2); }
 .how__foot {
   margin-top: auto;
   display: flex;

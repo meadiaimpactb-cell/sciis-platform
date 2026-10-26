@@ -59,6 +59,9 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
 .site-footer {
   position: relative;
   background: var(--bg-footer);
+  /* laid out only when it nears the viewport (first-paint cost); the size is remembered after the first render */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 760px;
   border-top: 1px solid rgba(var(--fg-rgb), 0.08);
 }
 .site-footer__inner {
@@ -81,8 +84,8 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
   max-width: 520px;
 }
 .site-footer__logo { height: 56px; width: auto; }
-.site-footer__statement { font: 800 44px/1.3 var(--fd); text-wrap: balance; }
-.site-footer__tagline { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); text-wrap: pretty; }
+.site-footer__statement { font: 800 44px/1.3 var(--fd); }
+.site-footer__tagline { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); }
 .site-footer__contact { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
 .site-footer__email {
   display: inline-flex;

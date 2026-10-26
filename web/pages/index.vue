@@ -16,6 +16,7 @@ useSeo({
 const api = useApi()
 // Copy from the CMS (home → meta.sections, editable in admin → content) with the landing.* texts as the fallback.
 const { text, list, items } = await usePageContent('home')
+const emblem = { dark: heroEmblemSrc('dark'), light: heroEmblemSrc('light') }
 const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data[0] ?? null).catch(() => null))
 </script>
 
@@ -50,7 +51,8 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
               <circle cx="696" cy="371" r="6" fill="var(--accent-hi)" />
               <circle cx="504" cy="829" r="5" fill="var(--fg)" />
             </svg>
-            <BrandMark class="hero__mark" :width="300" filled glow :frame-width="5" />
+            <img class="hero__mark on-dark" :src="emblem.dark" alt="" width="300" height="408" fetchpriority="high" decoding="async">
+            <img class="hero__mark on-light" :src="emblem.light" alt="" width="300" height="408" loading="lazy" decoding="async">
             <span class="hero__pulse" />
           </div>
 
@@ -138,8 +140,8 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
 .hero__side--investors { text-align: end; align-items: flex-end; justify-self: end; }
 .hero__side--projects { text-align: start; align-items: flex-start; justify-self: start; }
 .hero__label-muted { color: var(--t2); }
-.hero__side-title { font: 800 32px/1.4 var(--fd); text-wrap: balance; }
-.hero__side-text { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); text-wrap: pretty; }
+.hero__side-title { font: 800 32px/1.4 var(--fd); }
+.hero__side-text { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); }
 .hero__side .site-btn { margin-top: 6px; }
 
 .hero__emblem {
@@ -190,7 +192,7 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
   padding-bottom: 72px;
 }
 .hero__title { max-width: 980px; font: 800 clamp(34px, 5.2vw, 54px)/1.35 var(--fd); text-wrap: balance; }
-.hero__lead { max-width: 720px; margin: 0; font: 400 18px/1.8 var(--fb); color: var(--t2); text-wrap: pretty; }
+.hero__lead { max-width: 720px; margin: 0; font: 400 18px/1.8 var(--fb); color: var(--t2); }
 .hero__disclaimer { margin: 6px 0 0; font: 400 13px/1.6 var(--fb); color: var(--t3); }
 
 /* Stacked (one column): centre both texts around the emblem. */
