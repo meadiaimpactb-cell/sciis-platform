@@ -49,8 +49,17 @@ export default defineNuxtConfig({
     // which saves two Arabic + two Latin font files (~130 KB) per visit.
     '@fontsource/ibm-plex-sans-arabic/400.css',
     '@fontsource/ibm-plex-sans-arabic/700.css',
+    // Public identity v3 (header, footer, home): Plex 500/600 for labels and buttons, Almarai for Arabic display
+    // headings, Sora for English ones. A face downloads only when a page uses it (and only the subsets it needs).
+    '@fontsource/ibm-plex-sans-arabic/500.css',
+    '@fontsource/ibm-plex-sans-arabic/600.css',
+    '@fontsource/almarai/700.css',
+    '@fontsource/almarai/800.css',
+    '@fontsource/sora/600.css',
+    '@fontsource/sora/700.css',
     '~/assets/css/tokens.css',
     '~/assets/css/main.css',
+    '~/assets/css/theme-site.css',
   ],
 
   app: {
@@ -68,6 +77,14 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
+      ],
+      // Public theme (design v3): the visitor's saved choice is applied before the first paint, so a reload never
+      // flashes the default dark palette. No attribute = dark (theme-site.css).
+      script: [
+        {
+          innerHTML: "try{var t=localStorage.getItem('scii-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
+          tagPosition: 'head',
+        },
       ],
     },
   },

@@ -1,99 +1,213 @@
 <script setup lang="ts">
-/** Home — doc §7.1 / §10.2. Section order and type scale follow falak.sa (see components/PageHero.vue). */
-import type { OpportunityCard, PublicStats, PublicStatsRaw, ContentItem, HeroImage } from '~/types/api'
+/**
+ * Home — design "SCII Homepage v3": the meeting point of the two audiences (investors · the emblem · project owners),
+ * the headline, the nine-stage strip; below the first screen (HomeBelowFold): what impact means, the two paths,
+ * how the platform works, membership benefits and the call to join, the latest news.
+ */
+import type { ContentItem } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
-const { t, locale } = useI18n()
+const { t } = useI18n()
 useSeo({
   title: t('home.seoTitle'),
   description: t('home.seoDescription'),
   jsonLd: { '@type': 'WebPage', name: t('home.seoTitle'), description: t('home.seoDescription'), isPartOf: { '@id': `${useSiteUrl()}/#website` }, about: { '@id': `${useSiteUrl()}/#organization` } },
 })
 const api = useApi()
-const { number } = useFormat()
-const join = useJoinChooser()
-
-// CMS copy (`home` page → meta.sections) with the i18n texts as fallback.
-const { page: homePage, text, list, items } = await usePageContent('home')
-// BRD-03 — hero images managed from the CMS (`home` page → meta.hero_images, max 3): a cross-fading backdrop of the hero.
-const heroImages = computed<HeroImage[]>(() => (homePage.value?.meta?.hero_images ?? []).filter((i): i is HeroImage => !!i?.url).slice(0, 3))
-const heroAlt = (img: HeroImage) => (locale.value === 'en' && img.alt_en ? img.alt_en : img.alt_ar) || ''
-const slide = ref(0)
-const heroCount = computed(() => heroImages.value?.length ?? 0)
-let heroTimer: ReturnType<typeof setInterval> | null = null
-const stopHero = () => { if (heroTimer) { clearInterval(heroTimer); heroTimer = null } }
-// UX-04 (WCAG 2.2.2) — the auto-advancing backdrop can be paused; it also stops on hover / keyboard focus.
-const heroPaused = ref(false)
-const startHero = () => {
-  stopHero()
-  if (!heroPaused.value && heroCount.value > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) heroTimer = setInterval(() => { slide.value = (slide.value + 1) % heroCount.value }, 5000)
-}
-const goSlide = (i: number) => { slide.value = i; startHero() }
-const toggleHero = () => { heroPaused.value = !heroPaused.value; if (heroPaused.value) stopHero(); else startHero() }
-onMounted(startHero)
-onBeforeUnmount(stopHero)
-
-const { data: featured } = await useAsyncData('home-featured', () => api.get<{ data: OpportunityCard[] }>('/public/featured-opportunities').then((r) => r.data).catch(() => []))
-// Accept both the mock shape (PublicStats) and the Laravel shape (PublicStatsRaw).
-const normalizeStats = (s: Partial<PublicStats & PublicStatsRaw>): PublicStats => ({
-  opportunities: s.opportunities ?? s.opportunities_eligible ?? 0,
-  members: s.members ?? s.approved_investors ?? 0,
-  sectors: s.sectors ?? s.sectors_covered ?? 0,
-  regions: s.regions,
-  connections: s.connections ?? 0,
-})
-const { data: stats } = await useAsyncData('home-stats', () => api.get<{ data: Partial<PublicStats & PublicStatsRaw> }>('/public/stats').then((r) => normalizeStats(r.data)).catch(() => false as const))
-// Social proof (CMS stories / partners) — each section renders only when published items exist.
-const { data: stories } = await usePublicStories()
-const { data: partners } = await usePublicPartners()
-const { data: news } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data.slice(0, 3)).catch(() => []))
-const statKeys = ['opportunities', 'members', 'sectors', 'connections'] as const
+// Copy from the CMS (home → meta.sections, editable in admin → content) with the landing.* texts as the fallback.
+const { text, list, items } = await usePageContent('home')
+const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data[0] ?? null).catch(() => null))
 </script>
 
 <template>
-  <div class="bg-surface">
-    <!-- HERO — full first screen, centred (the public header overlays it) -->
-    <PageHero tall :kicker="text('hero_eyebrow', 'home.heroEyebrow')" :title="text('hero_title', 'home.heroTitle')" :lead="text('hero_text', 'home.heroText')">
-      <template v-if="heroCount" #backdrop>
-        <div class="absolute inset-0" role="region" aria-roledescription="carousel" :aria-label="$t('home.heroGalleryLabel')">
-          <img
-            v-for="(img, i) in heroImages" :key="img.url"
-            :src="img.url" :alt="heroAlt(img)" :width="img.width ?? 1600" :height="img.height ?? 1200"
-            :loading="i === 0 ? 'eager' : 'lazy'" :fetchpriority="i === 0 ? 'high' : undefined" decoding="async"
-            class="absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out" :class="i === slide ? 'opacity-100' : 'opacity-0'" :aria-hidden="i === slide ? undefined : 'true'"
-          >
-          <div class="absolute inset-0 bg-navy-950/80" aria-hidden="true" />
-        </div>
-      </template>
-      <AppButton variant="accent" size="lg" aria-haspopup="dialog" @click="join.open($event)">{{ $t('home.ctaExplore') }}</AppButton>
-      <AppButton to="/for-entrepreneurs" size="lg" variant="line">{{ $t('home.ctaSubmit') }}</AppButton>
-      <template #bottom>
-        <div v-if="heroCount > 1" class="mb-5 flex items-center justify-center gap-2" role="group" :aria-label="$t('home.heroGalleryLabel')" @mouseenter="stopHero" @mouseleave="startHero" @focusin="stopHero" @focusout="startHero">
-          <button type="button" class="h-6 w-6 rounded-full text-white/80 hover:text-white flex items-center justify-center kbd-focus" :aria-pressed="heroPaused" :aria-label="$t('platform.a11y.pauseSlides')" @click="toggleHero">
-            <svg v-if="heroPaused" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4l10 6-10 6V4z" /></svg>
-            <svg v-else class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4h3v12H6zM11 4h3v12h-3z" /></svg>
-          </button>
-          <button v-for="(img, i) in heroImages" :key="`dot-${img.url}`" type="button" :aria-current="i === slide ? 'true' : undefined" :aria-label="$t('home.heroSlide', { n: i + 1, total: heroCount })" class="h-2.5 rounded-full transition-all kbd-focus" :class="i === slide ? 'w-7 bg-teal' : 'w-2.5 bg-white/50 hover:bg-white'" @click="goSlide(i)" />
-        </div>
-        <Disclaimer variant="dark" />
-      </template>
-    </PageHero>
+  <div class="site-surface">
+    <section class="hero" aria-labelledby="home-title">
+      <div class="hero__stars site-stars" aria-hidden="true" />
+      <div class="site-wrap hero__inner">
+        <p class="hero__eyebrow"><span class="hero__eyebrow-dot" aria-hidden="true" />{{ text('hero_badge', 'landing.hero.eyebrow') }}</p>
 
-    <!-- NUMBERS (Falak «ماذا حققنا») -->
-    <section v-if="stats" class="surface-dark relative overflow-hidden" aria-labelledby="home-stats">
-      <NightSky :orbits="false" />
-      <div class="container-x relative section-y">
-        <h2 id="home-stats" class="section-label text-white">{{ $t('home.statsTitle') }}</h2>
-        <dl class="mt-14 grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
-          <div v-for="k in statKeys" :key="k" class="flex flex-col-reverse gap-2">
-            <dt class="stat-label text-white/60">{{ $t(`home.stats.${k}`) }}</dt>
-            <dd class="stat-value text-white">{{ number(stats[k]) }}</dd>
+        <div class="hero__meet">
+          <div class="hero__side hero__side--investors">
+            <span class="site-label">{{ text('investors_label', 'landing.hero.aLabel') }}</span>
+            <h2 class="hero__side-title">{{ text('investors_title', 'landing.hero.aTitle') }}</h2>
+            <p class="hero__side-text">{{ text('investors_text', 'landing.hero.aText') }}</p>
+            <NuxtLink :to="$localePath('/for-investors')" class="site-btn site-btn--primary site-btn--lg site-btn--glow kbd-focus">{{ text('investors_cta', 'landing.hero.aCta') }}</NuxtLink>
           </div>
-        </dl>
+
+          <div class="hero__emblem" aria-hidden="true">
+            <svg class="hero__orbits" viewBox="0 0 1200 1200">
+              <defs>
+                <radialGradient id="home-halo" cx="50%" cy="50%" r="50%">
+                  <stop offset="0" stop-color="#58B0A8" stop-opacity=".5" />
+                  <stop offset="1" stop-color="#58B0A8" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="600" cy="600" r="300" fill="url(#home-halo)" />
+              <circle cx="600" cy="600" r="250" fill="none" stroke="rgba(var(--fg-rgb), .14)" stroke-width="1" />
+              <circle cx="600" cy="600" r="560" fill="none" stroke="rgba(var(--fg-rgb), .06)" stroke-width="1" />
+              <path d="M504 371A250 250 0 0 1 696 371" fill="none" stroke="var(--accent-hi)" stroke-width="3" stroke-linecap="round" opacity=".85" />
+              <path d="M696 829A250 250 0 0 1 504 829" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" opacity=".5" />
+              <circle cx="696" cy="371" r="6" fill="var(--accent-hi)" />
+              <circle cx="504" cy="829" r="5" fill="var(--fg)" />
+            </svg>
+            <BrandMark class="hero__mark" :width="300" filled glow :frame-width="5" />
+            <span class="hero__pulse" />
+          </div>
+
+          <div class="hero__side hero__side--projects">
+            <span class="site-label hero__label-muted">{{ text('projects_label', 'landing.hero.bLabel') }}</span>
+            <h2 class="hero__side-title">{{ text('projects_title', 'landing.hero.bTitle') }}</h2>
+            <p class="hero__side-text">{{ text('projects_text', 'landing.hero.bText') }}</p>
+            <NuxtLink :to="$localePath('/for-entrepreneurs')" class="site-btn site-btn--secondary site-btn--lg kbd-focus">{{ text('projects_cta', 'landing.hero.bCta') }}</NuxtLink>
+          </div>
+        </div>
+
+        <div class="hero__headline">
+          <h1 id="home-title" class="hero__title">{{ text('headline', 'landing.hero.title') }}</h1>
+          <p class="hero__lead">{{ text('headline_lead', 'landing.hero.lead') }}</p>
+          <p class="hero__disclaimer">{{ $t('landing.hero.disclaimer') }}</p>
+        </div>
       </div>
+      <StageMarquee :label="text('stages_label', 'landing.stages.label')" :items="list('stages_list', 'landing.stages.items')" />
     </section>
 
     <!-- Everything below the first screen hydrates when it scrolls into view (server-rendered for SEO). -->
-    <LazyHomeBelowFold hydrate-on-visible :content="{ text, list, items }" :featured="featured" :stories="stories" :partners="partners" :news="news" />
+    <LazyHomeBelowFold hydrate-on-visible :content="{ text, list, items }" :news="latestNews" />
   </div>
 </template>
+
+<style scoped>
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(1100px 760px at 50% 48%, var(--glow) 0%, var(--bg1) 50%, var(--bg0) 100%);
+}
+.hero__stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 22%, rgba(var(--fg-rgb), 0.9), transparent 60%),
+    radial-gradient(1px 1px at 20% 68%, rgba(var(--fg-rgb), 0.7), transparent 60%),
+    radial-gradient(1.5px 1.5px at 31% 14%, rgba(var(--fg-rgb), 0.8), transparent 60%),
+    radial-gradient(1px 1px at 44% 86%, rgba(var(--fg-rgb), 0.7), transparent 60%),
+    radial-gradient(1.5px 1.5px at 57% 10%, rgba(var(--fg-rgb), 0.75), transparent 60%),
+    radial-gradient(1px 1px at 69% 78%, rgba(var(--fg-rgb), 0.8), transparent 60%),
+    radial-gradient(2px 2px at 81% 30%, rgba(var(--accent-rgb), 0.9), transparent 60%),
+    radial-gradient(1px 1px at 90% 60%, rgba(var(--fg-rgb), 0.8), transparent 60%),
+    radial-gradient(1.5px 1.5px at 6% 88%, rgba(var(--fg-rgb), 0.6), transparent 60%),
+    radial-gradient(2px 2px at 16% 42%, rgba(var(--accent-rgb), 0.7), transparent 60%),
+    radial-gradient(1px 1px at 95% 12%, rgba(var(--fg-rgb), 0.7), transparent 60%);
+}
+.hero__inner {
+  position: relative;
+  padding-top: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 56px;
+}
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  margin: 0;
+  padding-inline: 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: rgba(88, 176, 168, 0.08);
+  font: 500 14px var(--fb);
+  color: var(--accent-text);
+}
+.hero__eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-hi); }
+
+/* The meeting point: investors · emblem · project owners (stacks in that order on narrow screens). */
+.hero__meet {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 236px), 1fr));
+  align-items: center;
+  gap: 40px 36px;
+}
+.hero__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+.hero__side--investors { text-align: end; align-items: flex-end; justify-self: end; }
+.hero__side--projects { text-align: start; align-items: flex-start; justify-self: start; }
+.hero__label-muted { color: var(--t2); }
+.hero__side-title { font: 800 32px/1.4 var(--fd); text-wrap: balance; }
+.hero__side-text { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); text-wrap: pretty; }
+.hero__side .site-btn { margin-top: 6px; }
+
+.hero__emblem {
+  position: relative;
+  justify-self: center;
+  width: 300px;
+  height: 408px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero__orbits {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1200px;
+  height: 1200px;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.hero__mark {
+  position: relative;
+  filter: drop-shadow(0 30px 60px rgba(var(--shadow-rgb), 0.6));
+}
+.hero__pulse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--accent-hi);
+  animation: hero-pulse 2.6s ease-out infinite;
+}
+@keyframes hero-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.6); }
+  70% { box-shadow: 0 0 0 22px rgba(var(--accent-rgb), 0); }
+}
+
+.hero__headline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 18px;
+  padding-bottom: 72px;
+}
+.hero__title { max-width: 980px; font: 800 clamp(34px, 5.2vw, 54px)/1.35 var(--fd); text-wrap: balance; }
+.hero__lead { max-width: 720px; margin: 0; font: 400 18px/1.8 var(--fb); color: var(--t2); text-wrap: pretty; }
+.hero__disclaimer { margin: 6px 0 0; font: 400 13px/1.6 var(--fb); color: var(--t3); }
+
+/* Stacked (one column): centre both texts around the emblem. */
+@media (max-width: 860px) {
+  .hero__side--investors,
+  .hero__side--projects { text-align: center; align-items: center; justify-self: center; }
+}
+@media (max-width: 640px) {
+  .hero__inner { padding-top: 48px; gap: 40px; }
+  .hero__side-title { font-size: 26px; }
+  .hero__emblem { width: 220px; height: 300px; }
+  .hero__mark { width: 220px; height: 300px; }
+  /* the orbits scale with the emblem (300 → 220 px) so the arcs stay clear of the texts above and below */
+  .hero__orbits { width: 880px; height: 880px; }
+  .hero__lead { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__pulse { animation: none; }
+}
+</style>

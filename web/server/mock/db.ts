@@ -490,7 +490,7 @@ const doc = (kind: DocumentResource['kind'], title: string, status: DocumentReso
   scan_result: 'clean',
 })
 
-export interface OpportunityRow extends OpportunityFull {
+export interface OpportunityRow extends Omit<OpportunityFull, 'evaluation_decision'> {
   owner_user_id: number
   sector_key: string
   impact_score: number

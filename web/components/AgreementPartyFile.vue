@@ -124,7 +124,7 @@ const downloadSigned = async () => {
                 <span v-else class="text-xs text-muted text-end">{{ a.status === 'sent_for_signature' ? $t('agreements.signatures.pending') : '—' }}</span>
               </li>
             </ul>
-            <div v-for="s in a.signatures.filter((x) => x.party === a.my_party && x.ip)" :key="s.id" class="mt-4 rounded-lg bg-bg p-3 text-xs text-muted space-y-1">
+            <div v-for="s in a.signatures.filter((x) => x.party === a?.my_party && x.ip)" :key="s.id" class="mt-4 rounded-lg bg-bg p-3 text-xs text-muted space-y-1">
               <p class="font-medium text-ink">{{ $t('agreements.party.yourEvidence') }}</p>
               <p class="num">{{ dateTime(s.signed_at) }} · <span class="ltr inline-block">{{ s.ip }}</span></p>
               <p class="break-all"><code class="ltr inline-block">{{ s.text_hash }}</code></p>

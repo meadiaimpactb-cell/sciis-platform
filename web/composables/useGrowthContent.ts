@@ -1,7 +1,7 @@
 import type { ContentItem } from '~/types/api'
 
 /**
- * Social proof + knowledge content managed from admin → content (stories / partners / resources).
+ * Social proof + knowledge content managed from admin → content (stories / resources).
  * Every fetch resolves to an array (never null) so prerendered pages stay stable, and shared keys let the layout and
  * the pages reuse one SSR payload. Sections that depend on them render only when items exist.
  */
@@ -13,11 +13,6 @@ const fetchList = (path: string) => {
 export function usePublicStories() {
   const { locale } = useI18n()
   return useAsyncData(`public-stories-${locale.value}`, fetchList('/public/stories'), { default: (): ContentItem[] => [] })
-}
-
-export function usePublicPartners() {
-  const { locale } = useI18n()
-  return useAsyncData(`public-partners-${locale.value}`, fetchList('/public/partners'), { default: (): ContentItem[] => [] })
 }
 
 export function usePublicResources() {

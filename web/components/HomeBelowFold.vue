@@ -1,208 +1,298 @@
 <script setup lang="ts">
 /**
- * Home page below the first screen (paths, featured, impact, how it works + benefits, partners, story, news, CTA).
- * Rendered by pages/index.vue as `<LazyHomeBelowFold hydrate-on-visible>`: the HTML is server-rendered (crawlable,
- * no layout shift), but its JavaScript only loads and hydrates when the visitor scrolls to it — keeping the main
- * thread free while the first screen becomes interactive.
+ * Home page below the first screen (design v3): what impact means (+ indicator card), the two paths, how the platform
+ * works (stepper), membership benefits and the call to join, the latest news. Rendered as
+ * `<LazyHomeBelowFold hydrate-on-visible>` — server-rendered, hydrated when it scrolls into view.
  */
-import type { ContentItem, OpportunityCard } from '~/types/api'
+import type { ContentItem } from '~/types/api'
 
-/** The page's `usePageContent('home')` helpers (CMS copy with i18n fallbacks), passed down unchanged. */
+/** Copy helpers of the home page (CMS home → meta.sections with the landing.* texts as the fallback). */
 type Content = Pick<Awaited<ReturnType<typeof usePageContent>>, 'text' | 'list' | 'items'>
-const props = defineProps<{ content: Content; featured: OpportunityCard[] | null; stories: ContentItem[]; partners: ContentItem[]; news: ContentItem[] | null }>()
-const { text, list, items } = props.content
-const { number, date } = useFormat()
+const props = defineProps<{ content: Content; news: ContentItem | null }>()
+const { text, list } = props.content
+const localePath = useLocalePath()
 const join = useJoinChooser()
-
-const benefits = computed(() => list('benefits', 'home.benefits'))
-const impactPoints = computed(() => list('impact_points', 'home.impactPoints'))
-const investorPoints = computed(() => list('investor_path_points', 'home.investorPath.points'))
-const entrepreneurPoints = computed(() => list('entrepreneur_path_points', 'home.entrepreneurPath.points'))
-const steps = computed(() => items<{ title?: string; text?: string }>('how_steps', 'home.how'))
-
-// Featured impact story (first published) — Falak "Success Stories" layout: picture + 40px title + excerpt.
-const { alt: contentAlt, title: contentTitle, body: contentBody } = useContentText()
-const story = computed(() => props.stories[0] ?? null)
-const storyExcerpt = computed(() => (story.value ? cmsExcerpt(contentBody(story.value), 240) : ''))
-const tools = [
-  { key: 'investor', to: '/tools/investor-readiness' },
-  { key: 'project', to: '/tools/project-readiness' },
-] as const
+const { date } = useFormat()
+const pad = (n: number) => String(n).padStart(2, '0')
+const criteria = computed(() => list('impact_criteria', 'landing.impact.criteria'))
+const benefits = computed(() => list('benefits_list', 'landing.benefits.items'))
+const steps = computed(() => props.content.items<{ title?: string; text?: string; meta?: string }>('how_steps_list', 'landing.how.steps'))
+const paths = computed(() => [
+  { key: 'investor', cta: '/auth/register?type=investor_individual', tool: '/tools/investor-readiness', primary: true },
+  { key: 'project', cta: '/auth/register?type=entrepreneur_entity', tool: '/tools/project-readiness', primary: false },
+].map((p) => ({
+  ...p,
+  title: text(`path_${p.key}_title`, `landing.paths.${p.key}.title`),
+  text: text(`path_${p.key}_text`, `landing.paths.${p.key}.text`),
+  points: list(`path_${p.key}_points`, `landing.paths.${p.key}.points`),
+  ctaLabel: text(`path_${p.key}_cta`, `landing.paths.${p.key}.cta`),
+  toolLabel: text(`path_${p.key}_tool`, `landing.paths.${p.key}.tool`),
+})))
 </script>
 
 <template>
   <div>
-      <!-- PATHS (Falak «البرامج»: three columns with vertical rules) -->
-      <section class="section-y" aria-labelledby="home-paths">
-        <div class="container-x">
-          <h2 id="home-paths" class="section-label">{{ text('paths_title', 'home.pathsTitle') }}</h2>
-          <p class="section-title mt-2 max-w-4xl">{{ text('paths_sub', 'home.pathsSub') }}</p>
-          <div class="mt-14 grid border-b border-border md:grid-cols-3">
-            <article class="flex flex-col items-center px-4 py-10 text-center md:px-8">
-              <span class="flex h-14 w-14 items-center justify-center rounded-md border border-navy/20 text-navy" aria-hidden="true"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2" /></svg></span>
-              <h3 class="card-title mt-6">{{ text('investor_path_title', 'home.investorPath.title') }}</h3>
-              <p class="text-desc mt-3 text-muted">{{ text('investor_path_text', 'home.investorPath.text') }}</p>
-              <ul class="mt-5 space-y-2 text-sm text-text">
-                <li v-for="p in investorPoints" :key="p">{{ p }}</li>
-              </ul>
-              <NuxtLink :to="$localePath('/auth/register?type=investor_individual')" class="mt-auto inline-block border-b-2 border-current pb-1 pt-8 text-base font-bold text-ink transition hover:text-teal-text">{{ $t('home.investorPath.cta') }}</NuxtLink>
-            </article>
-            <article class="flex flex-col items-center border-t border-border px-4 py-10 text-center md:border-s md:border-t-0 md:px-8">
-              <span class="flex h-14 w-14 items-center justify-center rounded-md border border-teal/40 text-teal-text" aria-hidden="true"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 6v3H8v-3C7 14 5 12 5 9a7 7 0 017-7zM9 22h6" /></svg></span>
-              <h3 class="card-title mt-6">{{ text('entrepreneur_path_title', 'home.entrepreneurPath.title') }}</h3>
-              <p class="text-desc mt-3 text-muted">{{ text('entrepreneur_path_text', 'home.entrepreneurPath.text') }}</p>
-              <ul class="mt-5 space-y-2 text-sm text-text">
-                <li v-for="p in entrepreneurPoints" :key="p">{{ p }}</li>
-              </ul>
-              <NuxtLink :to="$localePath('/auth/register?type=entrepreneur_entity')" class="mt-auto inline-block border-b-2 border-current pb-1 pt-8 text-base font-bold text-ink transition hover:text-teal-text">{{ $t('home.entrepreneurPath.cta') }}</NuxtLink>
-            </article>
-            <article class="flex flex-col items-center border-t border-border px-4 py-10 text-center md:border-s md:border-t-0 md:px-8">
-              <span class="flex h-14 w-14 items-center justify-center rounded-md border border-navy/20 text-navy" aria-hidden="true"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg></span>
-              <h3 class="card-title mt-6">{{ $t('tools.band.title') }}</h3>
-              <p class="text-desc mt-3 text-muted">{{ $t('tools.band.text') }}</p>
-              <ul class="mt-auto space-y-3 pt-8">
-                <li v-for="x in tools" :key="x.key">
-                  <NuxtLink :to="$localePath(x.to)" class="inline-block border-b-2 border-current pb-1 text-base font-bold text-ink transition hover:text-teal-text">{{ $t(`tools.${x.key}.title`) }}</NuxtLink>
-                </li>
-              </ul>
-            </article>
-          </div>
+    <!-- What we mean by impact -->
+    <section class="impact" aria-labelledby="home-impact">
+      <div class="site-wrap impact__inner">
+        <div class="impact__copy">
+          <span class="site-label">{{ text('impact_label', 'landing.impact.label') }}</span>
+          <h2 id="home-impact" class="impact__title">{{ text('impact_heading', 'landing.impact.title') }}</h2>
+          <p class="impact__text">{{ text('impact_body', 'landing.impact.text') }}</p>
+          <ol class="impact__criteria">
+            <li v-for="(c, i) in criteria" :key="i"><span class="impact__num">{{ pad(i + 1) }}</span>{{ c }}</li>
+          </ol>
         </div>
-      </section>
+        <IndicatorCard />
+      </div>
+    </section>
 
-      <!-- FEATURED OPPORTUNITIES (Falak «استثماراتنا») -->
-      <section v-if="featured?.length" class="section-y border-t border-border" aria-labelledby="home-featured">
-        <div class="container-x">
-          <h2 id="home-featured" class="section-label">{{ $t('home.featuredTitle') }}</h2>
-          <p class="section-sub">{{ $t('home.featuredSub') }}</p>
-          <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <OpportunityCard v-for="o in featured" :key="o.uuid" :opportunity="o" to="/auth/login" :show-status="false" />
+    <!-- The two paths -->
+    <section id="paths" class="paths" :aria-label="$t('home.pathsTitle')">
+      <div class="paths__grid">
+        <div class="paths__badge" aria-hidden="true"><BrandMark :width="20" :framed="false" /></div>
+        <article v-for="(p, i) in paths" :key="p.key" class="paths__half" :class="`paths__half--${p.key}`">
+          <span class="paths__num">{{ pad(i + 1) }}</span>
+          <h3 class="paths__title">{{ p.title }}</h3>
+          <p class="paths__text">{{ p.text }}</p>
+          <ul class="site-checks paths__points">
+            <li v-for="(point, n) in p.points" :key="n">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" :stroke="p.primary ? 'var(--accent-hi)' : 'var(--fg)'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              {{ point }}
+            </li>
+          </ul>
+          <div class="paths__actions">
+            <NuxtLink :to="localePath(p.cta)" class="site-btn site-btn--lg kbd-focus" :class="p.primary ? 'site-btn--primary' : 'site-btn--secondary'">{{ p.ctaLabel }}</NuxtLink>
+            <NuxtLink :to="localePath(p.tool)" class="site-link kbd-focus" :class="!p.primary && 'paths__tool--plain'">{{ p.toolLabel }} <span class="inline-block rtl:rotate-180" aria-hidden="true">→</span></NuxtLink>
           </div>
-          <Disclaimer variant="box" class="mt-6" />
-          <div class="mt-14 text-center">
-            <NuxtLink :to="$localePath('/auth/login')" class="link-cta">{{ $t('home.featuredCta') }}</NuxtLink>
-          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- How the platform works -->
+    <section class="how-section" aria-labelledby="home-how">
+      <div class="site-wrap how-section__inner">
+        <div class="how-section__head">
+          <span class="site-label">{{ text('how_label', 'landing.how.label') }}</span>
+          <h2 id="home-how" class="section-heading">{{ text('how_heading', 'landing.how.title') }}</h2>
         </div>
-      </section>
+        <HowItWorksStepper class="how-section__stepper" :steps="steps" :label="text('how_heading', 'landing.how.title')" />
+        <p class="how-section__note">{{ text('how_note', 'landing.how.note') }}</p>
+      </div>
+    </section>
 
-      <!-- WHY / IMPACT (Falak «لماذا…؟» dark section) -->
-      <section class="surface-dark relative overflow-hidden" aria-labelledby="home-impact">
-        <NightSky :orbits="false" />
-        <div class="container-x relative grid items-center gap-12 py-20 md:py-[7.5rem] lg:grid-cols-2 lg:gap-20">
-          <div>
-            <h2 id="home-impact" class="section-title text-white">{{ text('impact_title', 'home.impactTitle') }}</h2>
-            <p class="text-desc mt-6 text-white/75">{{ text('impact_text', 'home.impactText') }}</p>
+    <!-- Membership benefits + call to join -->
+    <section id="join" class="join" aria-labelledby="home-benefits">
+      <div class="site-stars join__stars" aria-hidden="true" />
+      <svg class="join__rings" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="home-ring" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7FD3C9" stop-opacity=".9" />
+            <stop offset=".5" stop-color="#58B0A8" stop-opacity=".25" />
+            <stop offset="1" stop-color="#203068" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <circle cx="700" cy="1020" r="560" fill="none" stroke="url(#home-ring)" stroke-width="1.2" />
+        <circle cx="700" cy="1020" r="760" fill="none" stroke="rgba(var(--fg-rgb), .1)" stroke-width="1" />
+      </svg>
+      <div class="site-wrap join__inner">
+        <div class="join__benefits">
+          <div class="join__head">
+            <span class="site-label">{{ text('benefits_label', 'landing.benefits.label') }}</span>
+            <h2 id="home-benefits" class="join__title">{{ text('benefits_heading', 'landing.benefits.title') }}</h2>
           </div>
-          <ul class="space-y-7">
-            <li v-for="p in impactPoints" :key="p" class="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,15rem)_1fr] sm:gap-8">
-              <span class="text-[0.9375rem] font-bold leading-[1.4rem] text-white">{{ p }}</span>
-              <span class="h-2 rounded-full bg-gradient-to-r from-teal-500 to-navy-600 rtl:bg-gradient-to-l" aria-hidden="true" />
+          <ul class="join__tiles">
+            <li v-for="(b, n) in benefits" :key="n" class="join__tile">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="var(--accent-hi)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              {{ b }}
             </li>
           </ul>
         </div>
-      </section>
-
-      <!-- HOW IT WORKS + MEMBERSHIP BENEFITS -->
-      <section class="section-y" aria-labelledby="home-how">
-        <div class="container-x">
-          <h2 id="home-how" class="section-label">{{ text('how_title', 'home.howTitle') }}</h2>
-          <p class="section-title mt-2 max-w-4xl">{{ text('how_sub', 'home.howSub') }}</p>
-          <ol class="relative mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
-            <li class="absolute inset-x-0 top-[1.375rem] hidden h-px bg-border lg:block" aria-hidden="true" />
-            <li v-for="(s, i) in steps" :key="i" class="relative">
-              <span class="num relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-teal bg-surface text-lg text-teal-text" aria-hidden="true">{{ String(i + 1).padStart(2, '0') }}</span>
-              <h3 class="mt-5 text-lg font-bold text-ink">{{ s.title }}</h3>
-              <p class="mt-2 text-sm text-muted">{{ s.text }}</p>
-            </li>
-          </ol>
-
-          <div class="mt-20 grid gap-10 border-t border-border pt-14 lg:grid-cols-[1fr_2fr]">
-            <div>
-              <h3 class="section-label">{{ text('benefits_title', 'home.benefitsTitle') }}</h3>
-              <p class="section-sub">{{ text('benefits_sub', 'home.benefitsSub') }}</p>
-            </div>
-            <ul class="grid gap-x-10 gap-y-5 sm:grid-cols-2">
-              <li v-for="b in benefits" :key="b" class="flex items-start gap-3">
-                <svg class="mt-1.5 h-4 w-4 shrink-0 text-teal-text" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
-                <span class="text-desc text-text">{{ b }}</span>
-              </li>
-            </ul>
+        <div class="join__cta">
+          <BrandMark :width="44" />
+          <h2 class="join__cta-title">{{ text('join_title', 'landing.cta.title') }}</h2>
+          <p class="join__cta-text">{{ text('join_text', 'landing.cta.text') }}</p>
+          <div class="join__cta-actions">
+            <button type="button" class="site-btn site-btn--primary site-btn--xl site-btn--glow kbd-focus" aria-haspopup="dialog" @click="join.open($event)">{{ $t('landing.cta.join') }}</button>
+            <NuxtLink :to="localePath('/auth/login')" class="join__login kbd-focus">{{ $t('landing.cta.login') }}</NuxtLink>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- PARTNERS (CMS: published + approved names only — never anonymous logos) -->
-      <section v-if="partners.length" class="section-y border-t border-border" aria-labelledby="home-partners">
-        <div class="container-x">
-          <h2 id="home-partners" class="section-title">{{ $t('partners.title') }}</h2>
-          <p class="section-sub">{{ $t('partners.sub') }}</p>
-          <PartnerLogos :partners="partners" class="mt-12" />
+    <!-- Latest news (one line) -->
+    <section v-if="news" id="news" class="news" aria-labelledby="home-news">
+      <div class="site-wrap news__inner">
+        <h2 id="home-news" class="site-label news__label">{{ $t('landing.news.label') }}</h2>
+        <div class="news__item">
+          <time v-if="news.published_at" class="news__date num" :datetime="news.published_at">{{ date(news.published_at) }}</time>
+          <NuxtLink :to="localePath(`/news/${news.slug}`)" class="news__title kbd-focus">{{ news.title ?? news.title_ar }}</NuxtLink>
         </div>
-      </section>
-
-      <!-- IMPACT STORY (Falak «Success Stories») -->
-      <section v-if="story" class="section-y border-t border-border" aria-labelledby="home-stories">
-        <div class="container-x">
-          <h2 id="home-stories" class="section-label">{{ $t('stories.title') }}</h2>
-          <article class="mt-12 grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
-            <img v-if="story.meta?.cover?.url" :src="story.meta.cover.url" :alt="contentAlt(story.meta.cover, contentTitle(story))" :width="story.meta.cover.width ?? 1200" :height="story.meta.cover.height ?? 675" loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-md object-cover">
-            <div v-else class="relative aspect-[4/3] w-full overflow-hidden rounded-md surface-dark" aria-hidden="true">
-              <NightSky />
-              <img src="/brand/mark-white.svg" alt="" width="100" height="136" class="absolute inset-0 m-auto h-2/5 w-auto opacity-30">
-            </div>
-            <div>
-              <p v-if="story.sector" class="text-sm text-teal-text">{{ story.sector }}</p>
-              <h3 class="section-title mt-2">{{ contentTitle(story) }}</h3>
-              <p v-if="storyExcerpt" class="text-desc mt-4 text-muted">{{ storyExcerpt }}</p>
-              <dl v-if="story.beneficiaries != null || story.impact_metric" class="mt-6 flex flex-wrap gap-x-10 gap-y-4">
-                <div v-if="story.beneficiaries != null">
-                  <dt class="text-sm text-muted">{{ $t('stories.beneficiaries') }}</dt>
-                  <dd class="num mt-1 text-3xl text-navy">{{ number(story.beneficiaries, { maximumFractionDigits: 0 }) }}</dd>
-                </div>
-                <div v-if="story.impact_metric">
-                  <dt class="text-sm text-muted">{{ $t('stories.impact') }}</dt>
-                  <dd class="mt-1 text-base font-bold text-ink">{{ story.impact_metric }}</dd>
-                </div>
-              </dl>
-              <NuxtLink :to="$localePath(`/stories#${story.slug}`)" class="link-more mt-8">
-                {{ $t('common.readMore') }}<span class="sr-only"> — {{ contentTitle(story) }}</span>
-                <svg class="h-5 w-5 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-              </NuxtLink>
-            </div>
-          </article>
-          <div class="mt-16 text-center">
-            <NuxtLink :to="$localePath('/stories')" class="link-cta">{{ $t('stories.viewAll') }}</NuxtLink>
-          </div>
-        </div>
-      </section>
-
-      <!-- NEWS -->
-      <section v-if="news?.length" class="section-y border-t border-border" aria-labelledby="home-news">
-        <div class="container-x">
-          <h2 id="home-news" class="section-label">{{ $t('home.latestTitle') }}</h2>
-          <div class="mt-12 grid md:grid-cols-3">
-            <article v-for="(n, i) in news" :key="n.id" class="py-8 md:px-8 md:py-0" :class="i > 0 ? 'border-t border-border md:border-s md:border-t-0' : 'md:ps-0'">
-              <p class="num text-sm text-teal-text">{{ date(n.published_at) }}</p>
-              <h3 class="card-title mt-3 leading-8"><NuxtLink :to="$localePath(`/news/${n.slug}`)" class="transition hover:text-teal-text">{{ n.title ?? n.title_ar }}</NuxtLink></h3>
-              <p class="text-desc mt-3 line-clamp-3 text-muted">{{ cmsExcerpt(n.body ?? n.body_ar ?? '', 180) }}</p>
-            </article>
-          </div>
-          <div class="mt-16 text-center">
-            <NuxtLink :to="$localePath('/news')" class="link-cta">{{ $t('home.allNews') }}</NuxtLink>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA (Falak download-section) -->
-      <section class="surface-dark relative overflow-hidden" aria-labelledby="home-cta">
-        <NightSky />
-        <div class="container-x relative py-24 text-center md:py-[7.5rem]">
-          <h2 id="home-cta" class="display text-white">{{ text('cta_band_title', 'home.ctaBandTitle') }}</h2>
-          <p class="lead mx-auto mt-6 max-w-3xl text-white/75">{{ text('cta_band_text', 'home.ctaBandText') }}</p>
-          <div class="mt-10 flex justify-center">
-            <AppButton variant="line" size="lg" class="min-w-[16rem]" aria-haspopup="dialog" @click="join.open($event)">{{ $t('nav.joinCouncil') }}</AppButton>
-          </div>
-        </div>
-      </section>
+        <NuxtLink :to="localePath('/news')" class="site-link kbd-focus">{{ $t('landing.news.all') }} <span class="inline-block rtl:rotate-180" aria-hidden="true">→</span></NuxtLink>
+      </div>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.section-heading { font: 800 clamp(30px, 4vw, 44px)/1.35 var(--fd); text-wrap: pretty; }
+
+/* ------------------------------------------------------------------------------------------------ impact */
+.impact { position: relative; overflow: hidden; background: var(--bg0); }
+.impact__inner {
+  padding-block: 128px 120px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 64px 96px;
+  align-items: center;
+}
+.impact__copy { display: flex; flex-direction: column; gap: 26px; }
+.impact__title { font: 800 clamp(30px, 4.4vw, 50px)/1.35 var(--fd); text-wrap: pretty; }
+.impact__text { margin: 0; max-width: 560px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
+.impact__criteria { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
+.impact__criteria li {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-block: 16px;
+  border-top: 1px solid rgba(var(--fg-rgb), 0.12);
+  font: 500 16px/1.5 var(--fb);
+  color: var(--fg);
+}
+.impact__criteria li:last-child { border-bottom: 1px solid rgba(var(--fg-rgb), 0.12); }
+.impact__num { min-width: 28px; font: 800 14px var(--fd); color: var(--accent-text); }
+
+/* ------------------------------------------------------------------------------------------------- paths */
+.paths {
+  position: relative;
+  background: var(--bg1);
+  border-block: 1px solid rgba(var(--fg-rgb), 0.1);
+}
+.paths__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 1px;
+  background: rgba(var(--fg-rgb), 0.12);
+}
+.paths__badge {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg1);
+  border: 1px solid rgba(var(--fg-rgb), 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.paths__half {
+  position: relative;
+  overflow: hidden;
+  padding: 120px clamp(24px, 6vw, 96px) 112px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.paths__half--investor { background: linear-gradient(180deg, rgba(88, 176, 168, 0.14), rgba(88, 176, 168, 0) 60%) var(--bg1); }
+.paths__half--project { background: linear-gradient(180deg, var(--tint2), rgba(32, 48, 104, 0) 60%) var(--bg1); }
+.paths__num { font: 800 15px var(--fd); color: var(--accent-text); }
+.paths__half--project .paths__num { color: var(--t2); }
+.paths__title { font: 800 clamp(30px, 3.4vw, 40px)/1.3 var(--fd); text-wrap: balance; }
+.paths__text { margin: 0; max-width: 520px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
+.paths__points { margin-top: 8px; }
+.paths__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 28px; margin-top: 18px; }
+.paths__actions .site-btn { height: 54px; padding-inline: 28px; }
+.paths__tool--plain { color: var(--fg); border-color: rgba(var(--fg-rgb), 0.4); }
+.paths__tool--plain:hover { color: var(--accent-text); border-color: var(--accent-text); }
+
+/* --------------------------------------------------------------------------------------------------- how */
+.how-section { background: var(--bg0); }
+.how-section__inner { padding-block: 120px; }
+.how-section__head { max-width: 760px; display: flex; flex-direction: column; gap: 14px; }
+.how-section__stepper { margin-top: 64px; }
+.how-section__note { margin: 48px 0 0; font: 400 14px/1.6 var(--fb); color: var(--t3); }
+
+/* -------------------------------------------------------------------------------------------------- join */
+.join {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(900px 600px at 50% 110%, var(--glow) 0%, var(--bg1) 55%, var(--bg0) 100%);
+  border-top: 1px solid rgba(var(--fg-rgb), 0.08);
+}
+.join__stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 30%, rgba(var(--fg-rgb), 0.8), transparent 60%),
+    radial-gradient(1px 1px at 26% 70%, rgba(var(--fg-rgb), 0.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 44% 20%, rgba(var(--fg-rgb), 0.7), transparent 60%),
+    radial-gradient(2px 2px at 62% 80%, rgba(var(--accent-rgb), 0.9), transparent 60%),
+    radial-gradient(1px 1px at 80% 36%, rgba(var(--fg-rgb), 0.8), transparent 60%),
+    radial-gradient(1.5px 1.5px at 94% 64%, rgba(var(--fg-rgb), 0.6), transparent 60%);
+}
+.join__rings {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1600px;
+  max-width: none;
+  height: 900px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.join__inner { position: relative; padding-block: 120px 136px; display: flex; flex-direction: column; gap: 80px; }
+.join__benefits { display: flex; flex-direction: column; gap: 32px; }
+.join__head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.join__title { font: 800 clamp(28px, 3.4vw, 40px)/1.4 var(--fd); text-wrap: pretty; }
+.join__tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+.join__tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: rgba(var(--fg-rgb), 0.05);
+  border: 1px solid rgba(var(--fg-rgb), 0.1);
+  font: 500 15px/1.65 var(--fb);
+  color: var(--fg);
+}
+.join__tile svg { flex: none; margin-top: 3px; }
+.join__cta { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; padding-top: 16px; }
+.join__cta-title { font: 800 clamp(36px, 5vw, 56px)/1.25 var(--fd); }
+.join__cta-text { margin: 0; font: 400 18px/1.7 var(--fb); color: var(--t2); }
+.join__cta-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px 28px; margin-top: 8px; }
+.join__login {
+  font: 500 15px var(--fb);
+  color: var(--t2);
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.3);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.join__login:hover { color: var(--fg); border-color: var(--fg); }
+
+/* -------------------------------------------------------------------------------------------------- news */
+.news { background: var(--bg1); border-top: 1px solid rgba(var(--fg-rgb), 0.08); }
+.news__inner { padding-block: 52px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 40px; }
+.news__label { flex: none; margin: 0; font-family: var(--fb); color: var(--accent-text); }
+.news__item { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 6px; }
+.news__date { font: 400 13px var(--fb); color: var(--t3); }
+.news__title { font: 700 22px/1.5 var(--fd); color: var(--fg); transition: color 0.15s ease; }
+.news__title:hover { color: var(--accent-text); }
+
+@media (max-width: 640px) {
+  .impact__inner { padding-block: 80px; }
+  .paths__half { padding-block: 88px 72px; }
+  .how-section__inner { padding-block: 80px; }
+  .join__inner { padding-block: 80px 96px; gap: 56px; }
+}
+</style>

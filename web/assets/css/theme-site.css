@@ -1,0 +1,201 @@
+/*
+ * SCII public identity v3 — design "SCII Homepage v3" (public header, footer and home page).
+ *
+ * Dark is the default; html[data-theme="light"] switches to the light palette. The visitor's choice is kept in
+ * localStorage ('scii-theme') and applied by an inline script before the first paint (nuxt.config → app.head),
+ * so a reload never flashes the wrong theme. The portal's own dark mode is separate (theme-dark.css, html.theme-dark).
+ *
+ * Colours are channel values where they are used with an alpha: rgba(var(--fg-rgb), .12).
+ */
+:root,
+html[data-theme='dark'] {
+  --bg0: #182455;
+  --bg0-rgb: 24, 36, 85;
+  --bg1: #203068;
+  --bg1-rgb: 32, 48, 104;
+  --bg-footer: #131c4a;
+  --glow: #2c4290;
+  --fg: #fff;
+  --fg-rgb: 255, 255, 255;
+  --t2: rgba(255, 255, 255, 0.78);
+  --t3: rgba(255, 255, 255, 0.62);
+  --accent-text: #7fd3c9;
+  --accent-hi: #7fd3c9;
+  --accent-rgb: 127, 211, 201;
+  --btn2-bg: #fff;
+  --btn2-fg: #182455;
+  --btn2-hover: #e6f3f1;
+  --mark-2: #fff;
+  --shadow-rgb: 0, 0, 0;
+  --tint2: rgba(44, 66, 144, 0.55);
+  --stars: 1;
+  --show-dark: block;
+  --show-light: none;
+}
+
+html[data-theme='light'] {
+  --bg0: #f4f6fa;
+  --bg0-rgb: 244, 246, 250;
+  --bg1: #fff;
+  --bg1-rgb: 255, 255, 255;
+  --bg-footer: #e9edf5;
+  --glow: #dce6f5;
+  --fg: #0e1330;
+  --fg-rgb: 32, 48, 104;
+  --t2: #3d4670;
+  --t3: #5b6286;
+  --accent-text: #2f7d74;
+  --accent-hi: #4a9e96;
+  --accent-rgb: 88, 176, 168;
+  --btn2-bg: #203068;
+  --btn2-fg: #fff;
+  --btn2-hover: #182455;
+  --mark-2: #203068;
+  --shadow-rgb: 32, 48, 104;
+  --tint2: rgba(32, 48, 104, 0.1);
+  --stars: 0.35;
+  --show-dark: none;
+  --show-light: block;
+}
+
+/* Theme-independent brand constants and the two type families (display follows the script). */
+:root {
+  --scii-teal: #58b0a8;
+  --scii-teal-ink: #07102a;
+  --fb: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+  --fd: 'Almarai', 'IBM Plex Sans Arabic', sans-serif;
+}
+[dir='ltr'] {
+  --fd: 'Sora', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------------------------- shared pieces */
+.site-surface {
+  background: var(--bg0);
+  color: var(--fg);
+  font-family: var(--fb);
+}
+.site-wrap {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 32px;
+}
+@media (max-width: 640px) {
+  .site-wrap { padding-inline: 16px; }
+}
+.font-display { font-family: var(--fd); }
+.site-surface h1,
+.site-surface h2,
+.site-surface h3 {
+  font-family: var(--fd);
+  color: var(--fg);
+  letter-spacing: 0;
+  margin: 0;
+}
+
+/* Section eyebrow label */
+.site-label {
+  font: 500 14px var(--fb);
+  color: var(--accent-text);
+}
+
+/* Show the element that matches the active theme (logos, sun / moon icons). */
+.on-dark { display: var(--show-dark); }
+.on-light { display: var(--show-light); }
+
+/* Pill buttons — the only interaction is the background colour (150 ms). */
+.site-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding-inline: 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: 600 14px var(--fb);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.site-btn--lg { height: 52px; padding-inline: 26px; font-size: 15px; }
+.site-btn--xl { height: 58px; padding-inline: 34px; font-size: 17px; }
+.site-btn--primary { background: var(--scii-teal); color: var(--scii-teal-ink); }
+.site-btn--primary:hover { background: var(--accent-hi); color: var(--scii-teal-ink); }
+.site-btn--glow { box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.4), 0 18px 40px -16px rgba(88, 176, 168, 0.7); }
+.site-btn--secondary { background: var(--btn2-bg); color: var(--btn2-fg); }
+.site-btn--secondary:hover { background: var(--btn2-hover); color: var(--btn2-fg); }
+.site-btn--outline { border-color: rgba(var(--fg-rgb), 0.22); color: var(--fg); background: transparent; font-weight: 500; font-size: 13px; padding-inline: 14px; }
+.site-btn--outline:hover { background: rgba(var(--fg-rgb), 0.1); color: var(--fg); }
+.site-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--fg-rgb), 0.22);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.site-icon-btn:hover { background: rgba(var(--fg-rgb), 0.1); }
+
+/* Underlined text link with an arrow */
+.site-link {
+  font: 500 15px var(--fb);
+  color: var(--accent-text);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.5);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.site-link:hover { color: var(--fg); border-color: var(--fg); }
+
+/* Frosted glass card */
+.site-glass {
+  position: relative;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(var(--fg-rgb), 0.08), rgba(var(--fg-rgb), 0.03));
+  border: 1px solid rgba(var(--fg-rgb), 0.14);
+  box-shadow: 0 40px 90px -40px rgba(var(--shadow-rgb), 0.85), inset 0 1px 0 rgba(var(--fg-rgb), 0.16);
+  backdrop-filter: blur(18px);
+}
+
+/* Teal tick list */
+.site-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.site-checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font: 500 16px/1.6 var(--fb);
+  color: var(--fg);
+}
+.site-checks svg { flex: none; margin-top: 3px; }
+
+/* Star field (decorative) */
+.site-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--stars);
+}
+
+/* Small controls that follow the theme (footer calendar select, social icons) */
+.site-select {
+  border-color: rgba(var(--fg-rgb), 0.22);
+  background: var(--bg-footer);
+  color: var(--fg);
+}
+.site-social {
+  background: rgba(var(--fg-rgb), 0.08);
+  color: var(--fg);
+}
+.site-social:hover { background: var(--scii-teal); color: var(--scii-teal-ink); }

@@ -2221,5 +2221,147 @@
       "externalNote": "This event has an external registration link, which stays visible on its page."
     }
   },
-  "phoneField": {"verified": "Mobile verified ✓", "unverified": "Not verified", "verifyNow": "Verify now"}
+  "phoneField": {"verified": "Mobile verified ✓", "unverified": "Not verified", "verifyNow": "Verify now"},
+  "landing": {
+    "themeToggle": "Toggle theme",
+    "hero": {
+      "eyebrow": "Saudi Arabia's national impact-investing platform",
+      "aLabel": "For impact investors",
+      "aTitle": "Evaluated opportunities, not pitches",
+      "aText": "Projects that passed a professional evaluation against published criteria, matched to your preferred sectors and stages.",
+      "aCta": "Explore opportunities",
+      "bLabel": "For project owners",
+      "bTitle": "Professional evaluation, your consent first",
+      "bText": "One unified form, clear feedback at every stage, and no contact with any investor before you allow it.",
+      "bCta": "Submit your project",
+      "title": "Where patient capital meets measurable impact",
+      "lead": "The SCII platform manages the connection between both sides, from first interest to a direct meeting, transparently and with no financial intermediation.",
+      "disclaimer": "The platform does not conduct financial transactions or provide investment advice."
+    },
+    "stages": {
+      "label": "A published 9-stage journey for every project",
+      "items": {
+        "1": "Registration",
+        "2": "Verification",
+        "3": "Profile completion",
+        "4": "Review & evaluation",
+        "5": "Eligibility & listing",
+        "6": "Expression of interest",
+        "7": "Dual consent",
+        "8": "Introduction meeting",
+        "9": "Follow-up & impact reports"
+      }
+    },
+    "impact": {
+      "label": "What we mean by impact",
+      "title": "Impact is measurable positive change in beneficiaries' lives. Not an intention, not a slogan.",
+      "text": "We treat it as a result that is measured, tracked and verified, through indicators with a baseline, a target and a clear data source.",
+      "criteria": {
+        "1": "Clear impact intent from the design stage",
+        "2": "Indicators with a baseline and a target",
+        "3": "Verifiable through data sources",
+        "4": "Balance between financial and social return"
+      },
+      "card": {
+        "badge": "Indicator card",
+        "sample": "Sample data",
+        "name": "Graduates employed after training",
+        "baseline": "Baseline",
+        "target": "Target",
+        "source": "Data source",
+        "sourceValue": "Employment records",
+        "frequency": "Update cycle",
+        "frequencyValue": "Quarterly",
+        "current": "Current reading"
+      }
+    },
+    "paths": {
+      "investor": {
+        "title": "I am an impact investor",
+        "text": "Complete your investor profile and get membership, then receive evaluated opportunities matching your preferred sectors and stages.",
+        "points": {
+          "1": "Opportunities evaluated against published criteria",
+          "2": "Recommendations by sector and stage",
+          "3": "Your data is shared only with your permission"
+        },
+        "cta": "Start the membership journey",
+        "tool": "Test your investor readiness"
+      },
+      "project": {
+        "title": "I have a project",
+        "text": "Submit your project through a unified form, receive a professional evaluation, and talk to investors who are genuinely interested.",
+        "points": {
+          "1": "A 9-stage journey with published timelines",
+          "2": "Clear evaluation feedback at every stage",
+          "3": "Your consent is required before any contact"
+        },
+        "cta": "Submit your project now",
+        "tool": "Test your project's readiness"
+      }
+    },
+    "how": {
+      "label": "How the platform works",
+      "title": "A clear journey from registration to connection",
+      "counter": "Step {n} of {total}",
+      "preview": "Preview",
+      "next": "Next step",
+      "note": "Timelines for every stage are published inside the platform.",
+      "steps": {
+        "1": {
+          "title": "Register & verify",
+          "text": "Create your account and verify your email and mobile number.",
+          "meta": "Takes under 5 minutes"
+        },
+        "2": {
+          "title": "Profile & membership",
+          "text": "Complete your profile for the Council team to review and grant membership.",
+          "meta": "Reviewed by the Council team"
+        },
+        "3": {
+          "title": "Discover or get matched",
+          "text": "Browse eligible opportunities or receive recommendations matching your interests.",
+          "meta": "Matched by sector and stage"
+        },
+        "4": {
+          "title": "Express interest",
+          "text": "Signal your interest; the project owner consents to share the full file.",
+          "meta": "Dual consent before anything is shared"
+        },
+        "5": {
+          "title": "Connect & follow up",
+          "text": "A structured introduction meeting run by the Council team, then impact follow-up reports.",
+          "meta": "Periodic impact reports after connection"
+        }
+      }
+    },
+    "benefits": {
+      "label": "Membership benefits",
+      "title": "Membership is free during the founding phase and gives you:",
+      "items": {
+        "1": "Access to eligible, evaluated impact opportunities",
+        "2": "Recommendations matching your preferred sectors and stages",
+        "3": "Executive summaries approved by project owners",
+        "4": "Structured introduction meetings run by the Council team",
+        "5": "Impact follow-up reports after connection",
+        "6": "Full control over your privacy and data"
+      }
+    },
+    "cta": {
+      "title": "Ready to join?",
+      "text": "Registration takes under ten minutes.",
+      "join": "Join the Council",
+      "login": "Already a member? Sign in"
+    },
+    "news": {
+      "label": "Latest news",
+      "all": "All news"
+    },
+    "footer": {
+      "statement": "We meet at impact.",
+      "tagline": "Connecting patient capital with projects that create measurable social impact",
+      "contact": "Contact us",
+      "top": "Back to top",
+      "disclaimer": "The platform does not conduct financial transactions or provide investment advice."
+    }
+  }
 }

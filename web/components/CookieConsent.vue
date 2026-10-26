@@ -31,24 +31,24 @@ onMounted(() => {
     <Transition name="page">
       <div
         v-if="consent.pending.value"
-        class="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:end-6 sm:max-w-md z-50 card shadow-pop p-5 border-navy/20"
+        class="cookie fixed bottom-4 inset-x-4 sm:inset-x-auto sm:end-6 sm:max-w-md z-50"
         role="dialog"
         aria-live="polite"
         :aria-label="$t('app.cookie.title')"
       >
         <div class="flex items-start gap-3">
-          <span class="h-9 w-9 rounded-lg bg-teal-soft text-teal-text flex items-center justify-center shrink-0" aria-hidden="true">
+          <span class="cookie__icon h-9 w-9 rounded-lg flex items-center justify-center shrink-0" aria-hidden="true">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3a9 9 0 109 9 4 4 0 01-4-4 4 4 0 01-5-5z" /><circle cx="9" cy="10" r="1" /><circle cx="14" cy="15" r="1" /><circle cx="8" cy="15" r="1" /></svg>
           </span>
           <div class="min-w-0">
-            <p class="font-semibold text-ink">{{ $t('app.cookie.title') }}</p>
-            <p class="mt-1 text-sm text-muted leading-6">
+            <p class="cookie__title">{{ $t('app.cookie.title') }}</p>
+            <p class="cookie__text mt-1">
               {{ $t('app.cookie.text') }}
-              <NuxtLink :to="localePath('/legal/privacy')" class="link">{{ $t('app.cookie.learnMore') }}</NuxtLink>
+              <NuxtLink :to="localePath('/legal/privacy')" class="cookie__link">{{ $t('app.cookie.learnMore') }}</NuxtLink>
             </p>
             <div class="mt-4 flex flex-wrap gap-2">
-              <AppButton size="sm" @click="consent.accept()">{{ $t('app.cookie.accept') }}</AppButton>
-              <AppButton size="sm" variant="secondary" @click="consent.reject()">{{ $t('app.cookie.reject') }}</AppButton>
+              <button type="button" class="site-btn site-btn--primary kbd-focus" @click="consent.accept()">{{ $t('app.cookie.accept') }}</button>
+              <button type="button" class="site-btn site-btn--outline kbd-focus" @click="consent.reject()">{{ $t('app.cookie.reject') }}</button>
             </div>
           </div>
         </div>
@@ -56,3 +56,20 @@ onMounted(() => {
     </Transition>
   </ClientOnly>
 </template>
+
+<style scoped>
+/* Follows the public theme (design v3). */
+.cookie {
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--bg1);
+  color: var(--fg);
+  border: 1px solid rgba(var(--fg-rgb), 0.14);
+  box-shadow: 0 30px 60px -20px rgba(var(--shadow-rgb), 0.6);
+  font-family: var(--fb);
+}
+.cookie__icon { background: rgba(88, 176, 168, 0.16); color: var(--accent-text); }
+.cookie__title { font: 600 15px var(--fb); color: var(--fg); }
+.cookie__text { font: 400 14px/1.7 var(--fb); color: var(--t2); }
+.cookie__link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+</style>

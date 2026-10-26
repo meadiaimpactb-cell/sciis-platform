@@ -45,7 +45,7 @@ const toggleColumn = (k: string) => { columns.value = columns.value.includes(k) 
 const toggleStatus = (v: string) => { f.status = f.status.includes(v) ? f.status.filter((x) => x !== v) : [...f.status, v] }
 const definition = (): ReportDefinition => ({
   columns: columns.value,
-  filters: Object.fromEntries(Object.entries({ ...f, overdue: f.overdue || undefined, status: f.status.length ? f.status : undefined }).filter(([k, v]) => has(k) || ['from', 'to', 'date_field'].includes(k) ? v !== '' && v != null && v !== false : false)),
+  filters: Object.fromEntries(Object.entries({ ...f, overdue: f.overdue || undefined, status: f.status.length ? f.status : undefined }).filter(([k, v]) => has(k) || ['from', 'to', 'date_field'].includes(k) ? v !== '' && v != null : false)),
   group_by: groupBy.value || null,
 })
 const groupable = computed(() => def.value?.columns.filter((c) => c.groupable && c.allowed) ?? [])

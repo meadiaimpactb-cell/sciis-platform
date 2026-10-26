@@ -2,7 +2,7 @@
 /**
  * Admin editor for the marketing copy of the public pages (pages.meta.sections), generated from the typed
  * schema in utils/pageSections.ts. Arabic and English side by side; lists and item groups support add / remove /
- * reorder. Missing CMS values are pre-filled from the i18n texts. Saving merges into the page meta (hero_images kept).
+ * reorder. Missing CMS values are pre-filled from the i18n texts. Saving writes the defined sections into the page meta (other meta such as hero_images is kept).
  * The draft is a `useZodForm` model (`sections.<key>.<ar|en>`): lengths / item counts are checked against SECTION_LIMITS
  * on save, server 422s (`meta.sections.<key>.<loc>`) land under the matching field.
  */
@@ -164,8 +164,8 @@ const clean = (s: PageSectionDef, v: DraftValue): DraftValue | null => {
     .filter((item) => Object.values(item).some((x) => typeof x === 'string' && x !== ''))
 }
 const save = () => sectionsForm.submit(async (v) => {
-  const existing = (page.value?.meta?.sections ?? {}) as PageSections
-  const sections: PageSections = { ...existing }
+  // Only the sections this page defines are kept: copy saved for an earlier design of the page is dropped.
+  const sections: PageSections = {}
   for (const s of def.value.sections) sections[s.key] = { ar: clean(s, v.sections[s.key].ar), en: clean(s, v.sections[s.key].en) }
   const meta = { ...(page.value?.meta ?? {}), sections }
   if (page.value) await api.patch(`/admin/content/pages/${page.value.id}`, { meta })

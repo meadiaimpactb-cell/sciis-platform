@@ -1,14 +1,22 @@
 <script setup lang="ts">
-// The two text weights of the current script, preloaded so the brand font is ready at first paint (no swap → no
-// layout shift of the centred hero). Same hashed files as the @fontsource CSS, so nothing is downloaded twice.
+// The body face and the headline face of the current script, preloaded so they are ready at first paint (no swap →
+// no layout shift of the centred hero). The home headline is Almarai / Sora (design v3); the other pages' heroes use
+// Plex bold. Same hashed files as the @fontsource CSS, so nothing is downloaded twice.
 import arabic400 from '@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2?url'
 import arabic700 from '@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-700-normal.woff2?url'
 import latin400 from '@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-latin-400-normal.woff2?url'
 import latin700 from '@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-latin-700-normal.woff2?url'
+import almarai800 from '@fontsource/almarai/files/almarai-arabic-800-normal.woff2?url'
+import sora700 from '@fontsource/sora/files/sora-latin-700-normal.woff2?url'
 
 const { locale, t } = useI18n()
-const fontPreloads = computed(() => (locale.value === 'ar' ? [arabic400, arabic700] : [latin400, latin700])
-  .map((href) => ({ rel: 'preload' as const, as: 'font' as const, type: 'font/woff2', href, crossorigin: 'anonymous' as const })))
+const route = useRoute()
+const localePath = useLocalePath()
+const fontPreloads = computed(() => {
+  const ar = locale.value === 'ar'
+  const headline = route.path === localePath('/') ? (ar ? almarai800 : sora700) : ar ? arabic700 : latin700
+  return [ar ? arabic400 : latin400, headline].map((href) => ({ rel: 'preload' as const, as: 'font' as const, type: 'font/woff2', href, crossorigin: 'anonymous' as const }))
+})
 const head = useLocaleHead({ dir: true, lang: true })
 const siteUrl = useSiteUrl()
 // Official channels from admin → settings (shared SSR payload with the footer/contact page).
