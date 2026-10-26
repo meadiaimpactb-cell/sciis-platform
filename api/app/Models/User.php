@@ -9,8 +9,10 @@ use App\Enums\MembershipStatus;
 use App\Enums\UserStatus;
 use App\Enums\UserType;
 use App\Models\Concerns\HasUuid;
+use App\Support\PhoneNumbers;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -53,10 +55,11 @@ class User extends Authenticatable implements HasLocalePreference
     protected $fillable = [
         'type', 'name', 'email', 'phone', 'password', 'locale', 'status', 'preferred_contact', 'organization_id',
         'email_verified_at', 'phone_verified_at', 'last_login_at',
+        'organization_can_act', 'organization_disabled_at', // ACC-08
     ];
 
     protected $hidden = [
-        'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
+        'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'national_id_hash',
     ];
 
     protected function casts(): array
@@ -72,12 +75,22 @@ class User extends Authenticatable implements HasLocalePreference
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'password' => 'hashed',
+            'preferences' => 'array', // UX-05 / BRD-04 — {calendar, theme}
+            'national_id_verified_at' => 'datetime', // ACC-09
+            'organization_can_act' => 'boolean', // ACC-08
+            'organization_disabled_at' => 'datetime', // ACC-08
         ];
     }
 
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
+    }
+
+    /** Standard verification layer: phones are always stored as E.164 (`05…` / `9665…` → `+9665…`) whatever the write path. */
+    protected function phone(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value): ?string => $value === null || trim($value) === '' ? null : (string) PhoneNumbers::normalize($value));
     }
 
     /** Admin endpoints reference users by numeric id (SPEC §6 `/admin/users/{id}`). */
@@ -219,7 +232,7 @@ class User extends Authenticatable implements HasLocalePreference
             return false;
         }
 
-        return $this->phone_verified_at !== null || $this->isStaff();
+        return $this->phone_verified_at !== null || $this->isStaff() || ! config('sciis.verification.phone');
     }
 
     public function hasTwoFactorEnabled(): bool
@@ -227,10 +240,10 @@ class User extends Authenticatable implements HasLocalePreference
         return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
-    /** Membership approved + terms accepted (SPEC §1.3 approved_member). */
+    /** Membership approved + terms accepted (SPEC §1.3 approved_member). ACC-08: colleagues use the organisation's. */
     public function isApprovedMember(): bool
     {
-        $membership = $this->relationLoaded('membership') ? $this->membership : $this->membership()->first();
+        $membership = $this->effectiveMembership();
 
         return $membership !== null
             && $membership->status === MembershipStatus::Approved
@@ -248,6 +261,63 @@ class User extends Authenticatable implements HasLocalePreference
     public function routeNotificationForSms(): ?string
     {
         return $this->phone;
+    }
+
+    /** NTF-04 — WhatsApp goes to the account phone (E.164). */
+    public function routeNotificationForWhatsapp(): ?string
+    {
+        return $this->phone;
+    }
+
+    // ---------------------------------------------------------------- ACC-08 organisation accounts
+
+    public function isOrganizationRepresentative(): bool
+    {
+        return $this->organization_id !== null && $this->organization?->representative_user_id === $this->id;
+    }
+
+    /** A colleague invited into an organisation account (not its representative). */
+    public function isOrganizationColleague(): bool
+    {
+        return $this->organization_id !== null && ! $this->isOrganizationRepresentative();
+    }
+
+    /** Individuals and representatives always act; colleagues only when the representative granted "can act". */
+    public function canActForOrganization(): bool
+    {
+        return ! $this->isOrganizationColleague() || (bool) $this->organization_can_act;
+    }
+
+    /** Ids of the active users of the same organisation account (the user alone otherwise). @return list<int> */
+    public function organizationPeerIds(): array
+    {
+        if ($this->organization_id === null) {
+            return [$this->id];
+        }
+
+        $ids = self::query()->where('organization_id', $this->organization_id)->where('type', $this->type->value)
+            ->whereNull('organization_disabled_at')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        return array_values(array_unique([$this->id, ...$ids]));
+    }
+
+    /**
+     * The membership that governs this account: the user's own, or for an organisation colleague the organisation's
+     * (representative's first, then any colleague holding one — e.g. after the representative role was transferred).
+     */
+    public function effectiveMembership(): ?Membership
+    {
+        if ($this->organization_id === null || ! $this->isInvestor()) {
+            return $this->relationLoaded('membership') ? $this->membership : $this->membership()->first();
+        }
+
+        $representativeId = (int) $this->organization?->representative_user_id;
+
+        return Membership::query()->whereIn('user_id', $this->organizationPeerIds())
+            ->orderByRaw('CASE WHEN user_id = ? THEN 0 ELSE 1 END', [$representativeId])
+            ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [MembershipStatus::Approved->value])
+            ->orderBy('id')
+            ->first();
     }
 
     public function preferredLocale(): string

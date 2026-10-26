@@ -38,6 +38,8 @@
         <env name="PAYMENT_GATEWAY" value="fake"/>
         <env name="FEATURE_PAYMENTS" value="false"/>
         <env name="SCIIS_2FA_ENFORCE_STAFF" value="false"/>
+        <env name="SCIIS_VERIFICATION_OPTIONAL" value="false"/>
+        <env name="FEATURE_ENGLISH" value="false"/>
         <env name="MOYASAR_WEBHOOK_SECRET" value="test-webhook-secret"/>
     </php>
 </phpunit>

@@ -1,44 +1,59 @@
 <script setup lang="ts">
 /** Login (ACC-01) — email+password, then 2FA challenge step when enabled (ACC-05). */
 import { z } from 'zod'
-import { makeSchemas } from '~/utils/validators'
+import { currentPasswordField, emailField, toLatinDigits, twoFactorCodeField, RULES } from '~/utils/validation'
+import { toastApiError, toastInfo, toastSuccess } from '~/utils/notify'
 definePageMeta({ layout: 'auth', middleware: 'guest' })
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useHead({ title: t('auth.login.metaTitle') })
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const localePath = useLocalePath()
-const toast = useToast()
 const { mock } = useApiBase()
-const S = makeSchemas(t)
-const form = useZodForm(z.object({ email: S.email, password: S.str(1) }), { email: '', password: '' })
-const step = ref<'credentials' | '2fa'>('credentials')
-const code = ref('')
-const codeError = ref('')
-const busy = ref(false)
+const form = useZodForm(z.object({ email: emailField, password: currentPasswordField }), { email: typeof route.query.email === 'string' ? route.query.email : '', password: '' })
+// `?step=2fa`: the API answered 403 `two_factor_challenge_required` (session logged in, TOTP still pending).
+const step = ref<'credentials' | '2fa'>(route.query.step === '2fa' && auth.twoFactorPending ? '2fa' : 'credentials')
+// 6-digit TOTP or a 10-character recovery code
+const codeForm = useZodForm(z.object({ code: twoFactorCodeField }), { code: '' })
 
-const go = () => {
+/** Login completes here (credentials without 2FA, or after the 2FA challenge): welcome toast, then redirect. */
+const welcome = () => {
+  const name = auth.me?.name?.trim()
+  toastSuccess(t('notify.welcome', { name: name ? (locale.value === 'ar' ? `، ${name}` : `, ${name}`) : '' }))
   const redirect = route.query.redirect as string | undefined
   router.push(redirect && redirect.startsWith('/') ? redirect : localePath(auth.homePath))
 }
 const submit = () => form.submit(async (v) => {
-  const res = await auth.login(v.email, v.password)
-  if (res.twoFactor) step.value = '2fa'
-  else go()
+  const res = await auth.login(v.email.trim(), v.password)
+  if (res.twoFactor) {
+    codeForm.reset()
+    step.value = '2fa'
+  } else welcome()
 })
-const verify = async () => {
-  codeError.value = ''
-  if (!/^\d{6}$/.test(code.value)) return (codeError.value = t('validation.code6'))
-  busy.value = true
+const verify = () => codeForm.submit(async (v) => {
+  await auth.challenge2fa(v.code.trim().toUpperCase())
+  welcome()
+})
+// ACC-05 — no authenticator app at hand: a one-time sign-in code by e-mail, or SMS when the phone is verified and SMS works.
+const tax = useTaxonomyStore()
+watch(step, (s) => { if (s === '2fa') tax.load().catch(() => {}) }, { immediate: true })
+const smsAvailable = computed(() => tax.settings?.phone_verification !== false && !!auth.me?.phone_verified)
+const sendingCode = ref<'email' | 'phone' | null>(null)
+const sendLoginCode = async (channel: 'email' | 'phone') => {
+  sendingCode.value = channel
   try {
-    await auth.challenge2fa(code.value)
-    go()
+    await useApi().post('/auth/2fa/send-code', { channel })
+    toastSuccess(t(channel === 'email' ? 'notify.codeSentEmail' : 'notify.codeSentPhone'))
   } catch (e) {
-    codeError.value = (e as { field?: (k: string) => string }).field?.('code') ?? t('auth.errors.invalidCode')
+    toastApiError(e)
   } finally {
-    busy.value = false
+    sendingCode.value = null
   }
+}
+const cancel2fa = async () => {
+  await auth.logout()
+  step.value = 'credentials'
 }
 const demo = [
   { key: 'investor', email: 'investor@demo.sciis.sa' },
@@ -50,7 +65,7 @@ const demo = [
   { key: 'matching', email: 'matching@demo.sciis.sa' },
   { key: 'membership', email: 'membership@demo.sciis.sa' },
 ]
-const fill = (email: string) => { form.values.email = email; form.values.password = 'password'; toast.info(t('auth.login.demoHint')) }
+const fill = (email: string) => { form.values.email = email; form.values.password = 'password'; form.clearErrors(); toastInfo(t('auth.login.demoHint')) }
 </script>
 
 <template>
@@ -62,6 +77,7 @@ const fill = (email: string) => { form.values.email = email; form.values.passwor
         <FormField v-model="form.values.email" name="email" type="email" :label="$t('common.email')" :error="form.errors.value.email" required autocomplete="email" ltr />
         <FormField v-model="form.values.password" name="password" type="password" :label="$t('common.password')" :error="form.errors.value.password" required autocomplete="current-password" ltr />
         <div class="flex items-center justify-between text-sm"><NuxtLink :to="$localePath('/auth/forgot')" class="link">{{ $t('auth.login.forgot') }}</NuxtLink></div>
+        <FormAlert :message="form.formError.value" />
         <AppButton type="submit" block size="lg" :loading="form.submitting.value">{{ $t('auth.login.submit') }}</AppButton>
       </form>
       <p class="mt-5 text-sm text-muted text-center">{{ $t('auth.login.noAccount') }} <NuxtLink :to="$localePath('/auth/register')" class="link">{{ $t('auth.login.register') }}</NuxtLink></p>
@@ -75,11 +91,19 @@ const fill = (email: string) => { form.values.email = email; form.values.passwor
       <h1 class="text-2xl font-semibold">{{ $t('auth.login.twoFactorTitle') }}</h1>
       <p class="text-muted mt-1">{{ $t('auth.login.twoFactorText') }}</p>
       <form class="mt-6 space-y-4" novalidate @submit.prevent="verify">
-        <FormField v-model="code" name="code" type="text" :label="$t('auth.login.twoFactorCode')" :error="codeError" required ltr autocomplete="one-time-code" :maxlength="6" placeholder="000000" />
+        <FormField :model-value="codeForm.values.code" name="code" type="text" :label="$t('auth.login.twoFactorCode')" :help="$t('auth.login.twoFactorRecoveryHint')" :error="codeForm.errors.value.code" required ltr autocomplete="one-time-code" :maxlength="RULES.recoveryCodeLength" placeholder="000000" @update:model-value="codeForm.values.code = toLatinDigits(String($event ?? ''))" />
         <p v-if="mock" class="text-xs text-muted">{{ $t('auth.verify.demoHint') }}</p>
-        <AppButton type="submit" block size="lg" :loading="busy">{{ $t('auth.login.verify') }}</AppButton>
-        <AppButton type="button" variant="ghost" block @click="step = 'credentials'">{{ $t('common.back') }}</AppButton>
+        <FormAlert :message="codeForm.formError.value" />
+        <AppButton type="submit" block size="lg" :loading="codeForm.submitting.value">{{ $t('auth.login.verify') }}</AppButton>
+        <AppButton type="button" variant="ghost" block @click="cancel2fa">{{ $t('common.back') }}</AppButton>
       </form>
+      <div class="mt-6 border-t border-border pt-4">
+        <p class="text-sm text-muted">{{ $t('auth.login.twoFactorAlt') }}</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <AppButton size="sm" variant="secondary" :loading="sendingCode === 'email'" :disabled="!!sendingCode" @click="sendLoginCode('email')">{{ $t('auth.login.sendCodeEmail') }}</AppButton>
+          <AppButton v-if="smsAvailable" size="sm" variant="secondary" :loading="sendingCode === 'phone'" :disabled="!!sendingCode" @click="sendLoginCode('phone')">{{ $t('auth.login.sendCodePhone') }}</AppButton>
+        </div>
+      </div>
     </template>
   </div>
 </template>

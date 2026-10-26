@@ -117,6 +117,12 @@ class PurgeRetentionCommand extends Command
                 'operational_risks' => null,
                 'council_relationship_desc' => null,
                 'funding_amount' => null,
+                // Team section: founders' names/LinkedIn + free-text experience are personal data.
+                'founders' => null,
+                'founders_commitment_note' => null,
+                'prior_startup_experience_desc' => null,
+                'industry_experience_desc' => null,
+                'advisory_board_desc' => null,
                 'anonymized_at' => now(),
             ])->save();
 

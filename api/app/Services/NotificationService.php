@@ -56,7 +56,21 @@ class NotificationService
             }
         }
 
+        // NTF-04 — WhatsApp is opt-in: preferred contact = whatsapp AND the category's WhatsApp switch is on, with a
+        // verified phone. Only notifications that define toWhatsApp() keep it (RespectsPreferences).
+        if ($this->whatsAppAllowed($user) && ($prefs->get(NotificationChannel::WhatsApp->value)?->enabled ?? false)) {
+            $channels[] = 'whatsapp';
+        }
+
         return $channels;
+    }
+
+    /** NTF-04 — the account may receive WhatsApp alerts at all (preferred contact + verified phone). */
+    public function whatsAppAllowed(User $user): bool
+    {
+        return $user->preferred_contact === NotificationChannel::WhatsApp->value
+            && ! empty($user->phone)
+            && ($user->phone_verified_at !== null || ! config('sciis.verification.phone'));
     }
 
     /** Builds the default preferences matrix for GET /me/notification-preferences. */
@@ -64,18 +78,21 @@ class NotificationService
     {
         $existing = $user->notificationPreferences()->get();
 
-        return collect(NotificationPreference::CATEGORIES)->map(function (string $category) use ($existing): array {
+        $categories = $user->isInvestor() ? NotificationPreference::CATEGORIES : array_diff(NotificationPreference::CATEGORIES, NotificationPreference::INVESTOR_CATEGORIES);
+
+        return collect(array_values($categories))->map(function (string $category) use ($existing): array {
             $row = ['category' => $category];
             foreach (NotificationChannel::cases() as $channel) {
                 $pref = $existing->first(fn (NotificationPreference $p): bool => $p->category === $category && $p->channel === $channel);
-                $row[$channel->value] = $channel === NotificationChannel::Database ? true : ($pref?->enabled ?? true);
+                // NTF-04 — WhatsApp defaults to off (explicit opt-in); the other channels default to on.
+                $row[$channel->value] = $channel === NotificationChannel::Database ? true : ($pref?->enabled ?? $channel !== NotificationChannel::WhatsApp);
             }
 
             return $row;
         });
     }
 
-    /** @param array<int, array{category: string, mail?: bool, sms?: bool}> $rows */
+    /** @param array<int, array{category: string, mail?: bool, sms?: bool, whatsapp?: bool}> $rows */
     public function updatePreferences(User $user, array $rows): void
     {
         foreach ($rows as $row) {
@@ -83,7 +100,7 @@ class NotificationService
             if (! in_array($category, NotificationPreference::CATEGORIES, true)) {
                 continue;
             }
-            foreach (['mail', 'sms'] as $channel) {
+            foreach (['mail', 'sms', 'whatsapp'] as $channel) {
                 if (array_key_exists($channel, $row)) {
                     NotificationPreference::query()->updateOrCreate(
                         ['user_id' => $user->id, 'channel' => $channel, 'category' => $category],

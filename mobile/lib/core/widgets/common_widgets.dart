@@ -169,7 +169,7 @@ class CompletionBar extends StatelessWidget {
           children: [
             Expanded(child: Text(label, style: t.bodyMedium)),
             Text(
-              '${formatInt(percent, Localizations.localeOf(context))}٪',
+              '${formatInt(percent, Localizations.localeOf(context))}%',
               style: t.labelLarge?.copyWith(color: color),
             ),
           ],
@@ -306,10 +306,12 @@ String formatSar(num value, Locale locale) {
   return locale.languageCode == 'ar' ? '$n ر.س' : 'SAR $n';
 }
 
+// Arabic month names with Latin digits (platform rule: no Arabic-Indic numerals anywhere).
 String formatDate(DateTime d, Locale locale) =>
-    DateFormat.yMMMd(locale.languageCode == 'ar' ? 'ar' : 'en').format(d.toLocal());
+    (DateFormat.yMMMd(locale.languageCode == 'ar' ? 'ar' : 'en')..useNativeDigits = false).format(d.toLocal());
 
 String formatDateTime(DateTime d, Locale locale) =>
-    DateFormat.yMMMd(locale.languageCode == 'ar' ? 'ar' : 'en')
-        .add_jm()
+    (DateFormat.yMMMd(locale.languageCode == 'ar' ? 'ar' : 'en')
+          ..add_jm()
+          ..useNativeDigits = false)
         .format(d.toLocal());

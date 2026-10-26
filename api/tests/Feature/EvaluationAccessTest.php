@@ -41,10 +41,11 @@ it('lets only the assigned evaluator see and act on the opportunity', function (
     $this->actingAs($this->evaluatorB, 'api');
     $this->postJson("/api/v1/admin/evaluation-assignments/{$assignment->id}/coi", ['has_conflict' => false])->assertForbidden();
 
-    // Evaluator A can.
+    // Evaluator A: the file only opens after declaring no conflict of interest (EVL-02).
     $this->actingAs($this->evaluatorA, 'api');
-    $this->getJson("/api/v1/admin/opportunities/{$this->opportunity->uuid}")->assertOk();
+    $this->getJson("/api/v1/admin/opportunities/{$this->opportunity->uuid}")->assertForbidden();
     $this->postJson("/api/v1/admin/evaluation-assignments/{$assignment->id}/coi", ['has_conflict' => false])->assertOk();
+    $this->getJson("/api/v1/admin/opportunities/{$this->opportunity->uuid}")->assertOk();
 });
 
 it('enforces the COI gate before scoring and snapshots the criteria version', function (): void {

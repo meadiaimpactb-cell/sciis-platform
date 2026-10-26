@@ -337,7 +337,7 @@ class _OverviewTab extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(child: Text(u.item)),
-                  Text('${u.percent.toStringAsFixed(0)}٪', style: t.labelLarge),
+                  Text('${u.percent.toStringAsFixed(0)}%', style: t.labelLarge),
                 ],
               ),
             ),
@@ -596,9 +596,12 @@ class _DocumentsTab extends ConsumerWidget {
               ? FilledButton(
                   onPressed: () async {
                     try {
-                      await ref
-                          .read(opportunitiesRepositoryProvider)
-                          .acceptNda(d.card.uuid, version: 'current');
+                      final repo = ref.read(opportunitiesRepositoryProvider);
+                      final nda = await repo.nda(d.card.uuid);
+                      if (!context.mounted) return;
+                      final accepted = await _confirmNda(context, nda);
+                      if (accepted != true) return;
+                      await repo.acceptNda(d.card.uuid, version: '${nda['version'] ?? ''}');
                       ref.invalidate(opportunityDetailProvider(d.card.uuid));
                     } on ApiException catch (e) {
                       if (context.mounted) {
@@ -785,4 +788,40 @@ class _InfoRequestSheetState extends State<_InfoRequestSheet> {
       ),
     );
   }
+}
+
+/// MSG-02 — the investor reads the full NDA text and ticks the confirmation before accepting.
+Future<bool?> _confirmNda(BuildContext context, Map<String, dynamic> nda) {
+  final l10n = AppLocalizations.of(context);
+  var read = false;
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => AlertDialog(
+        title: Text('${nda['title'] ?? l10n.documentsNdaTitle}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Flexible(child: SingleChildScrollView(child: Text('${nda['body'] ?? ''}'))),
+              const SizedBox(height: BrandSpacing.sm),
+              CheckboxListTile(
+                value: read,
+                onChanged: (v) => setState(() => read = v ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.ndaReadConfirm),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.actionCancel)),
+          FilledButton(onPressed: read ? () => Navigator.of(ctx).pop(true) : null, child: Text(l10n.documentsNdaAccept)),
+        ],
+      ),
+    ),
+  );
 }

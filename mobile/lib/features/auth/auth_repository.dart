@@ -38,7 +38,11 @@ class RegisterInput {
         'password': password,
         'locale': locale,
         // ACC-01 / PRV-02: explicit consents captured at registration.
-        'consents': [ConsentType.privacyPolicy.value, ConsentType.terms.value],
+        'consents': [
+          ConsentType.privacyPolicy.value,
+          ConsentType.terms.value,
+          if (type.isInvestor) ConsentType.dataAccuracy.value,
+        ],
       };
 }
 

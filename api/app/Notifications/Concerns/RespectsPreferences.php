@@ -19,7 +19,10 @@ trait RespectsPreferences
     public function via(object $notifiable): array
     {
         if ($notifiable instanceof User) {
-            return app(NotificationService::class)->channelsFor($notifiable, $this->category());
+            $channels = app(NotificationService::class)->channelsFor($notifiable, $this->category());
+
+            // NTF-04 — only key alerts (notifications with a WhatsApp template) go out on WhatsApp.
+            return method_exists($this, 'toWhatsApp') ? $channels : array_values(array_diff($channels, ['whatsapp']));
         }
 
         return ['database'];

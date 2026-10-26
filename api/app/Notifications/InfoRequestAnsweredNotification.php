@@ -33,7 +33,7 @@ class InfoRequestAnsweredNotification extends Notification implements ShouldQueu
             ->greeting(__('notifications.greeting', ['name' => $notifiable->name ?? '']))
             ->line(__('notifications.info_request.line', ['name' => $this->infoRequest->opportunity->name]))
             ->line((string) $this->infoRequest->owner_answer)
-            ->action(__('notifications.info_request.action'), $this->frontendUrl('/investor/info-requests'));
+            ->action(__('notifications.info_request.action'), $this->frontendUrl('/app/investor/info-requests'));
     }
 
     public function toSms(object $notifiable): string

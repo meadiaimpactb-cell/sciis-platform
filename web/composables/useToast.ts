@@ -1,27 +1,12 @@
-/** Tiny toast queue (no external lib). */
-export interface Toast {
-  id: number
-  kind: 'success' | 'error' | 'info'
-  message: string
-}
-const toasts = ref<Toast[]>([])
-let seq = 1
+/**
+ * Back-compat facade: `const toast = useToast(); toast.success('…')` — every call is routed through the central
+ * notification layer (`utils/notify.ts`), so the look of all notifications is changed in one place.
+ */
+import { toastError, toastInfo, toastSuccess, toastWarning } from '~/utils/notify'
 
-export const useToast = () => {
-  const push = (kind: Toast['kind'], message: string, ttl = 3500) => {
-    const id = seq++
-    toasts.value.push({ id, kind, message })
-    if (import.meta.client) setTimeout(() => dismiss(id), ttl)
-    return id
-  }
-  const dismiss = (id: number) => {
-    toasts.value = toasts.value.filter((t) => t.id !== id)
-  }
-  return {
-    toasts,
-    success: (m: string) => push('success', m),
-    error: (m: string) => push('error', m, 5000),
-    info: (m: string) => push('info', m),
-    dismiss,
-  }
-}
+export const useToast = () => ({
+  success: (m: string) => void toastSuccess(m),
+  error: (m: string) => void toastError(m),
+  warning: (m: string) => void toastWarning(m),
+  info: (m: string) => void toastInfo(m),
+})

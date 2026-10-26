@@ -108,7 +108,13 @@ class OpportunitiesRepository {
     return InfoRequest.fromJson(asMap(json['data']).isEmpty ? json : asMap(json['data']));
   }
 
-  /// POST /opportunities/{uuid}/nda-accept {version} — consent before full file.
+  /// GET /opportunities/{uuid}/nda — current NDA {version, title, body, …} (MSG-02: shown before accepting).
+  Future<Map<String, dynamic>> nda(String uuid) async {
+    final json = await _api.getJson('/opportunities/$uuid/nda');
+    return asMap(json['data']);
+  }
+
+  /// POST /opportunities/{uuid}/nda-accept {version} — the version shown to the investor (422 if outdated).
   Future<void> acceptNda(String uuid, {required String version}) =>
       _api.postJson('/opportunities/$uuid/nda-accept', body: {'version': version});
 

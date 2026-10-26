@@ -25,20 +25,24 @@ class OpportunityPolicy
 
     public function view(User $user, Opportunity $opportunity): bool
     {
-        if ($opportunity->isOwnedBy($user)) {
+        // ACC-08 — entity colleagues read the file (acting ones also edit, through isOwnedBy).
+        if ($opportunity->isOwnedBy($user) || $opportunity->isSharedWithColleague($user)) {
             return true;
         }
 
         if ($user->isStaff()) {
             if ($user->hasRole('evaluator') && ! $user->hasAnyRole(['super_admin', 'reviewer', 'matching_officer'])) {
+                // EVL-02: the file opens only after the evaluator declared no conflict of interest.
                 return $opportunity->evaluationAssignments()
                     ->where('evaluator_user_id', $user->id)
                     ->where('status', '!=', AssignmentStatus::Withdrawn->value)
+                    ->whereNotNull('coi_declared_at')
+                    ->where('coi_has_conflict', false)
                     ->exists();
             }
+            // EVL-04 — only files actively referred to this member; access ends at the referral's expiry.
             if ($user->hasRole('advisory_member') && ! $user->hasAnyRole(['super_admin', 'reviewer', 'matching_officer'])) {
-                return $opportunity->evaluationDecisions()->whereNotNull('advisory_referral_id')->exists()
-                    || \App\Models\AdvisoryReferral::query()->where('opportunity_id', $opportunity->id)->where('advisory_user_id', $user->id)->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->exists();
+                return \App\Models\AdvisoryReferral::query()->active()->where('opportunity_id', $opportunity->id)->where('advisory_user_id', $user->id)->exists();
             }
 
             return $user->can('opportunities.view');
@@ -126,7 +130,8 @@ class OpportunityPolicy
     /** Investor-side actions (save / interest / info request) — must be visible to them. */
     public function interact(User $user, Opportunity $opportunity): bool
     {
-        return $user->isInvestor() && $this->view($user, $opportunity);
+        // ACC-08 — read-only colleagues of an institutional investor browse but do not act.
+        return $user->isInvestor() && $user->canActForOrganization() && $this->view($user, $opportunity);
     }
 
     /** DOC-02 / ENT-06 — list & download documents only with an active grant (or owner/staff). */

@@ -1,13 +1,25 @@
 <script setup lang="ts">
-/** Simple CSS/SVG bar chart (no chart lib). Horizontal bars with labels and values. */
-const props = withDefaults(defineProps<{ series: { label: string; value: number; color?: string }[]; max?: number; funnel?: boolean; unit?: string }>(), { funnel: false })
+/** Simple CSS/SVG bar chart (no chart lib). Horizontal bars with labels and values.
+ *  RPT-03 — `clickable`: every bar is a button that emits `select` (drill-down to the records behind it). */
+const props = withDefaults(defineProps<{ series: { label: string; value: number; color?: string; key?: string }[]; max?: number; funnel?: boolean; unit?: string; clickable?: boolean; selectedKey?: string | null }>(), { funnel: false, clickable: false, selectedKey: null })
+const emit = defineEmits<{ (e: 'select', item: { label: string; value: number; key?: string }, index: number): void }>()
 const { number } = useFormat()
 const maxV = computed(() => props.max ?? Math.max(1, ...props.series.map((s) => s.value)))
+const keyOf = (s: { label: string; key?: string }) => s.key ?? s.label
 </script>
 
 <template>
-  <div v-if="series.length" class="space-y-2.5" role="img">
-    <div v-for="(s, i) in series" :key="s.label" class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm">
+  <div v-if="series.length" class="space-y-2.5" :role="clickable ? 'group' : 'img'">
+    <component
+      :is="clickable ? 'button' : 'div'"
+      v-for="(s, i) in series"
+      :key="keyOf(s)"
+      :type="clickable ? 'button' : undefined"
+      class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm text-start"
+      :class="clickable && ['rounded-lg -mx-1.5 px-1.5 py-1 transition kbd-focus hover:bg-navy-50 cursor-pointer', selectedKey === keyOf(s) && 'bg-navy-50 ring-1 ring-navy/20']"
+      :aria-label="clickable ? `${s.label}: ${number(s.value)}${unit ?? ''} — ${$t('components.chart.drill')}` : undefined"
+      @click="clickable && emit('select', s, i)"
+    >
       <div class="min-w-0">
         <div class="flex items-center justify-between gap-2 mb-1">
           <span class="truncate text-ink/90">{{ s.label }}</span>
@@ -17,7 +29,7 @@ const maxV = computed(() => props.max ?? Math.max(1, ...props.series.map((s) => 
           <div class="h-full rounded-full transition-all duration-500" :style="{ width: `${Math.max(2, (s.value / maxV) * 100)}%`, backgroundColor: s.color ?? 'var(--blue)' }" />
         </div>
       </div>
-    </div>
+    </component>
   </div>
   <p v-else class="text-sm text-muted">{{ $t('components.chart.noData') }}</p>
 </template>

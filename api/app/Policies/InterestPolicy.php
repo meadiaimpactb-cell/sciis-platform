@@ -11,7 +11,8 @@ class InterestPolicy
 {
     public function view(User $user, Interest $interest): bool
     {
-        if ($interest->investor_user_id === $user->id) {
+        // ACC-08 — colleagues of an institutional investor see the organisation's interests.
+        if ($interest->investor_user_id === $user->id || ($user->isInvestor() && in_array($interest->investor_user_id, $user->organizationPeerIds(), true))) {
             return true;
         }
         if ($interest->opportunity->isOwnedBy($user)) {
@@ -23,11 +24,20 @@ class InterestPolicy
 
     public function close(User $user, Interest $interest): bool
     {
-        return $interest->investor_user_id === $user->id && $interest->isOpen();
+        $ownSide = $interest->investor_user_id === $user->id
+            || ($user->isInvestor() && $user->canActForOrganization() && in_array($interest->investor_user_id, $user->organizationPeerIds(), true)); // ACC-08
+
+        return $ownSide && $interest->isOpen();
     }
 
     /** ENT-06 — only the opportunity owner decides. */
     public function decide(User $user, Interest $interest): bool
+    {
+        return $interest->opportunity->isOwnedBy($user);
+    }
+
+    /** ENT-06 — only the opportunity owner revokes an access they approved. */
+    public function revoke(User $user, Interest $interest): bool
     {
         return $interest->opportunity->isOwnedBy($user);
     }

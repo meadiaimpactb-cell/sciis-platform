@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Investor;
 
 use App\Enums\DocumentAccessAction;
+use App\Enums\InfoRequestStatus;
 use App\Enums\NominationResponse;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Investor\CloseInterestRequest;
 use App\Http\Requests\Investor\ExpressInterestRequest;
 use App\Http\Requests\Investor\InfoRequestRequest;
-use App\Http\Requests\Investor\NdaAcceptRequest;
 use App\Http\Requests\Investor\RespondNominationRequest;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\InfoRequestResource;
@@ -54,7 +54,8 @@ class InterestController extends Controller
     /** GET /investor/interests */
     public function index(Request $request): JsonResponse
     {
-        $paginator = $request->user()->interests()->with(['opportunity', 'declineReason'])->latest('id')->paginate($this->perPage($request));
+        // ACC-08 — an organisation account lists the interests of all its colleagues.
+        $paginator = Interest::query()->whereIn('investor_user_id', $request->user()->organizationPeerIds())->with(['opportunity', 'declineReason'])->latest('id')->paginate($this->perPage($request));
 
         return response()->json([
             'data' => InterestResource::collection($paginator->items())->resolve($request),
@@ -105,10 +106,29 @@ class InterestController extends Controller
         ]);
     }
 
+    /** POST /investor/info-requests/{id}/close — §6.3: the requesting investor closes their own answered request. */
+    public function closeInfoRequest(Request $request, InfoRequest $infoRequest): JsonResponse
+    {
+        if ($infoRequest->investor_user_id !== $request->user()->id) {
+            abort(403, __('messages.errors.forbidden'));
+        }
+        if ($infoRequest->isClosed()) {
+            throw new DomainException(__('messages.info_request.already_closed'), 'info_request_closed', 422);
+        }
+        if ($infoRequest->status !== InfoRequestStatus::Answered) {
+            throw new DomainException(__('messages.info_request.close_after_answer'), 'info_request_not_answered', 422);
+        }
+
+        $infoRequest->close($request->user());
+
+        return $this->ok((new InfoRequestResource($infoRequest->load('opportunity')))->resolve($request));
+    }
+
     /** GET /investor/nominations */
     public function nominations(Request $request): JsonResponse
     {
-        $paginator = $request->user()->nominations()->with(['opportunity.sector', 'opportunity.regions', 'opportunity.investmentTypes', 'opportunity.beneficiaryGroups', 'opportunity.organization', 'opportunity.teaser', 'opportunity.fundingRange', 'declineReason'])->latest('sent_at')->paginate($this->perPage($request));
+        // ACC-08 — an organisation account lists the nominations of all its colleagues.
+        $paginator = Nomination::query()->whereIn('investor_user_id', $request->user()->organizationPeerIds())->with(['opportunity.sector', 'opportunity.regions', 'opportunity.investmentTypes', 'opportunity.beneficiaryGroups', 'opportunity.organization', 'opportunity.teaser', 'opportunity.fundingRange', 'declineReason'])->latest('sent_at')->paginate($this->perPage($request));
 
         return response()->json([
             'data' => NominationResource::collection($paginator->items())->resolve($request),
@@ -119,7 +139,8 @@ class InterestController extends Controller
     /** POST /investor/nominations/{id}/respond — MAT-01 */
     public function respondNomination(RespondNominationRequest $request, Nomination $nomination): JsonResponse
     {
-        if ($nomination->investor_user_id !== $request->user()->id) {
+        // ACC-08 — a colleague with "can act" answers for the organisation; read-only colleagues cannot.
+        if (! in_array($nomination->investor_user_id, $request->user()->organizationPeerIds(), true) || ! $request->user()->canActForOrganization()) {
             throw new DomainException(__('messages.errors.forbidden'), 'forbidden', 403);
         }
         if ($nomination->response !== null) {
@@ -145,15 +166,6 @@ class InterestController extends Controller
             'nomination' => (new NominationResource($nomination->load('opportunity')))->resolve($request),
             'interest' => $interest ? (new InterestResource($interest->load('opportunity')))->resolve($request) : null,
         ]);
-    }
-
-    /** POST /opportunities/{uuid}/nda-accept — ENT-06 */
-    public function acceptNda(NdaAcceptRequest $request, Opportunity $opportunity): JsonResponse
-    {
-        $this->authorize('interact', $opportunity);
-        $grant = $this->interests->acceptNda($opportunity, $request->user(), $request->validated('version'), (string) $request->ip(), $request->userAgent());
-
-        return $this->ok(['granted' => $grant->isActive(), 'granted_at' => $grant->granted_by_owner_at?->toIso8601String(), 'nda_consent_id' => $grant->nda_consent_id]);
     }
 
     /** GET /opportunities/{uuid}/documents — granted only (DOC-02). */

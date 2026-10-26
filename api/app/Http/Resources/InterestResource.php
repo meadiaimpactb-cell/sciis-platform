@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Enums\InterestStatus;
+use App\Models\Interest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin \App\Models\Interest
+ * @mixin Interest
  *
  * MSG-01: the owner never sees the investor identity before `connected`; staff always do.
  */
@@ -20,7 +21,9 @@ class InterestResource extends JsonResource
     {
         $viewer = $request->user();
         $isStaff = $viewer?->isStaff() ?? false;
-        $isInvestor = $viewer?->id === $this->investor_user_id;
+        // ACC-08 — colleagues of an institutional investor read the organisation's interests as the investor side.
+        $isInvestor = $viewer?->id === $this->investor_user_id
+            || ($viewer !== null && $viewer->isInvestor() && $viewer->organization_id !== null && in_array($this->investor_user_id, $viewer->organizationPeerIds(), true));
         $connected = in_array($this->status, [InterestStatus::Connected, InterestStatus::Meeting], true);
 
         $o = $this->opportunity;
@@ -38,7 +41,14 @@ class InterestResource extends JsonResource
             'closed_reason' => $this->closed_reason,
             'closed_at' => $this->closed_at?->toIso8601String(),
             'nomination_id' => $this->nomination_id,
+            // ENT-06 — full-file grant state (owner approved & not revoked) and whether the owner may revoke it now.
+            'access_active' => $this->resource->hasOwnerGrant(),
+            'access_revoked_at' => $this->resource->accessGrant()?->revoked_at?->toIso8601String(),
+            'can_revoke' => $this->when(! $isInvestor && ! $isStaff, fn (): bool => $this->resource->hasOwnerGrant() && $viewer !== null && $o->isOwnedBy($viewer)),
+            // Staff: the valid next states of the interest state machine (web shows one button per target).
+            'allowed_transitions' => $this->when($isStaff, fn () => array_map(fn (InterestStatus $s): string => $s->value, InterestStatus::transitions()[$this->status->value] ?? [])),
             'investor' => $this->when($isStaff || $connected, fn () => [
+                'id' => $this->when($isStaff, $this->investor?->id),
                 'uuid' => $this->investor?->uuid,
                 'name' => $this->investor?->name,
                 'type' => $this->investor?->type->value,

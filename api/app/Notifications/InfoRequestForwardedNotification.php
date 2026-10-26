@@ -34,7 +34,7 @@ class InfoRequestForwardedNotification extends Notification implements ShouldQue
             ->line(__('notifications.info_request_forwarded.line'))
             ->line('**'.$this->infoRequest->subject.'**')
             ->line($this->infoRequest->body)
-            ->action(__('notifications.info_request_forwarded.action'), $this->frontendUrl('/entrepreneur/info-requests'));
+            ->action(__('notifications.info_request_forwarded.action'), $this->frontendUrl('/app/entrepreneur/info-requests'));
     }
 
     public function toSms(object $notifiable): string

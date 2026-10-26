@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Enums\ScanResult;
 use App\Models\Document;
 use App\Services\AuditLogger;
+use App\Services\DocumentService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,7 +29,7 @@ class ScanDocumentJob implements ShouldQueue
 
     public function __construct(public readonly int $documentId) {}
 
-    public function handle(AuditLogger $audit): void
+    public function handle(AuditLogger $audit, DocumentService $documents): void
     {
         $document = Document::query()->find($this->documentId);
         if ($document === null) {
@@ -36,7 +37,7 @@ class ScanDocumentJob implements ShouldQueue
         }
 
         $driver = (string) config('sciis.documents.scan_driver', 'none');
-        $result = $driver === 'clamav' ? $this->scanWithClamAv($document) : ScanResult::Clean;
+        $result = $driver === 'clamav' ? $this->scanWithClamAv($document, $documents) : ScanResult::Clean;
 
         $document->scan_result = $result;
         $document->scanned_at = now();
@@ -49,14 +50,13 @@ class ScanDocumentJob implements ShouldQueue
         }
     }
 
-    private function scanWithClamAv(Document $document): ScanResult
+    private function scanWithClamAv(Document $document, DocumentService $documents): ScanResult
     {
         $host = (string) config('services.clamav.host', '127.0.0.1');
         $port = (int) config('services.clamav.port', 3310);
 
         try {
-            $stream = Storage::disk($document->disk)->readStream($document->path);
-            if ($stream === null) {
+            if (! Storage::disk($document->disk)->exists($document->path)) {
                 return ScanResult::Pending;
             }
 
@@ -67,18 +67,16 @@ class ScanDocumentJob implements ShouldQueue
                 return ScanResult::Pending;
             }
 
+            // SEC-01 — clamd always scans the plaintext (encrypted files are decrypted chunk by chunk).
             fwrite($socket, "zINSTREAM\0");
-            while (! feof($stream)) {
-                $chunk = fread($stream, 8192);
-                if ($chunk === false || $chunk === '') {
-                    break;
+            foreach ($documents->plaintextChunks($document) as $plain) {
+                foreach (str_split($plain, 65536) as $chunk) {
+                    fwrite($socket, pack('N', strlen($chunk)).$chunk);
                 }
-                fwrite($socket, pack('N', strlen($chunk)).$chunk);
             }
             fwrite($socket, pack('N', 0));
             $response = (string) fgets($socket);
             fclose($socket);
-            fclose($stream);
 
             if (str_contains($response, 'FOUND')) {
                 return ScanResult::Infected;

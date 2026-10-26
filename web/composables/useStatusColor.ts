@@ -32,6 +32,15 @@ const MAP: Record<string, string> = {
   'meeting.scheduled': '#1F5BFF',
   'meeting.held': '#047857',
   'meeting.cancelled': '#6B7280',
+  // agreement (AGR-02..05)
+  'agreement.draft': '#94A3B8',
+  'agreement.legal_review': '#B45309',
+  'agreement.changes_requested': '#D97706',
+  'agreement.approved': '#1F5BFF',
+  'agreement.sent_for_signature': '#6D28D9',
+  'agreement.signed': '#047857',
+  'agreement.archived': '#374151',
+  'agreement.cancelled': '#6B7280',
   // evaluation result
   'eval.eligible': '#047857',
   'eval.eligible_with_conditions': '#B45309',
@@ -55,7 +64,7 @@ const MAP: Record<string, string> = {
 }
 
 export const statusColor = (
-  kind: 'opportunity' | 'membership' | 'interest' | 'document' | 'info' | 'meeting' | 'eval' | 'generic',
+  kind: 'opportunity' | 'membership' | 'interest' | 'document' | 'info' | 'meeting' | 'eval' | 'agreement' | 'generic',
   value: OpportunityStatus | MembershipStatus | InterestStatus | DocumentStatus | InfoRequestStatus | MeetingStatus | EvaluationResult | string,
 ) => {
   if (kind === 'opportunity') return opportunityStatusColor(value as OpportunityStatus)

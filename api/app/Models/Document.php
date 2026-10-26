@@ -18,7 +18,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-/** DOC-01..03 — encrypted at rest, signed temporary URLs only, every access logged. */
+/**
+ * DOC-01..03 — encrypted at rest, signed temporary URLs only, every access logged.
+ * `encrypted` = the stored bytes are application-encrypted (DocumentCipher; non-S3 disks). S3 relies on SSE.
+ */
 class Document extends Model
 {
     /** @use HasFactory<DocumentFactory> */
@@ -26,7 +29,7 @@ class Document extends Model
 
     protected $fillable = [
         'owner_user_id', 'documentable_type', 'documentable_id', 'kind', 'title', 'disk', 'path', 'mime', 'size_bytes',
-        'sha256', 'sensitivity', 'status', 'reviewer_note', 'version', 'supersedes_document_id', 'scanned_at', 'scan_result',
+        'sha256', 'encrypted', 'sensitivity', 'status', 'reviewer_note', 'version', 'supersedes_document_id', 'scanned_at', 'scan_result',
     ];
 
     protected $hidden = ['path', 'disk'];
@@ -39,6 +42,7 @@ class Document extends Model
             'sensitivity' => Sensitivity::class,
             'scan_result' => ScanResult::class,
             'size_bytes' => 'integer',
+            'encrypted' => 'boolean',
             'version' => 'integer',
             'scanned_at' => 'datetime',
         ];

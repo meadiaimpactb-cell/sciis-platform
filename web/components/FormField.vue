@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ZOD_FORM_KEY } from '~/composables/useZodForm'
 /**
  * Form field wrapper with label, help, error, and a11y wiring. Supports input/textarea/select/checkbox/chips via `type`.
  * Works with v-model. Options: {value,label}[]
@@ -26,10 +27,33 @@ const props = withDefaults(
   { type: 'text', required: false, disabled: false, rows: 4 },
 )
 const emit = defineEmits<{ (e: 'update:modelValue', v: unknown): void; (e: 'blur'): void }>()
+// Standard verification layer: validate on blur (and on submit), not on every keystroke.
+const zodForm = inject(ZOD_FORM_KEY, null)
+const onBlur = () => {
+  emit('blur')
+  if (zodForm?.has(props.name)) void zodForm.validateField(props.name)
+}
 const id = `f-${props.name.replace(/[^a-z0-9_-]/gi, '-')}-${useId()}`
 const errId = `${id}-err`
 const helpId = `${id}-help`
-const describedBy = computed(() => [props.error ? errId : null, props.help ? helpId : null].filter(Boolean).join(' ') || undefined)
+// UX-04 — only reference what is rendered: outside checkboxes the help text is replaced by the error.
+const describedBy = computed(() => (props.type === 'checkbox' ? [props.error ? errId : null, props.help ? helpId : null] : [props.error ? errId : props.help ? helpId : null]).filter(Boolean).join(' ') || undefined)
+/** Radio cards: arrow keys move the choice (and focus) like native radios; one tab stop for the group. */
+const radioRefs = ref<HTMLButtonElement[]>([])
+const onRadioKey = (e: KeyboardEvent) => {
+  const opts = props.options ?? []
+  if (!opts.length) return
+  const fwd = ['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(e.key)
+  if (!fwd) return
+  e.preventDefault()
+  const rtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
+  const step = e.key === 'ArrowDown' || e.key === (rtl ? 'ArrowLeft' : 'ArrowRight') ? 1 : -1
+  const cur = Math.max(0, opts.findIndex((o) => o.value === props.modelValue))
+  const next = (cur + step + opts.length) % opts.length
+  emit('update:modelValue', opts[next].value)
+  nextTick(() => radioRefs.value[next]?.focus())
+}
+const radioTabindex = (v: string | number, i: number) => (props.modelValue === v || (i === 0 && !(props.options ?? []).some((o) => o.value === props.modelValue)) ? 0 : -1)
 
 const onInput = (e: Event) => {
   const el = e.target as HTMLInputElement
@@ -51,7 +75,7 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
   <div class="min-w-0">
     <!-- checkbox -->
     <label v-if="type === 'checkbox'" :for="id" class="flex items-start gap-3 cursor-pointer select-none" :class="disabled && 'opacity-60 cursor-not-allowed'">
-      <input :id="id" type="checkbox" :name="name" :checked="!!modelValue" :disabled="disabled" :aria-invalid="!!error" :aria-describedby="describedBy" class="mt-1 h-4 w-4 rounded border-border text-blue focus:ring-blue" @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)" />
+      <input :id="id" type="checkbox" :name="name" :checked="!!modelValue" :disabled="disabled" :aria-invalid="!!error" :aria-required="required || undefined" :aria-describedby="describedBy" class="mt-1 h-4 w-4 rounded border-border text-blue focus:ring-blue" @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)" />
       <span class="text-sm text-ink leading-6">
         <slot name="label">{{ label }}</slot>
         <span v-if="required" class="text-danger ms-0.5" aria-hidden="true">*</span>
@@ -65,13 +89,14 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
         {{ label }}
         <span v-if="required" class="text-danger ms-0.5" aria-hidden="true">*</span>
         <span v-else-if="!required && type !== 'chips'" class="text-xs text-muted font-normal ms-1">({{ $t('common.optional') }})</span>
+        <span v-if="required && (type === 'chips' || type === 'radio-cards')" class="sr-only">({{ $t('common.required') }})</span>
       </label>
 
       <!-- textarea -->
-      <textarea v-if="type === 'textarea'" :id="id" :name="name" :value="(modelValue as string) ?? ''" :placeholder="placeholder" :rows="rows" :maxlength="maxlength" :disabled="disabled" :required="required" :aria-invalid="!!error" :aria-describedby="describedBy" class="input resize-y" :class="[error && 'input-error']" @input="onInput" @blur="emit('blur')" />
+      <textarea v-if="type === 'textarea'" :id="id" :name="name" :value="(modelValue as string) ?? ''" :placeholder="placeholder" :rows="rows" :maxlength="maxlength" :disabled="disabled" :required="required" :aria-invalid="!!error" :aria-describedby="describedBy" class="input resize-y" :class="[error && 'input-error']" @input="onInput" @blur="onBlur" />
 
       <!-- select -->
-      <select v-else-if="type === 'select'" :id="id" :name="name" :value="(modelValue as string | number) ?? ''" :disabled="disabled" :required="required" :aria-invalid="!!error" :aria-describedby="describedBy" class="input" :class="[error && 'input-error']" @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value || null)" @blur="emit('blur')">
+      <select v-else-if="type === 'select'" :id="id" :name="name" :value="(modelValue as string | number) ?? ''" :disabled="disabled" :required="required" :aria-invalid="!!error" :aria-describedby="describedBy" class="input" :class="[error && 'input-error']" @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value || null)" @blur="onBlur">
         <option value="">{{ placeholder ?? $t('common.selectPlaceholder') }}</option>
         <option v-for="o in options" :key="o.value" :value="o.value">{{ o.label }}</option>
       </select>
@@ -85,8 +110,8 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
       </div>
 
       <!-- radio cards -->
-      <div v-else-if="type === 'radio-cards'" role="radiogroup" :aria-labelledby="`${id}-label`" :aria-describedby="describedBy" class="grid gap-3 sm:grid-cols-2">
-        <button v-for="o in options" :key="o.value" type="button" role="radio" :aria-checked="modelValue === o.value" class="text-start rounded-xl border p-4 transition kbd-focus" :class="modelValue === o.value ? 'border-blue bg-blue-soft/60 ring-1 ring-blue' : 'border-border bg-surface hover:border-blue/50'" :disabled="disabled" @click="emit('update:modelValue', o.value)">
+      <div v-else-if="type === 'radio-cards'" role="radiogroup" :aria-labelledby="`${id}-label`" :aria-describedby="describedBy" :aria-required="required || undefined" class="grid gap-3 sm:grid-cols-2" @keydown="onRadioKey">
+        <button v-for="(o, i) in options" :key="o.value" :ref="(el) => { if (el) radioRefs[i] = el as HTMLButtonElement }" type="button" role="radio" :aria-checked="modelValue === o.value" :tabindex="radioTabindex(o.value, i)" class="text-start rounded-xl border p-4 transition kbd-focus" :class="modelValue === o.value ? 'border-blue bg-blue-soft/60 ring-1 ring-blue' : 'border-border bg-surface hover:border-blue/50'" :disabled="disabled" @click="emit('update:modelValue', o.value)">
           <span class="flex items-center gap-2">
             <span class="h-4 w-4 rounded-full border-2 flex items-center justify-center" :class="modelValue === o.value ? 'border-blue' : 'border-border'" aria-hidden="true"><span v-if="modelValue === o.value" class="h-2 w-2 rounded-full bg-blue" /></span>
             <span class="font-medium text-ink">{{ o.label }}</span>
@@ -96,7 +121,7 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
       </div>
 
       <!-- input -->
-      <input v-else :id="id" :name="name" :type="type" :value="(modelValue as string | number) ?? ''" :placeholder="placeholder" :maxlength="maxlength" :disabled="disabled" :required="required" :autocomplete="autocomplete" :min="min" :max="max" :step="step" :aria-invalid="!!error" :aria-describedby="describedBy" class="input" :class="[error && 'input-error', ltr && 'ltr text-start']" :dir="ltr ? 'ltr' : undefined" @input="onInput" @blur="emit('blur')" />
+      <input v-else :id="id" :name="name" :type="type" :value="(modelValue as string | number) ?? ''" :placeholder="placeholder" :maxlength="maxlength" :disabled="disabled" :required="required" :autocomplete="autocomplete" :min="min" :max="max" :step="step" :aria-invalid="!!error" :aria-describedby="describedBy" class="input" :class="[error && 'input-error', ltr && 'ltr text-start']" :dir="ltr ? 'ltr' : undefined" @input="onInput" @blur="onBlur" />
 
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">

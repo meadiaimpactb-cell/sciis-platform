@@ -129,9 +129,13 @@ class AdminMeetingController extends Controller
                 }
             }
 
+            // MTG-02 — re-recording the minutes keeps the done state of actions that are still listed (same text + owner).
+            $doneAt = $meeting->actions()->whereNotNull('done_at')->get()
+                ->mapWithKeys(fn ($a): array => [trim((string) $a->description).'|'.($a->owner_user_id ?? '') => $a->done_at])->all();
             $meeting->actions()->delete();
             foreach ((array) ($data['actions'] ?? []) as $action) {
-                $meeting->actions()->create(['description' => $action['description'], 'owner_user_id' => $action['owner_user_id'] ?? null, 'due_at' => $action['due_at'] ?? null]);
+                $key = trim((string) $action['description']).'|'.($action['owner_user_id'] ?? '');
+                $meeting->actions()->create(['description' => $action['description'], 'owner_user_id' => $action['owner_user_id'] ?? null, 'due_at' => $action['due_at'] ?? null, 'done_at' => $doneAt[$key] ?? null]);
             }
 
             $this->audit->log('meeting.minutes_recorded', $meeting, null, ['actions' => count((array) ($data['actions'] ?? []))], $request->user());

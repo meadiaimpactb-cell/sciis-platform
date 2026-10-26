@@ -6,6 +6,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!auth.loaded) await auth.fetchMe()
   const localePath = useLocalePath()
   if (!auth.isAuthenticated) return navigateTo({ path: localePath('/auth/login'), query: { redirect: to.fullPath } })
+  const gate = await auth.gate()
+  if (gate) return navigateTo({ path: localePath(gate.path), query: gate.query })
   if (!auth.isStaff) return navigateTo(localePath(auth.homePath))
   const required = (to.meta.roles as StaffRole[] | undefined) ?? []
   if (required.length && !auth.hasRole(...required)) {

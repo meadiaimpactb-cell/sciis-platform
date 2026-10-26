@@ -43,7 +43,7 @@ class CompletionRequestedNotification extends Notification implements ShouldQueu
             $mail->line(__('notifications.completion.due', ['date' => $this->request->due_at->toDateString()]));
         }
 
-        return $mail->action(__('notifications.completion.action'), $this->frontendUrl('/entrepreneur/opportunities/'.$opportunity->uuid));
+        return $mail->action(__('notifications.completion.action'), $this->frontendUrl('/app/entrepreneur/opportunities/'.$opportunity->uuid));
     }
 
     public function toSms(object $notifiable): string

@@ -1,170 +1,99 @@
 <script setup lang="ts">
-/** Home — doc §7.1 / §10.2 */
-import type { OpportunityCard, PublicStats, ContentItem } from '~/types/api'
+/** Home — doc §7.1 / §10.2. Section order and type scale follow falak.sa (see components/PageHero.vue). */
+import type { OpportunityCard, PublicStats, PublicStatsRaw, ContentItem, HeroImage } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
-const { t, tm, rt } = useI18n()
-useHead({ title: t('home.metaTitle') })
+const { t, locale } = useI18n()
+useSeo({
+  title: t('home.seoTitle'),
+  description: t('home.seoDescription'),
+  jsonLd: { '@type': 'WebPage', name: t('home.seoTitle'), description: t('home.seoDescription'), isPartOf: { '@id': `${useSiteUrl()}/#website` }, about: { '@id': `${useSiteUrl()}/#organization` } },
+})
 const api = useApi()
 const { number } = useFormat()
-const { date } = useFormat()
+const join = useJoinChooser()
+
+// CMS copy (`home` page → meta.sections) with the i18n texts as fallback.
+const { page: homePage, text, list, items } = await usePageContent('home')
+// BRD-03 — hero images managed from the CMS (`home` page → meta.hero_images, max 3): a cross-fading backdrop of the hero.
+const heroImages = computed<HeroImage[]>(() => (homePage.value?.meta?.hero_images ?? []).filter((i): i is HeroImage => !!i?.url).slice(0, 3))
+const heroAlt = (img: HeroImage) => (locale.value === 'en' && img.alt_en ? img.alt_en : img.alt_ar) || ''
+const slide = ref(0)
+const heroCount = computed(() => heroImages.value?.length ?? 0)
+let heroTimer: ReturnType<typeof setInterval> | null = null
+const stopHero = () => { if (heroTimer) { clearInterval(heroTimer); heroTimer = null } }
+// UX-04 (WCAG 2.2.2) — the auto-advancing backdrop can be paused; it also stops on hover / keyboard focus.
+const heroPaused = ref(false)
+const startHero = () => {
+  stopHero()
+  if (!heroPaused.value && heroCount.value > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) heroTimer = setInterval(() => { slide.value = (slide.value + 1) % heroCount.value }, 5000)
+}
+const goSlide = (i: number) => { slide.value = i; startHero() }
+const toggleHero = () => { heroPaused.value = !heroPaused.value; if (heroPaused.value) stopHero(); else startHero() }
+onMounted(startHero)
+onBeforeUnmount(stopHero)
 
 const { data: featured } = await useAsyncData('home-featured', () => api.get<{ data: OpportunityCard[] }>('/public/featured-opportunities').then((r) => r.data).catch(() => []))
-const { data: stats } = await useAsyncData('home-stats', () => api.get<{ data: PublicStats }>('/public/stats').then((r) => r.data).catch(() => null))
-const { data: news } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data.slice(0, 3)).catch(() => []))
-
-// Replaceable hero image area: 3 rotating labelled placeholders
-const heroIdx = ref(0)
-const heroVariant = computed(() => ((heroIdx.value % 3) + 1) as 1 | 2 | 3)
-let timer: ReturnType<typeof setInterval> | null = null
-onMounted(() => {
-  timer = setInterval(() => (heroIdx.value = (heroIdx.value + 1) % 3), 5000)
+// Accept both the mock shape (PublicStats) and the Laravel shape (PublicStatsRaw).
+const normalizeStats = (s: Partial<PublicStats & PublicStatsRaw>): PublicStats => ({
+  opportunities: s.opportunities ?? s.opportunities_eligible ?? 0,
+  members: s.members ?? s.approved_investors ?? 0,
+  sectors: s.sectors ?? s.sectors_covered ?? 0,
+  regions: s.regions,
+  connections: s.connections ?? 0,
 })
-onBeforeUnmount(() => timer && clearInterval(timer))
-
-const benefits = computed(() => (tm('home.benefits') as string[]).map((b) => rt(b)))
-const impactPoints = computed(() => (tm('home.impactPoints') as string[]).map((b) => rt(b)))
-const investorPoints = computed(() => (tm('home.investorPath.points') as string[]).map((b) => rt(b)))
-const entrepreneurPoints = computed(() => (tm('home.entrepreneurPath.points') as string[]).map((b) => rt(b)))
-const steps = [1, 2, 3, 4, 5]
+const { data: stats } = await useAsyncData('home-stats', () => api.get<{ data: Partial<PublicStats & PublicStatsRaw> }>('/public/stats').then((r) => normalizeStats(r.data)).catch(() => false as const))
+// Social proof (CMS stories / partners) — each section renders only when published items exist.
+const { data: stories } = await usePublicStories()
+const { data: partners } = await usePublicPartners()
+const { data: news } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data.slice(0, 3)).catch(() => []))
+const statKeys = ['opportunities', 'members', 'sectors', 'connections'] as const
 </script>
 
 <template>
-  <div>
-    <!-- HERO -->
-    <section class="bg-ink text-white relative overflow-hidden">
-      <div class="absolute inset-0 opacity-40 pointer-events-none" style="background: radial-gradient(60% 60% at 85% 20%, rgba(31,91,255,0.45) 0, transparent 60%), radial-gradient(40% 40% at 10% 90%, rgba(15,118,110,0.4) 0, transparent 60%)" aria-hidden="true" />
-      <div class="container-x relative grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 py-16 lg:py-24 items-center">
-        <div>
-          <p class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs font-medium text-white/85">
-            <span class="h-1.5 w-1.5 rounded-full bg-blue" aria-hidden="true" />{{ $t('home.heroEyebrow') }}
-          </p>
-          <h1 class="mt-5 text-4xl sm:text-5xl lg:text-[3.4rem] font-semibold leading-[1.15] text-white text-balance">{{ $t('home.heroTitle') }}</h1>
-          <p class="mt-5 text-lg text-white/75 leading-8 max-w-xl">{{ $t('home.heroText') }}</p>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <AppButton to="/auth/register" size="lg">{{ $t('home.ctaExplore') }}</AppButton>
-            <AppButton to="/for-entrepreneurs" size="lg" variant="secondary">{{ $t('home.ctaSubmit') }}</AppButton>
+  <div class="bg-surface">
+    <!-- HERO — full first screen, centred (the public header overlays it) -->
+    <PageHero tall :kicker="text('hero_eyebrow', 'home.heroEyebrow')" :title="text('hero_title', 'home.heroTitle')" :lead="text('hero_text', 'home.heroText')">
+      <template v-if="heroCount" #backdrop>
+        <div class="absolute inset-0" role="region" aria-roledescription="carousel" :aria-label="$t('home.heroGalleryLabel')">
+          <img
+            v-for="(img, i) in heroImages" :key="img.url"
+            :src="img.url" :alt="heroAlt(img)" :width="img.width ?? 1600" :height="img.height ?? 1200"
+            :loading="i === 0 ? 'eager' : 'lazy'" :fetchpriority="i === 0 ? 'high' : undefined" decoding="async"
+            class="absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out" :class="i === slide ? 'opacity-100' : 'opacity-0'" :aria-hidden="i === slide ? undefined : 'true'"
+          >
+          <div class="absolute inset-0 bg-navy-950/80" aria-hidden="true" />
+        </div>
+      </template>
+      <AppButton variant="accent" size="lg" aria-haspopup="dialog" @click="join.open($event)">{{ $t('home.ctaExplore') }}</AppButton>
+      <AppButton to="/for-entrepreneurs" size="lg" variant="line">{{ $t('home.ctaSubmit') }}</AppButton>
+      <template #bottom>
+        <div v-if="heroCount > 1" class="mb-5 flex items-center justify-center gap-2" role="group" :aria-label="$t('home.heroGalleryLabel')" @mouseenter="stopHero" @mouseleave="startHero" @focusin="stopHero" @focusout="startHero">
+          <button type="button" class="h-6 w-6 rounded-full text-white/80 hover:text-white flex items-center justify-center kbd-focus" :aria-pressed="heroPaused" :aria-label="$t('platform.a11y.pauseSlides')" @click="toggleHero">
+            <svg v-if="heroPaused" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4l10 6-10 6V4z" /></svg>
+            <svg v-else class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4h3v12H6zM11 4h3v12h-3z" /></svg>
+          </button>
+          <button v-for="(img, i) in heroImages" :key="`dot-${img.url}`" type="button" :aria-current="i === slide ? 'true' : undefined" :aria-label="$t('home.heroSlide', { n: i + 1, total: heroCount })" class="h-2.5 rounded-full transition-all kbd-focus" :class="i === slide ? 'w-7 bg-teal' : 'w-2.5 bg-white/50 hover:bg-white'" @click="goSlide(i)" />
+        </div>
+        <Disclaimer variant="dark" />
+      </template>
+    </PageHero>
+
+    <!-- NUMBERS (Falak «ماذا حققنا») -->
+    <section v-if="stats" class="surface-dark relative overflow-hidden" aria-labelledby="home-stats">
+      <NightSky :orbits="false" />
+      <div class="container-x relative section-y">
+        <h2 id="home-stats" class="section-label text-white">{{ $t('home.statsTitle') }}</h2>
+        <dl class="mt-14 grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
+          <div v-for="k in statKeys" :key="k" class="flex flex-col-reverse gap-2">
+            <dt class="stat-label text-white/60">{{ $t(`home.stats.${k}`) }}</dt>
+            <dd class="stat-value text-white">{{ number(stats[k]) }}</dd>
           </div>
-          <Disclaimer variant="dark" class="mt-5" />
-          <dl v-if="stats" class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl">
-            <div v-for="k in (['opportunities', 'members', 'sectors', 'connections'] as const)" :key="k" class="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-              <dt class="text-xs text-white/60">{{ $t(`home.stats.${k}`) }}</dt>
-              <dd class="text-2xl font-semibold num">{{ number(stats[k]) }}</dd>
-            </div>
-          </dl>
-        </div>
-        <div class="relative">
-          <div class="relative aspect-[4/3] rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-pop">
-            <Transition name="page" mode="out-in">
-              <PlaceholderImage :key="heroIdx" :variant="heroVariant" ratio="h-full" :intent="$t(`home.heroImages.${heroIdx + 1}`)" class="h-full" flush />
-            </Transition>
-          </div>
-          <div class="mt-3 flex items-center justify-center gap-2" role="tablist" aria-label="hero images">
-            <button v-for="i in 3" :key="i" type="button" role="tab" :aria-selected="heroIdx === i - 1" class="h-2 rounded-full transition-all kbd-focus" :class="heroIdx === i - 1 ? 'w-8 bg-blue' : 'w-2 bg-white/30 hover:bg-white/60'" :aria-label="`${$t('app.placeholderImage')} ${i}`" @click="heroIdx = i - 1" />
-          </div>
-        </div>
+        </dl>
       </div>
     </section>
 
-    <!-- TWO PATHS -->
-    <section class="container-x py-16 lg:py-20">
-      <div class="text-center max-w-2xl mx-auto">
-        <h2 class="section-title">{{ $t('home.pathsTitle') }}</h2>
-        <p class="section-sub mx-auto">{{ $t('home.pathsSub') }}</p>
-      </div>
-      <div class="mt-10 grid md:grid-cols-2 gap-6">
-        <article class="card card-pad flex flex-col">
-          <span class="h-11 w-11 rounded-xl bg-blue-soft text-blue flex items-center justify-center" aria-hidden="true"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2" /></svg></span>
-          <h3 class="mt-4 text-xl font-semibold">{{ $t('home.investorPath.title') }}</h3>
-          <p class="mt-2 text-muted leading-7">{{ $t('home.investorPath.text') }}</p>
-          <ul class="mt-4 space-y-2 text-sm">
-            <li v-for="p in investorPoints" :key="p" class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 rounded-full bg-blue shrink-0" aria-hidden="true" />{{ p }}</li>
-          </ul>
-          <AppButton to="/auth/register" class="mt-6 w-fit">{{ $t('home.investorPath.cta') }}</AppButton>
-        </article>
-        <article class="card card-pad flex flex-col">
-          <span class="h-11 w-11 rounded-xl bg-success/10 text-success flex items-center justify-center" aria-hidden="true"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 6v3H8v-3C7 14 5 12 5 9a7 7 0 017-7zM9 22h6" /></svg></span>
-          <h3 class="mt-4 text-xl font-semibold">{{ $t('home.entrepreneurPath.title') }}</h3>
-          <p class="mt-2 text-muted leading-7">{{ $t('home.entrepreneurPath.text') }}</p>
-          <ul class="mt-4 space-y-2 text-sm">
-            <li v-for="p in entrepreneurPoints" :key="p" class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 rounded-full bg-success shrink-0" aria-hidden="true" />{{ p }}</li>
-          </ul>
-          <AppButton to="/auth/register?type=entrepreneur_entity" variant="dark" class="mt-6 w-fit">{{ $t('home.entrepreneurPath.cta') }}</AppButton>
-        </article>
-      </div>
-    </section>
-
-    <!-- FEATURED -->
-    <section v-if="featured?.length" class="bg-surface border-y border-border">
-      <div class="container-x py-16">
-        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div><h2 class="section-title">{{ $t('home.featuredTitle') }}</h2><p class="section-sub">{{ $t('home.featuredSub') }}</p></div>
-          <AppButton to="/auth/login" variant="outline">{{ $t('home.featuredCta') }}</AppButton>
-        </div>
-        <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <OpportunityCard v-for="o in featured" :key="o.uuid" :opportunity="o" to="/auth/login" :show-status="false" />
-        </div>
-        <Disclaimer variant="box" class="mt-6" />
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="container-x py-16 lg:py-20">
-      <div class="text-center max-w-2xl mx-auto"><h2 class="section-title">{{ $t('home.howTitle') }}</h2><p class="section-sub mx-auto">{{ $t('home.howSub') }}</p></div>
-      <ol class="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <li v-for="s in steps" :key="s" class="card card-pad relative">
-          <span class="num text-3xl font-semibold text-blue/30">0{{ s }}</span>
-          <h3 class="mt-2 font-semibold">{{ $t(`home.how.${s}.title`) }}</h3>
-          <p class="mt-1 text-sm text-muted leading-6">{{ $t(`home.how.${s}.text`) }}</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- IMPACT DEFINITION -->
-    <section class="bg-navy text-white">
-      <div class="container-x py-16 grid lg:grid-cols-2 gap-10 items-center">
-        <div>
-          <h2 class="text-2xl sm:text-3xl font-semibold text-white">{{ $t('home.impactTitle') }}</h2>
-          <p class="mt-4 text-white/75 leading-8">{{ $t('home.impactText') }}</p>
-        </div>
-        <ul class="grid sm:grid-cols-2 gap-4">
-          <li v-for="(p, i) in impactPoints" :key="p" class="rounded-xl bg-white/5 border border-white/10 p-4 flex items-start gap-3">
-            <span class="num h-7 w-7 rounded-lg bg-blue text-white text-sm flex items-center justify-center shrink-0">{{ i + 1 }}</span>
-            <span class="text-sm leading-6">{{ p }}</span>
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- MEMBERSHIP BENEFITS -->
-    <section class="container-x py-16 lg:py-20">
-      <div class="text-center max-w-2xl mx-auto"><h2 class="section-title">{{ $t('home.benefitsTitle') }}</h2><p class="section-sub mx-auto">{{ $t('home.benefitsSub') }}</p></div>
-      <ul class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <li v-for="b in benefits" :key="b" class="card p-4 flex items-start gap-3">
-          <svg class="h-5 w-5 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
-          <span class="text-sm leading-6">{{ b }}</span>
-        </li>
-      </ul>
-    </section>
-
-    <!-- NEWS -->
-    <section v-if="news?.length" class="container-x pb-16">
-      <h2 class="section-title">{{ $t('home.latestTitle') }}</h2>
-      <div class="mt-6 grid md:grid-cols-3 gap-5">
-        <article v-for="n in news" :key="n.id" class="card card-pad">
-          <p class="text-xs text-muted">{{ date(n.published_at) }}</p>
-          <h3 class="mt-1 font-semibold">{{ n.title_ar }}</h3>
-          <p class="mt-2 text-sm text-muted leading-6">{{ n.body_ar }}</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- CTA BAND -->
-    <section class="container-x pb-4">
-      <div class="rounded-2xl bg-blue text-white p-8 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div><h2 class="text-2xl font-semibold text-white">{{ $t('home.ctaBandTitle') }}</h2><p class="mt-1 text-white/80">{{ $t('home.ctaBandText') }}</p></div>
-        <AppButton to="/auth/register" variant="secondary" size="lg">{{ $t('nav.joinInvestor') }}</AppButton>
-      </div>
-    </section>
+    <!-- Everything below the first screen hydrates when it scrolls into view (server-rendered for SEO). -->
+    <LazyHomeBelowFold hydrate-on-visible :content="{ text, list, items }" :featured="featured" :stories="stories" :partners="partners" :news="news" />
   </div>
 </template>

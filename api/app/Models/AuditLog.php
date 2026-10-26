@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use LogicException;
 
 /**
- * AUD-01/02 — append-only. The DB trigger `audit_logs_immutable` blocks UPDATE/DELETE on Postgres,
- * and this model refuses them at the ORM level too so nothing ever rewrites history.
+ * AUD-01/02 — append-only. DB triggers block UPDATE/DELETE (`audit_logs_immutable` on Postgres,
+ * `audit_logs_no_update` / `audit_logs_no_delete` on MySQL and sqlite — 2026_10_25_300001), and this model
+ * refuses them at the ORM level too so nothing ever rewrites history.
  */
 final class AuditLog extends Model
 {

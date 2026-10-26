@@ -22,6 +22,24 @@ return [
         'endpoint' => env('MOYASAR_ENDPOINT', 'https://api.moyasar.com/v1'),
     ],
 
+    // ACC-09 — Nafath MFA (Elm). Issued when the platform is onboarded with the Nafath service.
+    'nafath' => [
+        'base_url' => env('NAFATH_BASE_URL', ''),
+        'app_id' => env('NAFATH_APP_ID', ''),
+        'app_key' => env('NAFATH_APP_KEY', ''),
+        'service' => env('NAFATH_SERVICE', 'DigitalServiceEnrollmentWithoutBio'),
+        'ttl_seconds' => (int) env('NAFATH_TTL_SECONDS', 180),
+        'timeout' => (int) env('NAFATH_TIMEOUT', 10),
+    ],
+
+    // NTF-04 — Meta WhatsApp Cloud API (driver `cloud_api`): phone number id + permanent access token of the app.
+    'whatsapp' => [
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID', ''),
+        'token' => env('WHATSAPP_ACCESS_TOKEN', ''),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+        'endpoint' => env('WHATSAPP_ENDPOINT', 'https://graph.facebook.com'),
+    ],
+
     'clamav' => [
         'host' => env('CLAMAV_HOST', '127.0.0.1'),
         'port' => (int) env('CLAMAV_PORT', 3310),

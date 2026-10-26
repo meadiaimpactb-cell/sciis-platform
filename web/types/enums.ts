@@ -83,7 +83,13 @@ export const DOCUMENT_KINDS = [
   'progress_evidence',
   'other',
 ] as const
-export type DocumentKind = (typeof DOCUMENT_KINDS)[number]
+/** INV-01 — investor membership file: individuals upload a CV; institutions the CR, authorization letter and impact policy. */
+export const INVESTOR_DOCUMENT_KINDS = {
+  individual: ['investor_cv'],
+  institutional: ['commercial_register', 'authorization_letter', 'impact_policy'],
+} as const
+export type InvestorDocumentKind = (typeof INVESTOR_DOCUMENT_KINDS)[keyof typeof INVESTOR_DOCUMENT_KINDS][number]
+export type DocumentKind = (typeof DOCUMENT_KINDS)[number] | InvestorDocumentKind
 
 export const DOCUMENT_STATUSES = ['pending_review', 'accepted', 'required', 'rejected'] as const
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number]
@@ -94,11 +100,24 @@ export type IndicatorValueStatus = (typeof INDICATOR_VALUE_STATUSES)[number]
 export const EXECUTION_STATUSES = ['on_track', 'delayed', 'stalled'] as const
 export type ExecutionStatus = (typeof EXECUTION_STATUSES)[number]
 
+/** PRJ-01 milestone plan approval · milestone state (`delayed` is derived) · PRJ-02 report review · ENT-10 update review */
+export const MILESTONE_PLAN_STATUSES = ['draft', 'submitted', 'approved', 'changes_requested'] as const
+export type MilestonePlanStatus = (typeof MILESTONE_PLAN_STATUSES)[number]
+export const MILESTONE_STATUSES = ['planned', 'in_progress', 'done', 'delayed'] as const
+export type MilestoneStatus = (typeof MILESTONE_STATUSES)[number]
+export const PROGRESS_REPORT_STATUSES = ['submitted', 'accepted', 'changes_requested'] as const
+export type ProgressReportStatus = (typeof PROGRESS_REPORT_STATUSES)[number]
+export const INVESTOR_UPDATE_STATUSES = ['pending_review', 'published', 'rejected'] as const
+export type InvestorUpdateStatus = (typeof INVESTOR_UPDATE_STATUSES)[number]
+
 export const MEETING_STATUSES = ['scheduled', 'held', 'cancelled'] as const
 export type MeetingStatus = (typeof MEETING_STATUSES)[number]
 
-export const AGREEMENT_STATUSES = ['draft', 'legal_review', 'approved', 'signed', 'archived'] as const
+/** AGR-02..05 — draft → legal_review → changes_requested → approved → sent_for_signature → signed → archived | cancelled */
+export const AGREEMENT_STATUSES = ['draft', 'legal_review', 'changes_requested', 'approved', 'sent_for_signature', 'signed', 'archived', 'cancelled'] as const
 export type AgreementStatus = (typeof AGREEMENT_STATUSES)[number]
+export const AGREEMENT_PARTIES = ['owner', 'investor'] as const
+export type AgreementParty = (typeof AGREEMENT_PARTIES)[number]
 
 export const CONSENT_TYPES = [
   'privacy_policy',
@@ -135,6 +154,25 @@ export type InvestmentType = (typeof INVESTMENT_TYPES)[number]
 
 export const PROJECT_STAGES = ['idea', 'prototype', 'pre_seed', 'seed', 'early_stage', 'later_stage'] as const
 export type ProjectStage = (typeof PROJECT_STAGES)[number]
+
+/** Opportunity application — team / market / motivation sections (api Opportunity::*). */
+export const PRODUCT_STAGES = ['idea', 'prototype', 'mvp', 'launched', 'scaling'] as const
+export type ProductStage = (typeof PRODUCT_STAGES)[number]
+
+export const FOUNDERS_COMMITMENTS = ['full_time', 'part_time', 'transitioning'] as const
+export type FoundersCommitment = (typeof FOUNDERS_COMMITMENTS)[number]
+
+/** How long the founders have known each other: <1 / 1–3 / 3–5 / 5+ years. */
+export const FOUNDERS_KNOWN_YEARS = ['lt_1', '1_3', '3_5', '5_plus'] as const
+export type FoundersKnownYears = (typeof FOUNDERS_KNOWN_YEARS)[number]
+
+export const DEV_TEAM_STRUCTURES = ['in_house', 'outsourced', 'hybrid', 'none'] as const
+export type DevTeamStructure = (typeof DEV_TEAM_STRUCTURES)[number]
+
+export const SUPPORT_NEEDS = ['mentoring', 'investor_intros', 'market_access', 'technical', 'legal', 'impact_measurement'] as const
+export type SupportNeed = (typeof SUPPORT_NEEDS)[number]
+
+export const MAX_FOUNDERS = 6
 
 export const RISK_APPETITES = ['high', 'medium', 'low'] as const
 export type RiskAppetite = (typeof RISK_APPETITES)[number]

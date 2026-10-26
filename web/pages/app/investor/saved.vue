@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import type { OpportunityCard } from '~/types/api'
+import { toastApiError, toastSuccess } from '~/utils/notify'
 definePageMeta({ layout: 'portal', middleware: ['investor'] })
 const { t } = useI18n()
 useHead({ title: t('investor.saved.metaTitle') })
 const api = useApi()
-const toast = useToast()
 const { data, loading, refresh } = useAsyncResource(() => api.get<{ data: OpportunityCard[] }>('/investor/saved').then((r) => r.data))
-const unsave = async (o: OpportunityCard) => { await api.del(`/opportunities/${o.uuid}/save`); toast.success(t('investor.opportunities.unsaveBtn')); await refresh() }
+const unsave = async (o: OpportunityCard) => {
+  try {
+    await api.del(`/opportunities/${o.uuid}/save`)
+    toastSuccess(t('notify.removedFromList', { name: o.name }))
+    await refresh()
+  } catch (e) { toastApiError(e) }
+}
 </script>
 <template>
   <div>

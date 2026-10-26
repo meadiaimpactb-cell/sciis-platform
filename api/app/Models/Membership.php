@@ -26,6 +26,7 @@ class Membership extends Model
             'reviewed_at' => 'datetime',
             'approved_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
+            'extra_answers' => 'array', // FRM-01 — membership review answers {key, version, answers, answered_at}
         ];
     }
 
@@ -42,6 +43,12 @@ class Membership extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /** ADM-08 — staff member the membership file is assigned to (set from the queue, one or many at once). */
+    public function assignedReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_reviewer_id');
     }
 
     public function isApproved(): bool

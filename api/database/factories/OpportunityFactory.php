@@ -44,6 +44,36 @@ class OpportunityFactory extends Factory
             'council_relationship' => false,
             'council_relationship_desc' => 'داخلي: علاقة بالمجلس',
             'data_accuracy_declared_at' => now(),
+            // Team & founders (confidential "س").
+            'founders_count' => 2,
+            'team_size' => 6,
+            'founders_commitment' => 'full_time',
+            'prior_startup_experience' => true,
+            'prior_startup_experience_desc' => 'سري: خبرة المؤسسين السابقة',
+            'industry_experience' => true,
+            'industry_experience_desc' => 'سري: خبرة القطاع',
+            'founders_known_years' => '3_5',
+            'has_advisory_board' => false,
+            'dev_team_structure' => 'in_house',
+            'founders_agreement_signed' => true,
+            'founders' => [
+                ['name' => 'سري: المؤسس الأول', 'role' => 'الرئيس التنفيذي', 'linkedin_url' => 'https://www.linkedin.com/in/secret-founder-one', 'is_full_time' => true],
+                ['name' => 'سري: المؤسس الثاني', 'role' => 'المدير التقني', 'linkedin_url' => 'https://www.linkedin.com/in/secret-founder-two', 'is_full_time' => false],
+            ],
+            // Market & product (public subset: product_stage, target_customers, competitive_advantage, traction_desc).
+            'product_stage' => 'mvp',
+            'target_customers' => 'العملاء المستهدفون',
+            'competitive_advantage' => 'الميزة التنافسية',
+            'traction_desc' => 'المؤشرات المحققة',
+            'market_size_desc' => 'خاص: حجم السوق',
+            'competitors' => 'خاص: المنافسون',
+            'go_to_market' => 'خاص: استراتيجية الوصول',
+            'technology_desc' => 'خاص: التقنية',
+            'scalability_desc' => 'خاص: قابلية التوسع',
+            // Motivation (internal "د").
+            'why_now' => 'داخلي: لماذا الآن',
+            'support_needed' => ['mentoring', 'investor_intros'],
+            'program_expectations' => 'داخلي: التوقعات',
         ];
     }
 

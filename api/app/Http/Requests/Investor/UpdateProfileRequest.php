@@ -6,6 +6,7 @@ namespace App\Http\Requests\Investor;
 
 use App\Enums\RiskAppetite;
 use App\Http\Requests\ApiRequest;
+use App\Rules\FormAnswers;
 
 /** INV-01 — sections: basics, interests, experience, declarations. */
 class UpdateProfileRequest extends ApiRequest
@@ -47,11 +48,16 @@ class UpdateProfileRequest extends ApiRequest
             'experience.social_investments_desc' => ['nullable', 'string', 'max:3000'],
             'experience.mentoring_available' => ['nullable', 'boolean'],
             'experience.mentoring_areas' => ['nullable', 'string', 'max:1000'],
+            // INV-01 — institutional investors only (ignored for individuals by InvestorProfileService).
+            'experience.impact_policy' => ['nullable', 'string', 'max:3000'],
 
             'declarations' => ['sometimes', 'array'],
             'declarations.accredited_declaration' => ['nullable', 'array'],
             'declarations.conflicts_disclosure' => ['nullable', 'string', 'max:3000'],
             'declarations.commit_meetings' => ['nullable', 'boolean'],
+
+            // FRM-01 — admin-defined additional questions, validated against the active schema (required enforced).
+            'extra_answers' => ['sometimes', 'nullable', 'array', new FormAnswers('investor_profile')],
         ];
     }
 }

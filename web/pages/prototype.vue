@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /** Prototype screen map for the product tester — lists every screen with links and one-click role login (mock mode). */
+import { toastApiError, toastError, toastInfo, toastSuccess } from '~/utils/notify'
 definePageMeta({ layout: 'default' })
-const { t, tm, rt } = useI18n()
+const { t, tm, rt, locale } = useI18n()
 useHead({ title: t('prototype.metaTitle') })
 const auth = useAuthStore()
 const router = useRouter()
 const localePath = useLocalePath()
-const toast = useToast()
 const { mock } = useApiBase()
 const { label } = useEnumLabel()
 const busy = ref<string | null>(null)
@@ -26,9 +26,13 @@ const loginAs = async (r: (typeof roles)[number]) => {
     if (auth.isAuthenticated) await auth.logout()
     const res = await auth.login(r.email, 'password')
     if (res.twoFactor) await auth.challenge2fa('123456')
-    toast.success(`${t('prototype.currentUser')}: ${auth.me?.name}`)
+    toastSuccess(t('notify.welcome', { name: auth.me?.name ? (locale.value === 'ar' ? `، ${auth.me.name}` : `, ${auth.me.name}`) : '' }))
     router.push(localePath(r.home))
-  } catch (e) { toast.error((e as Error).message) } finally { busy.value = null }
+  } catch (e) { toastApiError(e) } finally { busy.value = null }
+}
+const logout = async () => {
+  if (!(await auth.logout())) return void toastError(t('notify.logoutFailed'))
+  toastInfo(t('notify.loggedOut'))
 }
 const sections: { key: string; screens: { path: string; title: string; note?: string }[] }[] = [
   { key: 'public', screens: [
@@ -61,7 +65,7 @@ const roleHint: Record<string, string> = { investor: 'investor', investorInst: '
         <SectionCard :title="$t('prototype.loginAs')" :sub="`${$t('prototype.currentUser')}: ${auth.me?.name ?? $t('prototype.notLoggedIn')}`">
           <div class="flex flex-wrap gap-2">
             <AppButton v-for="r in roles" :key="r.key" variant="secondary" size="sm" :loading="busy === r.key" @click="loginAs(r)">{{ $t(`auth.login.demoRoles.${r.key}`) }}<span v-if="r.twoFactor" class="text-[10px] text-muted">2FA</span></AppButton>
-            <AppButton v-if="auth.isAuthenticated" variant="ghost" size="sm" @click="auth.logout()">{{ $t('common.logout') }}</AppButton>
+            <AppButton v-if="auth.isAuthenticated" variant="ghost" size="sm" @click="logout">{{ $t('common.logout') }}</AppButton>
           </div>
         </SectionCard>
         <SectionCard v-for="s in sections" :key="s.key" :title="$t(`prototype.sections.${s.key}`)" flush>

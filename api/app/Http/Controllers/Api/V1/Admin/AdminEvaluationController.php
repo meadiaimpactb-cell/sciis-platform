@@ -42,6 +42,26 @@ class AdminEvaluationController extends Controller
         return $this->ok($this->assignmentArray($assignment));
     }
 
+    /**
+     * GET /admin/opportunities/{uuid}/my-assignment — EVL-02: the signed-in evaluator's own assignment with the
+     * project's reference and name only. It is readable before the conflict-of-interest declaration, which is what
+     * opens the file itself.
+     */
+    public function myAssignment(Request $request, Opportunity $opportunity): JsonResponse
+    {
+        $assignment = $opportunity->evaluationAssignments()->with('evaluator')
+            ->where('evaluator_user_id', $request->user()->id)
+            ->latest('id')
+            ->first();
+
+        abort_if($assignment === null, 404);
+
+        return $this->ok([
+            'assignment' => $this->assignmentArray($assignment->setRelation('opportunity', $opportunity)),
+            'opportunity' => ['uuid' => $opportunity->uuid, 'reference_no' => $opportunity->reference_no, 'name' => $opportunity->name],
+        ]);
+    }
+
     /** GET /admin/evaluation-assignments/{id}/score — scoring form (criteria + existing scores). */
     public function scoreForm(Request $request, EvaluationAssignment $assignment): JsonResponse
     {
@@ -80,11 +100,17 @@ class AdminEvaluationController extends Controller
     {
         $this->authorize('view', $opportunity);
         $user = $request->user();
-        if (! $user->can('evaluations.approve') && ! $user->can('evaluations.assign')) {
+        if ($user->can('evaluations.approve') || $user->can('evaluations.assign')) {
+            return $this->ok($this->evaluations->comparison($opportunity));
+        }
+
+        // An assigned evaluator may load the panel restricted to their own assignment (no peer scores — EVL-01).
+        $isAssigned = $opportunity->evaluationAssignments()->where('evaluator_user_id', $user->id)->exists();
+        if (! $isAssigned) {
             abort(403, __('messages.errors.forbidden'));
         }
 
-        return $this->ok($this->evaluations->comparison($opportunity));
+        return $this->ok($this->evaluations->comparison($opportunity, $user));
     }
 
     /** POST /admin/opportunities/{uuid}/evaluation/decide — EVL-03 */
@@ -98,9 +124,10 @@ class AdminEvaluationController extends Controller
             EvaluationResult::from($request->validated('result')),
             $request->validated('conditions'),
             $request->validated('reasons'),
+            (array) $request->validated('improvement_plan', []),
         );
 
-        return response()->json(['data' => $decision->only(['id', 'result', 'conditions', 'reasons', 'decided_at'])], 201);
+        return response()->json(['data' => $decision->only(['id', 'result', 'conditions', 'reasons', 'improvement_plan', 'decided_at'])], 201);
     }
 
     /** GET /admin/evaluation-criteria — FRM-03 */
@@ -108,7 +135,21 @@ class AdminEvaluationController extends Controller
     {
         $list = EvaluationCriterion::query()->orderBy('axis')->orderBy('sort')->get();
 
-        return response()->json(['data' => $list->map(fn (EvaluationCriterion $c): array => $c->toArray() + ['label' => $c->label()])->all()]);
+        return response()->json([
+            'data' => $list->map(fn (EvaluationCriterion $c): array => $this->criterionArray($c))->all(),
+            'version' => EvaluationCriterion::currentVersion(),
+        ]);
+    }
+
+    /** `weight` is a decimal column (string in PHP) — cast to float for JSON consumers. @return array<string, mixed> */
+    private function criterionArray(EvaluationCriterion $c): array
+    {
+        return array_merge($c->toArray(), [
+            'axis' => $c->axis->value,
+            'weight' => (float) $c->weight,
+            'is_active' => (bool) $c->is_active,
+            'label' => $c->label(),
+        ]);
     }
 
     /** POST /admin/evaluation-criteria */
@@ -120,7 +161,7 @@ class AdminEvaluationController extends Controller
         $criterion = EvaluationCriterion::query()->create($request->validated() + ['version' => EvaluationCriterion::currentVersion()]);
         $this->audit->log('evaluation_criterion.created', $criterion, null, $criterion->toArray(), $request->user());
 
-        return response()->json(['data' => $criterion->toArray()], 201);
+        return response()->json(['data' => $this->criterionArray($criterion->refresh())], 201);
     }
 
     /** PATCH /admin/evaluation-criteria/{id} */
@@ -133,7 +174,7 @@ class AdminEvaluationController extends Controller
         $criterion->fill($request->validated())->save();
         $this->audit->log('evaluation_criterion.updated', $criterion, $before, $criterion->getChanges(), $request->user());
 
-        return $this->ok($criterion->toArray());
+        return $this->ok($this->criterionArray($criterion->refresh()));
     }
 
     /** @return array<string, mixed> */

@@ -15,6 +15,7 @@ use App\Http\Requests\Admin\ReviewDocumentRequest;
 use App\Http\Requests\Admin\TransitionOpportunityRequest;
 use App\Http\Resources\DocumentResource;
 use App\Http\Resources\OpportunityFullResource;
+use App\Models\AdvisoryReferral;
 use App\Models\CompletionRequest;
 use App\Models\Document;
 use App\Models\Opportunity;
@@ -28,6 +29,7 @@ use App\Services\SettingsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /** ADM-01 (transitions), ADM-02 (assignment), ADM-04 (completion requests), ADM-05 (notes), DOC review. */
 class AdminOpportunityController extends Controller
@@ -40,27 +42,44 @@ class AdminOpportunityController extends Controller
         private readonly AuditLogger $audit,
     ) {}
 
-    /** GET /admin/opportunities — filters: status, sector, overdue, assignee, search. */
+    /**
+     * GET /admin/opportunities — filters: status, sector (key or id), overdue, assignee (id or `none`), search.
+     * Accepted both as `filter[x]` (web) and top-level `x` (mobile).
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Opportunity::class);
         $user = $request->user();
 
+        $filter = fn (string $key): mixed => $request->input('filter.'.$key, $request->input($key));
+        $status = $filter('status');
+        $sector = $filter('sector');
+        $assignee = $filter('assignee');
+        $search = $filter('search');
+        $overdue = filter_var($filter('overdue'), FILTER_VALIDATE_BOOLEAN);
+
         $query = Opportunity::query()
             ->with(['sector', 'owner', 'assignedReviewer', 'teaser', 'regions', 'investmentTypes', 'beneficiaryGroups', 'sdgs', 'organization', 'fundingRange', 'indicators', 'completionRequests'])
             ->whereNotNull('submitted_at')
-            ->when($request->filled('status'), fn (Builder $q) => $q->whereIn('status', (array) $request->input('status')))
-            ->when($request->filled('sector'), fn (Builder $q) => $q->where('sector_id', (int) $request->input('sector')))
-            ->when($request->boolean('overdue'), fn (Builder $q) => $q->overdue())
-            ->when($request->filled('assignee'), fn (Builder $q) => $q->where('assigned_reviewer_id', (int) $request->input('assignee')))
-            ->when($request->filled('search'), function (Builder $q) use ($request): void {
-                $term = '%'.$request->input('search').'%';
+            ->when(filled($status), fn (Builder $q) => $q->whereIn('status', is_array($status) ? $status : explode(',', (string) $status)))
+            ->when(filled($sector), fn (Builder $q) => is_numeric($sector)
+                ? $q->where('sector_id', (int) $sector)
+                : $q->whereHas('sector', fn (Builder $s) => $s->where('key', (string) $sector)))
+            ->when($overdue, fn (Builder $q) => $q->overdue())
+            // MAT-01 — `assignee=none` lists the files nobody has picked up yet.
+            ->when(filled($assignee), fn (Builder $q) => $assignee === 'none' ? $q->whereNull('assigned_reviewer_id') : $q->where('assigned_reviewer_id', (int) $assignee))
+            ->when(filled($search), function (Builder $q) use ($search): void {
+                $term = '%'.$search.'%';
                 $q->where(fn (Builder $w) => $w->where('name', 'like', $term)->orWhere('reference_no', 'like', $term));
             });
 
         // ACC-04: evaluators only see their assignments.
         if ($user->hasRole('evaluator') && ! $user->hasAnyRole(['super_admin', 'reviewer', 'matching_officer', 'membership_officer'])) {
             $query->whereHas('evaluationAssignments', fn (Builder $a) => $a->where('evaluator_user_id', $user->id));
+        }
+        // EVL-04: advisory members only see files actively referred to them (same rule as OpportunityPolicy::view).
+        if ($user->hasRole('advisory_member') && ! $user->hasAnyRole(['super_admin', 'reviewer', 'matching_officer'])) {
+            $query->whereIn('id', AdvisoryReferral::query()->active()->where('advisory_user_id', $user->id)->select('opportunity_id'));
         }
 
         $paginator = $query->orderByDesc('submitted_at')->paginate($this->perPage($request));
@@ -75,6 +94,8 @@ class AdminOpportunityController extends Controller
     public function show(Request $request, Opportunity $opportunity): JsonResponse
     {
         $this->authorize('view', $opportunity);
+        // AUD-01 — staff read access to the file is audited (one row per user per file per 10 minutes).
+        $this->audit->logThrottled('opportunity.viewed', $opportunity, $request->user(), ['context' => 'admin', 'reference_no' => $opportunity->reference_no]);
 
         return $this->ok((new OpportunityFullResource($opportunity))->resolve($request));
     }
@@ -105,8 +126,8 @@ class AdminOpportunityController extends Controller
 
         $to = OpportunityStatus::from($request->validated('to'));
 
-        // not_eligible requires supervisor approval: reviewer may only propose when super_admin exists? Keep it simple:
-        // reviewer or super_admin with permission; reason enforced by the state machine.
+        // ADM-07 — not_eligible (final rejection) needs the supervisor sign-off `evaluations.approve` on top of
+        // `opportunities.transition` (OpportunityStateMachine::permits); the reason is enforced by its guard().
         $opportunity = $this->stateMachine->transition($opportunity, $to, $request->user(), $request->validated('reason'));
 
         return $this->ok((new OpportunityFullResource($opportunity))->resolve($request));
@@ -117,7 +138,7 @@ class AdminOpportunityController extends Controller
     {
         $this->authorize('transition', $opportunity);
 
-        $due = $request->validated('due_at') ? \Illuminate\Support\Carbon::parse($request->validated('due_at')) : now()->addDays($this->settings->slaDays('completion'));
+        $due = $request->validated('due_at') ? Carbon::parse($request->validated('due_at')) : now()->addDays($this->settings->slaDays('completion'));
 
         $completion = CompletionRequest::query()->create([
             'opportunity_id' => $opportunity->id,

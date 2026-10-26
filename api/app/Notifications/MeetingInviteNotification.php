@@ -6,6 +6,7 @@ namespace App\Notifications;
 
 use App\Models\Meeting;
 use App\Notifications\Concerns\RespectsPreferences;
+use App\Services\WhatsApp\WhatsAppMessage;
 use App\Support\Ics;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -57,6 +58,14 @@ class MeetingInviteNotification extends Notification implements ShouldQueue
     public function toSms(object $notifiable): string
     {
         return __('notifications.meeting.sms', ['title' => $this->meeting->title, 'when' => $this->meeting->starts_at->timezone(config('app.timezone'))->format('Y-m-d H:i')]);
+    }
+
+    /** NTF-04 — template `meeting_invite`: {{1}} title, {{2}} date-time (Riyadh). */
+    public function toWhatsApp(object $notifiable): ?WhatsAppMessage
+    {
+        return WhatsAppMessage::forKey('meeting_invite', (string) ($notifiable->locale ?? 'ar'), [
+            $this->meeting->title, $this->meeting->starts_at->timezone(config('app.timezone'))->format('Y-m-d H:i'),
+        ], $this->toSms($notifiable));
     }
 
     /** @return array<string, mixed> */

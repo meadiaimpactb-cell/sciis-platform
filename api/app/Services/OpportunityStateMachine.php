@@ -81,6 +81,20 @@ class OpportunityStateMachine
     }
 
     /**
+     * Targets this actor may pick (map ∩ permissions — business guards are still checked on submit), so the
+     * staff UI never offers a decision the actor cannot sign (ADM-07: not_eligible needs the supervisor).
+     *
+     * @return array<int, OpportunityStatus>
+     */
+    public function allowedTargetsFor(Opportunity $opportunity, User $actor): array
+    {
+        return array_values(array_filter(
+            $this->allowedTargets($opportunity->status),
+            fn (OpportunityStatus $to): bool => $this->permits($opportunity, $to, $actor),
+        ));
+    }
+
+    /**
      * @param  array<string, mixed>  $metadata
      *
      * @throws InvalidTransitionException|AuthorizationException
@@ -96,6 +110,33 @@ class OpportunityStateMachine
         $this->authorize($opportunity, $to, $actor);
         $this->guard($opportunity, $to, $reason);
 
+        return $this->persist($opportunity, $from, $to, $actor, $reason, $metadata);
+    }
+
+    /**
+     * Journey 11.3 — a transition performed by the platform itself (scheduled automation, no actor): same map,
+     * guards, log, audit and owner notification; only the actor permission check does not apply.
+     *
+     * @param  array<string, mixed>  $metadata
+     *
+     * @throws InvalidTransitionException
+     */
+    public function systemTransition(Opportunity $opportunity, OpportunityStatus $to, string $reason, array $metadata = []): Opportunity
+    {
+        $from = $opportunity->status;
+
+        if (! $this->canTransition($from, $to)) {
+            throw InvalidTransitionException::forStatuses($from->value, $to->value);
+        }
+
+        $this->guard($opportunity, $to, $reason);
+
+        return $this->persist($opportunity, $from, $to, null, $reason, $metadata + ['system' => true]);
+    }
+
+    /** @param array<string, mixed> $metadata */
+    private function persist(Opportunity $opportunity, OpportunityStatus $from, OpportunityStatus $to, ?User $actor, ?string $reason, array $metadata): Opportunity
+    {
         return DB::transaction(function () use ($opportunity, $from, $to, $actor, $reason, $metadata): Opportunity {
             $before = ['status' => $from->value];
 
@@ -107,7 +148,7 @@ class OpportunityStateMachine
                 'opportunity_id' => $opportunity->id,
                 'from_status' => $from->value,
                 'to_status' => $to->value,
-                'actor_user_id' => $actor->id,
+                'actor_user_id' => $actor?->id,
                 'reason' => $reason,
                 'metadata' => $metadata ?: null,
                 'created_at' => now(),
@@ -132,27 +173,39 @@ class OpportunityStateMachine
      */
     private function authorize(Opportunity $opportunity, OpportunityStatus $to, User $actor): void
     {
+        if (! $this->permits($opportunity, $to, $actor)) {
+            // ADM-07 — a reviewer holding opportunities.transition gets the specific "supervisor sign-off" message.
+            $supervisorOnly = $to === OpportunityStatus::NotEligible && $actor->isStaff() && $actor->can('opportunities.transition');
+
+            throw new AuthorizationException(__($supervisorOnly ? 'messages.transitions.supervisor_required' : 'messages.transitions.forbidden'));
+        }
+    }
+
+    /** Who may perform which transition (permission + ownership only; no business guards). */
+    public function permits(Opportunity $opportunity, OpportunityStatus $to, User $actor): bool
+    {
         $isOwner = $opportunity->isOwnedBy($actor);
         $isStaff = $actor->isStaff();
+        // ADM-01 — the staff permission per target status is configurable (`workflow.transition_permissions`,
+        // e.g. {"in_execution": "agreements.manage"}); unmapped targets keep `opportunities.transition`.
+        $map = (array) $this->settings->get('workflow.transition_permissions', []);
+        $mapped = is_string($map[$to->value] ?? null) ? $map[$to->value] : null;
+        $staffMay = $isStaff && $actor->can($mapped ?? 'opportunities.transition');
 
-        $allowed = match ($to) {
+        return match ($to) {
             // Owner submits / re-submits.
-            OpportunityStatus::New => $isOwner || ($isStaff && $actor->can('opportunities.transition')),
+            OpportunityStatus::New => $isOwner || $staffMay,
             // Re-submission after completion is owner's; initial screening (new→under_review) is staff's.
-            OpportunityStatus::UnderReview => ($isOwner && $opportunity->status === OpportunityStatus::NeedsCompletion)
-                || ($isStaff && $actor->can('opportunities.transition')),
-            OpportunityStatus::Withdrawn => $isOwner || ($isStaff && $actor->can('opportunities.transition')),
-            OpportunityStatus::Closed => $isStaff && ($actor->hasRole('super_admin') || $actor->can('opportunities.transition')),
+            OpportunityStatus::UnderReview => ($isOwner && $opportunity->status === OpportunityStatus::NeedsCompletion) || $staffMay,
+            OpportunityStatus::Withdrawn => $isOwner || $staffMay,
+            OpportunityStatus::Closed => $isStaff && ($actor->hasRole('super_admin') || $staffMay),
             // Connection is driven by the matching officer (nominations.manage) once dual consent is satisfied.
-            OpportunityStatus::Connected => $isStaff && ($actor->can('nominations.manage') || $actor->can('opportunities.transition')),
-            default => $isStaff && $actor->can('opportunities.transition'),
+            OpportunityStatus::Connected => $isStaff && (($mapped === null && $actor->can('nominations.manage')) || $staffMay),
+            // ADM-07 — the final rejection needs the supervisor's sign-off (`evaluations.approve`) on top of the
+            // transition permission; the reviewer keeps screening, completion requests and eligible. Reason: guard().
+            OpportunityStatus::NotEligible => $staffMay && $actor->can('evaluations.approve'),
+            default => $staffMay,
         };
-
-        if (! $allowed) {
-            throw new AuthorizationException(__('messages.transitions.forbidden'));
-        }
-
-        // not_eligible requires a supervisor (super_admin) or a reviewer; reason is enforced in guard().
     }
 
     /** Business guards from SPEC §3 "Rules". */
@@ -172,6 +225,9 @@ class OpportunityStateMachine
                 }
                 if (! $opportunity->hasApprovedTeaser()) {
                     throw InvalidTransitionException::guardFailed('messages.transitions.teaser_required');
+                }
+                if (! $opportunity->hasTeaserPublicationConsent()) {
+                    throw InvalidTransitionException::guardFailed('messages.transitions.teaser_consent_required');
                 }
                 break;
 
@@ -220,6 +276,10 @@ class OpportunityStateMachine
         if ($to === OpportunityStatus::Eligible) {
             $opportunity->evaluation_approved_at ??= $now;
         }
+
+        // ADM-03 — post-evaluation stages: one deadline per stage (eligible → matching, connected, negotiating).
+        $stageKind = Opportunity::STAGE_SLA_KINDS[$to->value] ?? null;
+        $opportunity->stage_due_at = $stageKind !== null ? $now->copy()->addDays($this->settings->slaDays($stageKind)) : null;
 
         if ($to->isTerminal()) {
             $opportunity->is_listed = false;

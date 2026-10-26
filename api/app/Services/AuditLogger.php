@@ -43,6 +43,55 @@ class AuditLogger
         ]);
     }
 
+    /**
+     * AUD-01 — read-access entries (`*.viewed`): at most one row per actor + action + record within the window,
+     * so reloading a file (or the SPA refreshing it after each action) does not flood the trail.
+     *
+     * @param  array<string, mixed>|null  $after
+     */
+    public function logThrottled(string $action, Model $auditable, ?User $actor = null, ?array $after = null, int $minutes = 10): ?AuditLog
+    {
+        $actor ??= $this->currentRequest()?->user();
+
+        $recent = AuditLog::query()
+            ->where('action', $action)
+            ->where('auditable_type', $auditable->getMorphClass())
+            ->where('auditable_id', $auditable->getKey())
+            ->where('user_id', $actor?->id)
+            ->where('created_at', '>=', now()->subMinutes($minutes))
+            ->exists();
+
+        return $recent ? null : $this->log($action, $auditable, null, $after, $actor);
+    }
+
+    /**
+     * ACC-04 — a 403 answered to an authenticated user. Called from the exception renderer (bootstrap/app.php);
+     * guests are never logged and a request is logged once even if several 403s are rendered for it.
+     */
+    public function accessDenied(Request $request, string $code): void
+    {
+        try {
+            if ($request->attributes->get('access_denied_logged') === true) {
+                return;
+            }
+            $user = $request->user();
+            if (! $user instanceof User) {
+                return;
+            }
+            $request->attributes->set('access_denied_logged', true);
+
+            $this->log('access.denied', null, null, [
+                'method' => $request->method(),
+                'path' => '/'.ltrim($request->path(), '/'),
+                'route' => $request->route()?->getName(),
+                'status' => 403,
+                'code' => $code,
+            ], $user);
+        } catch (\Throwable) {
+            // Never let audit logging break the error response.
+        }
+    }
+
     /** Convenience: logs the dirty attributes of a model that was just saved. */
     public function logModelChange(string $action, Model $model, ?User $actor = null): AuditLog
     {

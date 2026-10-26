@@ -16,7 +16,7 @@ class EnsureFullyVerified
     {
         $user = $request->user();
 
-        if ($user === null || ! $user->isFullyVerified()) {
+        if ($user === null || (! $user->isFullyVerified() && ! config('sciis.verification.optional'))) {
             throw new DomainException(__('messages.auth.verification_required'), 'verification_required', 403, [
                 'email_verified' => [$user?->email_verified_at ? 'yes' : 'no'],
                 'phone_verified' => [$user?->phone_verified_at ? 'yes' : 'no'],

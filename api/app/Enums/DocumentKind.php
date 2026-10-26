@@ -22,4 +22,17 @@ enum DocumentKind: string
     case Agreement = 'agreement';
     case ProgressEvidence = 'progress_evidence';
     case Other = 'other';
+    // INV-01 — investor membership documents.
+    case InvestorCv = 'investor_cv';
+    case ImpactPolicy = 'impact_policy';
+    // MTG-03 — attachment of an in-platform message.
+    case MessageAttachment = 'message_attachment';
+
+    /** INV-01 — kinds an investor uploads to the membership file, by investor type. @return list<self> */
+    public static function forInvestor(bool $institutional): array
+    {
+        return $institutional
+            ? [self::CommercialRegister, self::AuthorizationLetter, self::ImpactPolicy]
+            : [self::InvestorCv];
+    }
 }

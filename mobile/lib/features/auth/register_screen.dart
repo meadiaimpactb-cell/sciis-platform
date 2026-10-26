@@ -1,5 +1,5 @@
 // Register entry (ACC-01): account type picker → basic form → consents → OTP.
-// POST /auth/register {type, name, email, phone, password, locale, consents:[privacy_policy, terms]}
+// POST /auth/register {type, name, email, phone, password, locale, consents:[privacy_policy, terms(, data_accuracy for investors)]}
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   UserType _type = UserType.investorIndividual;
   bool _acceptPrivacy = false;
   bool _acceptTerms = false;
+  bool _acceptAccuracy = false;
   bool _busy = false;
   Map<String, List<String>> _fieldErrors = const {};
   String? _error;
@@ -46,7 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_acceptPrivacy || !_acceptTerms) {
+    if (!_acceptPrivacy || !_acceptTerms || (_type.isInvestor && !_acceptAccuracy)) {
       setState(() => _error = l10n.registerConsentRequired);
       return;
     }
@@ -171,6 +172,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.consentTerms, style: t.bodyMedium),
               ),
+              if (_type.isInvestor)
+                CheckboxListTile(
+                  value: _acceptAccuracy,
+                  onChanged: (v) => setState(() => _acceptAccuracy = v ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.consentDataAccuracy, style: t.bodyMedium),
+                ),
               if (_error != null) ...[
                 const SizedBox(height: BrandSpacing.sm),
                 Text(_error!, style: t.bodySmall?.copyWith(color: BrandColors.danger)),

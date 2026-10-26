@@ -214,5 +214,7 @@
   "dataRequestAccess": "طلب نسخة من بياناتي",
   "dataRequestRectify": "طلب تصحيح بياناتي",
   "dataRequestErase": "طلب حذف حسابي وبياناتي",
-  "dataRequestSent": "تم تسجيل طلبك وسيتواصل معك فريق المجلس"
+  "dataRequestSent": "تم تسجيل طلبك وسيتواصل معك فريق المجلس",
+  "consentDataAccuracy": "أقرّ بأن البيانات التي أقدّمها صحيحة ومحدّثة",
+  "ndaReadConfirm": "قرأت نص الاتفاقية وأوافق على الالتزام به"
 }

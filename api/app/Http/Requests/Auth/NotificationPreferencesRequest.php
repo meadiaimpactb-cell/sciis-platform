@@ -17,6 +17,7 @@ class NotificationPreferencesRequest extends ApiRequest
             'preferences.*.category' => ['required', 'string', 'in:'.implode(',', NotificationPreference::CATEGORIES)],
             'preferences.*.mail' => ['sometimes', 'boolean'],
             'preferences.*.sms' => ['sometimes', 'boolean'],
+            'preferences.*.whatsapp' => ['sometimes', 'boolean'], // NTF-04
         ];
     }
 }

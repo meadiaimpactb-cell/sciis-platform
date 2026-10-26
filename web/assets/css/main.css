@@ -12,20 +12,22 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-bg text-text min-h-screen;
+    @apply bg-bg text-text min-h-screen text-sm;
     font-feature-settings: "tnum" 1, "lnum" 1;
   }
   h1, h2, h3, h4 {
     @apply font-semibold text-ink tracking-tight;
     text-wrap: balance;
   }
+  /* UX-04 — teal-700 keeps the focus ring ≥3:1 on white, the light greys and the navy surfaces (teal-500 is 2.5:1 on white) */
   :focus-visible {
-    outline: 2px solid var(--blue);
+    outline: 2px solid var(--teal-700);
     outline-offset: 2px;
     border-radius: 0.25rem;
   }
   ::selection {
-    background: var(--blue-soft);
+    background: var(--teal-100);
+    color: var(--navy-900);
   }
   [dir="rtl"] input[type="email"],
   [dir="rtl"] input[type="url"],
@@ -34,36 +36,110 @@
     text-align: start;
     unicode-bidi: plaintext;
   }
+  /* `plaintext` keeps "+966…", "67%" and dates in reading order; `match-parent` aligns a block-level number with
+     its container's direction (plaintext alone would push it to the left inside Arabic columns). */
   .num, [data-num] {
     font-variant-numeric: tabular-nums lining-nums;
     unicode-bidi: plaintext;
+    text-align: match-parent;
   }
 }
 
 @layer components {
+  /* 1200 px content frame with 12 px gutters (falak.sa measures) — public pages and portals alike */
   .container-x {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[75rem] px-3;
+  }
+  /* Vertical rhythm of a public section: 100 px desktop / 80 px phone */
+  .section-y {
+    @apply py-20 md:py-[6.25rem];
+  }
+  /* Section label — 25 px bold (Falak «البرامج») */
+  .section-label {
+    @apply text-2xl font-bold text-ink;
   }
   .card {
     @apply rounded-xl border border-border bg-surface shadow-card;
   }
+  .card-hover {
+    @apply transition duration-300 hover:-translate-y-0.5 hover:shadow-pop hover:border-teal/50;
+  }
   .card-pad {
     @apply p-5 sm:p-6;
   }
-  .section-title {
-    @apply text-2xl sm:text-3xl font-semibold text-ink;
+  /* Eyebrow label above section titles — teal accent with a short rule */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-teal-text;
   }
+  .eyebrow::before {
+    content: "";
+    @apply h-px w-6 bg-teal;
+  }
+  .eyebrow-dark {
+    @apply text-teal-400;
+  }
+  .eyebrow-dark::before {
+    @apply bg-teal-400;
+  }
+  /* Section title — 40 / 60 regular (30 / 45 on phones) */
+  .section-title {
+    @apply text-3xl leading-[2.8125rem] md:text-4xl md:leading-[3.75rem] font-normal text-ink tracking-normal;
+  }
+  /* Description under a title — 16 / 30 */
   .section-sub {
-    @apply mt-2 text-muted max-w-2xl;
+    @apply mt-3 text-base leading-[1.875rem] text-muted max-w-2xl;
+  }
+  .text-desc {
+    @apply text-base leading-[1.875rem];
+  }
+  /* Hero display line — 50 / 60 regular (30 / 36 on phones) and its 20 px lead */
+  .display {
+    @apply text-3xl md:text-5xl font-normal tracking-normal;
+  }
+  .lead {
+    @apply text-xl;
+  }
+  /* Key figures — 50 px value, 35 px unit (28 on phones), 18 px label */
+  /* Not `.num`: its `unicode-bidi: plaintext` would align a bare number to the left inside an Arabic column. */
+  .stat-value {
+    @apply text-5xl font-normal;
+    font-variant-numeric: tabular-nums lining-nums;
+    unicode-bidi: isolate;
+  }
+  .stat-unit {
+    @apply text-[1.75rem] leading-[2.1rem] md:text-[2.1875rem] md:leading-[2.625rem] font-normal;
+  }
+  .stat-label {
+    @apply text-lg;
+  }
+  /* Card title — 20 px bold */
+  .card-title {
+    @apply text-xl leading-6 font-bold text-ink;
+  }
+  /* Underlined call-to-action link — 25 px bold (20 on phones) */
+  .link-cta {
+    @apply inline-block text-xl md:text-2xl font-bold text-ink border-b-2 border-current pb-2 transition hover:text-teal-text;
+  }
+  /* "Read more" link — 23 px (18 on phones) with the reading-direction arrow */
+  .link-more {
+    @apply inline-flex items-center gap-2 text-lg md:text-[1.4375rem] md:leading-[2.15rem] text-ink transition hover:text-teal-text;
+  }
+  /* Filter tabs — 14 px, 6 px radius, outlined; active = filled navy */
+  .tab-pill {
+    @apply inline-flex items-center rounded-md border border-ink/80 px-4 py-2 text-sm text-ink transition hover:bg-navy-50;
+  }
+  .tab-pill-active {
+    @apply border-navy bg-navy text-white hover:bg-navy;
   }
   .label {
     @apply block text-sm font-medium text-ink mb-1.5;
   }
   .input {
-    @apply w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-muted/70 focus:border-blue focus:ring-2 focus:ring-blue/20 focus:outline-none disabled:bg-bg disabled:text-muted transition;
+    /* UX-04 — outline 3.2:1 (--c-input-border) and a teal-700 focus border (4.9:1), WCAG 1.4.11 */
+    @apply w-full rounded-lg border border-[rgb(var(--c-input-border))] bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-muted/60 focus:border-teal-700 focus:ring-4 focus:ring-teal/20 focus:outline-none disabled:bg-bg disabled:text-muted transition;
   }
   .input-error {
-    @apply border-danger focus:border-danger focus:ring-danger/20;
+    @apply border-danger focus:border-danger focus:ring-danger/15;
   }
   .help {
     @apply mt-1.5 text-xs text-muted;
@@ -72,19 +148,19 @@
     @apply mt-1.5 text-xs text-danger;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink hover:border-blue/60 cursor-pointer select-none transition;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink hover:border-teal hover:text-navy cursor-pointer select-none transition;
   }
   .chip-active {
-    @apply border-blue bg-blue-soft text-blue font-medium;
+    @apply border-navy bg-navy text-white font-medium hover:text-white;
   }
   .link {
-    @apply text-blue hover:underline underline-offset-4;
+    @apply text-navy font-medium hover:text-teal-text underline-offset-4 hover:underline transition;
   }
   .table-base {
     @apply w-full text-sm text-start;
   }
   .table-base th {
-    @apply text-start text-xs font-semibold uppercase tracking-wide text-muted bg-bg/70 px-4 py-3 border-b border-border whitespace-nowrap;
+    @apply text-start text-xs font-semibold uppercase tracking-wide text-muted bg-navy-50 px-4 py-3 border-b border-border whitespace-nowrap;
   }
   .table-base td {
     @apply px-4 py-3 border-b border-border align-middle;
@@ -92,18 +168,40 @@
   .table-base tbody tr:last-child td {
     @apply border-b-0;
   }
+  .table-base tbody tr {
+    @apply transition hover:bg-navy-50/60;
+  }
   .kbd-focus {
-    @apply focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2;
+    @apply focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2;
   }
   .placeholder-img {
     @apply relative overflow-hidden text-white;
-    background: linear-gradient(135deg, #101B33 0%, #1F5BFF 60%, #0F766E 100%);
+    background: var(--gradient-brand);
   }
   .placeholder-img:not(.rounded-none) {
     @apply rounded-xl;
   }
   .placeholder-img:not(.border-0) {
     @apply border border-dashed border-border;
+  }
+  /* Dark brand surfaces (hero, numbers, CTA, footer, sidebar) — flat deep navy, like Falak's flat night sections */
+  .surface-dark {
+    @apply bg-navy-950 text-white;
+  }
+  /* Subtle dotted grid overlay for dark hero surfaces */
+  .brand-grid {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 90%);
+  }
+  .glass {
+    @apply rounded-xl border border-white/15 bg-white/10 backdrop-blur-md;
+  }
+  .text-gradient {
+    background: linear-gradient(90deg, #7FCBC0 0%, #58B4A8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .prose-basic h2 {
     @apply text-xl font-semibold text-ink mt-8 mb-3;
@@ -143,3 +241,74 @@
 .page-leave-to {
   opacity: 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-float-slow, .animate-fade-up { animation: none; }
+}
+
+/* SweetAlert2 skin for utils/notify.ts — the notification contract (position top-centre, 340–460 px, 16 px/700,
+   30 px icon, 5 px type stripe, z-index 99999). swal2's CSS is lazy-loaded after this file, so the selectors are
+   prefixed with the layer class (and use !important where swal2 does) to win regardless of load order. */
+.swal2-container.sciis-swal-layer { z-index: 99999 !important; }
+body.swal2-toast-shown .swal2-container.sciis-swal-layer {
+  width: max-content;
+  min-width: min(340px, calc(100vw - 24px));
+  max-width: min(460px, calc(100vw - 24px));
+  padding: 16px 0 0;
+}
+.sciis-swal-layer .swal2-popup.sciis-toast {
+  --toast-accent: var(--navy-700);
+  padding: 18px 22px;
+  border: 1px solid var(--navy-100);
+  border-inline-start: 5px solid var(--toast-accent);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.2);
+  font-family: inherit;
+  column-gap: 12px;
+}
+.sciis-swal-layer .swal2-popup.sciis-toast--success { --toast-accent: #2E9E6B; }
+.sciis-swal-layer .swal2-popup.sciis-toast--error { --toast-accent: #C0392B; }
+.sciis-swal-layer .swal2-popup.sciis-toast--warning { --toast-accent: #C6A15B; }
+.sciis-swal-layer .swal2-popup.sciis-toast--info { --toast-accent: var(--navy-700); }
+.sciis-swal-layer .sciis-toast .sciis-toast__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: start;
+}
+/* 30 px icon: every part of the swal2 icon is sized in em — a 2em box plus a 0.25em ring on each side = 2.5em. */
+.sciis-swal-layer .sciis-toast .swal2-icon {
+  margin: 0;
+  font-size: 12px;
+  border-color: var(--toast-accent);
+  color: var(--toast-accent);
+}
+.sciis-swal-layer .sciis-toast .swal2-success .swal2-success-ring { border-color: color-mix(in srgb, var(--toast-accent) 30%, transparent); }
+.sciis-swal-layer .sciis-toast .swal2-success [class^='swal2-success-line'],
+.sciis-swal-layer .sciis-toast .swal2-error [class^='swal2-x-mark-line'] { background-color: var(--toast-accent); }
+.sciis-swal-layer .sciis-toast .swal2-close {
+  color: var(--muted, #6B7280);
+  font-size: 26px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.sciis-swal-layer .sciis-toast .swal2-close:hover { color: var(--ink); background: var(--navy-50); }
+.sciis-swal-layer .sciis-toast .swal2-close:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal-500) 45%, transparent); }
+.sciis-swal-layer .sciis-toast .swal2-timer-progress-bar { background: var(--toast-accent); opacity: 0.85; }
+.sciis-toast-in { animation: sciis-toast-in 220ms ease-out; }
+.sciis-toast-out { animation: sciis-toast-out 180ms ease-in forwards; }
+@keyframes sciis-toast-in { from { transform: translateY(-18px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sciis-toast-out { to { transform: translateY(-18px); opacity: 0; } }
+@media (max-width: 640px) {
+  body.swal2-toast-shown .swal2-container.sciis-swal-layer { width: calc(100vw - 24px); min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sciis-toast-in, .sciis-toast-out { animation: none; }
+}
+.sciis-swal-layer .swal2-popup.sciis-dialog { font-family: inherit; border-radius: 16px; }
+.sciis-swal-layer .sciis-dialog .swal2-title { color: var(--ink); font-size: 1.25rem; }
+.sciis-swal-layer .sciis-dialog .swal2-html-container { color: var(--text); }

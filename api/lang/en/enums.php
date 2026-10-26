@@ -26,17 +26,28 @@ return [
         'financial_statements' => 'Financial statements', 'business_plan' => 'Business plan', 'team_cv' => 'Team CVs',
         'impact_evidence' => 'Impact evidence', 'authorization_letter' => 'Authorization letter',
         'financial_projections' => 'Financial projections', 'agreement' => 'Agreement', 'progress_evidence' => 'Progress evidence', 'other' => 'Other',
+        'investor_cv' => 'CV', 'impact_policy' => 'Impact / ESG policy', 'message_attachment' => 'Message attachment',
     ],
     'document_status' => ['pending_review' => 'Pending review', 'accepted' => 'Accepted', 'required' => 'Required', 'rejected' => 'Rejected'],
     'indicator_value_status' => ['entered' => 'Entered', 'verified' => 'Verified', 'needs_clarification' => 'Needs clarification'],
     'execution_status' => ['on_track' => 'On track', 'delayed' => 'Delayed', 'stalled' => 'Stalled'],
+    // PRJ-01 / PRJ-02 / ENT-10
+    'milestone_plan_status' => ['draft' => 'Draft', 'submitted' => 'Awaiting approval', 'approved' => 'Approved', 'changes_requested' => 'Changes requested'],
+    'milestone_status' => ['planned' => 'Planned', 'in_progress' => 'In progress', 'done' => 'Done', 'delayed' => 'Delayed'],
+    'progress_report_status' => ['submitted' => 'Awaiting review', 'accepted' => 'Accepted', 'changes_requested' => 'Changes requested'],
+    'investor_update_status' => ['pending_review' => 'Awaiting review', 'published' => 'Sent', 'rejected' => 'Not approved'],
     'meeting_status' => ['scheduled' => 'Scheduled', 'held' => 'Held', 'cancelled' => 'Cancelled'],
-    'agreement_status' => ['draft' => 'Draft', 'legal_review' => 'Legal review', 'approved' => 'Approved', 'signed' => 'Signed', 'archived' => 'Archived'],
+    'agreement_status' => [
+        'draft' => 'Draft', 'legal_review' => 'In legal review', 'changes_requested' => 'Changes requested', 'approved' => 'Approved',
+        'sent_for_signature' => 'Sent for signature', 'signed' => 'Signed', 'archived' => 'Archived', 'cancelled' => 'Cancelled',
+    ],
+    'agreement_party' => ['owner' => 'Project owner', 'investor' => 'Investor'],
+    'agreement_review_decision' => ['approved' => 'Approve', 'changes_requested' => 'Request changes'],
     'consent_type' => [
         'privacy_policy' => 'Privacy policy', 'terms' => 'Terms', 'teaser_publication' => 'Teaser publication',
         'full_file_share' => 'Full file share', 'nda' => 'NDA', 'data_accuracy' => 'Data accuracy declaration',
     ],
-    'notification_channel' => ['database' => 'In-app', 'mail' => 'Email', 'sms' => 'SMS'],
+    'notification_channel' => ['database' => 'In-app', 'mail' => 'Email', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp'],
     'payment_status' => ['pending' => 'Pending', 'authorized' => 'Authorized', 'paid' => 'Paid', 'failed' => 'Failed', 'refunded' => 'Refunded', 'cancelled' => 'Cancelled'],
     'payment_purpose' => ['membership_fee' => 'Membership fee', 'service_fee' => 'Service fee', 'training' => 'Training', 'sponsorship' => 'Sponsorship'],
     'investment_type' => [
@@ -67,4 +78,10 @@ return [
     'document_access_action' => ['view' => 'View', 'download' => 'Download'],
     'investor_access_level' => ['visitor' => 'Visitor', 'registered' => 'Registered', 'approved_member' => 'Approved member', 'granted' => 'Granted', 'connected' => 'Connected'],
     'match_criteria' => ['sector' => 'Sector', 'stage' => 'Stage', 'region' => 'Region', 'investment_type' => 'Investment type', 'funding_range' => 'Funding range'],
+    // Opportunity application — team / market / motivation sections.
+    'product_stage' => ['idea' => 'Idea', 'prototype' => 'Prototype', 'mvp' => 'Minimum viable product (MVP)', 'launched' => 'Launched', 'scaling' => 'Scaling'],
+    'founders_commitment' => ['full_time' => 'Full-time', 'part_time' => 'Part-time', 'transitioning' => 'Transitioning to full-time'],
+    'founders_known_years' => ['lt_1' => 'Less than a year', '1_3' => '1–3 years', '3_5' => '3–5 years', '5_plus' => 'More than 5 years'],
+    'dev_team_structure' => ['in_house' => 'In-house', 'outsourced' => 'Outsourced', 'hybrid' => 'Hybrid', 'none' => 'No development team'],
+    'support_need' => ['mentoring' => 'Mentoring', 'investor_intros' => 'Investor introductions', 'market_access' => 'Market & customer access', 'technical' => 'Technical support', 'legal' => 'Legal & regulatory support', 'impact_measurement' => 'Impact measurement'],
 ];

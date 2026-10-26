@@ -62,6 +62,184 @@ class DemoSeeder extends Seeder
         $investors = $this->investors();
         $entrepreneurs = $this->entrepreneurs();
         $this->opportunities($entrepreneurs, $staff, $investors);
+        $this->seedOpportunityProfiles();
+    }
+
+    /**
+     * Team & founders / market & product / motivation answers for the demo opportunities (readiness axis).
+     * Fills ONLY columns that are still null (never overwrites what a demo user typed), so it is safe to re-run:
+     * `php artisan tinker --execute="(new Database\Seeders\DemoSeeder)->seedOpportunityProfiles();"`.
+     * The draft «وصول» is left partly empty on purpose so the owner demo shows the new checklist items.
+     */
+    public function seedOpportunityProfiles(): void
+    {
+        $howHeard = fn (string $key): ?int => TaxonomyTerm::query()->group('how_heard')->where('key', $key)->value('id');
+
+        foreach ($this->opportunityProfiles() as $name => $profile) {
+            $o = Opportunity::query()->where('name', $name)->first();
+            if ($o === null) {
+                continue;
+            }
+            if (array_key_exists('how_heard', $profile)) {
+                $profile['how_heard_id'] = $howHeard($profile['how_heard']);
+                unset($profile['how_heard']);
+            }
+            $missing = array_filter($profile, function (mixed $value, string $column) use ($o): bool {
+                $current = $o->getAttribute($column);
+
+                return $value !== null && ($current === null || $current === []);
+            }, ARRAY_FILTER_USE_BOTH);
+            if ($missing === []) {
+                continue;
+            }
+            $o->timestamps = false; // keep the demo ordering (updated_at)
+            $o->forceFill($missing)->saveQuietly();
+        }
+    }
+
+    /** @return array<string, array<string, mixed>> keyed by opportunity name */
+    private function opportunityProfiles(): array
+    {
+        $founder = fn (string $name, string $role, bool $fullTime = true): array => ['name' => $name.' (افتراضي)', 'role' => $role, 'linkedin_url' => null, 'is_full_time' => $fullTime];
+
+        return [
+            'سُلّم (افتراضي)' => [
+                'founders_count' => 2, 'team_size' => 14, 'founders_commitment' => 'full_time',
+                'prior_startup_experience' => true, 'prior_startup_experience_desc' => 'أسست الرئيسة التنفيذية مركز تدريب مهني صغيرًا (2017–2021) ودمجته لاحقًا مع جهة تعليمية.',
+                'industry_experience' => true, 'industry_experience_desc' => 'أكثر من عشر سنوات في التوظيف والموارد البشرية بقطاعي الخدمات اللوجستية والتجزئة.',
+                'founders_known_years' => '5_plus', 'has_advisory_board' => true, 'advisory_board_desc' => 'مستشاران من شركات لوجستية كبرى ومستشارة متخصصة في قياس الأثر الاجتماعي.',
+                'dev_team_structure' => 'hybrid', 'founders_agreement_signed' => true,
+                'founders' => [$founder('هيفاء العتيبي', 'الرئيسة التنفيذية'), $founder('ماجد الشهري', 'مدير الشراكات والتوظيف')],
+                'target_customers' => 'الشباب الباحثون عن عمل (20–29 عامًا) في المناطق الطرفية، وشركات التوظيف والخدمات التي تحتاج كوادر مؤهلة.',
+                'market_size_desc' => 'نحو 180 ألف وظيفة جديدة متوقعة في القطاعات المستهدفة حتى 2030 (السوق القابل للخدمة)، نستهدف تأهيل 2% منها خلال خمس سنوات.',
+                'competitors' => 'معاهد التدريب التقليدية وبرامج التوظيف الحكومية العامة دون ارتباط مباشر بأصحاب العمل.',
+                'competitive_advantage' => 'تدريب مرتبط بمقابلات مضمونة لدى 11 جهة شريكة، ونموذج دفع جزئي من صاحب العمل عند التثبيت.',
+                'go_to_market' => 'شراكات مع صندوق تنمية الموارد البشرية والجمعيات الأهلية في المناطق، وحملات رقمية موجهة.',
+                'product_stage' => 'launched', 'technology_desc' => 'منصة تعلّم ومتابعة خاصة مع لوحة متابعة لأصحاب العمل.',
+                'traction_desc' => '610 خريجين حتى الآن، ومعدل توظيف 54% خلال 90 يومًا من التخرج، و11 جهة توظيف شريكة.',
+                'scalability_desc' => 'نموذج معسكر قابل للتكرار في ثلاث مدن جديدة بتكلفة إطلاق محدودة لكل مدينة.',
+                'why_now' => 'نمو الطلب على الكوادر في القطاعات المستهدفة وتوفر شركاء التوظيف يجعلان التوسع الآن مجديًا.',
+                'support_needed' => ['investor_intros', 'market_access', 'impact_measurement'],
+                'program_expectations' => 'إغلاق جولة التمويل خلال ستة أشهر وبناء إطار معتمد لقياس الأثر.', 'how_heard' => 'event',
+            ],
+            'مهارة (افتراضي)' => [
+                'founders_count' => 3, 'team_size' => 9, 'founders_commitment' => 'full_time',
+                'prior_startup_experience' => false, 'industry_experience' => true, 'industry_experience_desc' => 'خبرة في تصميم المناهج الرقمية وإدارة برامج التمكين في القطاع غير الربحي.',
+                'founders_known_years' => '3_5', 'has_advisory_board' => false, 'dev_team_structure' => 'in_house', 'founders_agreement_signed' => true,
+                'founders' => [$founder('ريم القحطاني', 'الرئيسة التنفيذية'), $founder('لمى الحربي', 'مديرة المحتوى التعليمي'), $founder('عبير الدوسري', 'مديرة العمليات')],
+                'target_customers' => 'النساء الباحثات عن عمل أو دخل إضافي في المدن الصغيرة، والجهات التي توظّف عن بُعد.',
+                'market_size_desc' => 'أكثر من 400 ألف امرأة في الفئة المستهدفة خارج المدن الكبرى؛ نستهدف 5 آلاف متدربة خلال ثلاث سنوات.',
+                'competitors' => 'منصات التعلم المفتوحة العامة ومراكز التدريب الأهلية.',
+                'competitive_advantage' => 'مراكز حضورية قريبة مع إرشاد مهني وربط مباشر بفرص العمل عن بُعد.',
+                'go_to_market' => 'شراكات مع الجمعيات النسائية والبلديات، وإحالات من الخريجات.',
+                'product_stage' => 'launched', 'technology_desc' => 'نظام إدارة تعلم مفتوح المصدر مخصص.',
+                'traction_desc' => 'ثلاثة مراكز تشغيلية، و1,200 متدربة، و38% منهن حصلن على دخل خلال ستة أشهر.',
+                'scalability_desc' => 'نموذج امتياز اجتماعي للمراكز مع شركاء محليين في كل مدينة.',
+                'why_now' => 'تنامي فرص العمل عن بُعد يتيح دخلًا للنساء في المدن الصغيرة دون الحاجة إلى الانتقال.',
+                'support_needed' => ['mentoring', 'investor_intros'],
+                'program_expectations' => 'توسيع الشبكة إلى خمسة مراكز وتوثيق الأثر.', 'how_heard' => 'referral',
+            ],
+            'رفق (افتراضي)' => [
+                'founders_count' => 2, 'team_size' => 35, 'founders_commitment' => 'full_time',
+                'prior_startup_experience' => true, 'prior_startup_experience_desc' => 'أسس المدير التقني تطبيق حجوزات صحية سابقًا وتخارج منه في 2022.',
+                'industry_experience' => true, 'industry_experience_desc' => 'المؤسسة الشريكة ممرضة قانونية بخبرة 12 عامًا في الرعاية المنزلية.',
+                'founders_known_years' => '1_3', 'has_advisory_board' => true, 'advisory_board_desc' => 'طبيب استشاري في طب المسنين وخبير امتثال صحي.',
+                'dev_team_structure' => 'in_house', 'founders_agreement_signed' => true,
+                'founders' => [$founder('خالد الزهراني', 'الرئيس التنفيذي'), $founder('منى الغامدي', 'مديرة الرعاية السريرية')],
+                'target_customers' => 'الأسر التي ترعى كبار السن في المنزل، وجهات التأمين والرعاية الاجتماعية.',
+                'market_size_desc' => 'أكثر من 1.4 مليون مسن في المملكة مع تزايد الطلب على الرعاية المنزلية بنحو 8% سنويًا.',
+                'competitors' => 'شركات التمريض المنزلي التقليدية ومكاتب الاستقدام.',
+                'competitive_advantage' => 'شبكة ممرضين مرخصين مع متابعة رقمية وتقارير دورية للأسرة.',
+                'go_to_market' => 'تعاقدات مع شركات التأمين وبرامج الضمان، وتسويق مباشر للأسر.',
+                'product_stage' => 'scaling', 'technology_desc' => 'تطبيق للأسر والممرضين مع جدولة ذكية وسجل رعاية إلكتروني.',
+                'traction_desc' => '900 مستفيد نشط، وعقدان مع جهتي تأمين، ونسبة رضا 92%.',
+                'scalability_desc' => 'التوسع إلى ثلاث مناطق جديدة عبر نموذج مراكز تشغيل إقليمية.',
+                'why_now' => 'تحولات منظومة الرعاية الصحية تدعم الرعاية المنزلية وتخفف الضغط على المستشفيات.',
+                'support_needed' => ['investor_intros', 'legal', 'impact_measurement'],
+                'program_expectations' => 'تمويل توسع إقليمي وشراكة مع جهة حكومية للرعاية الاجتماعية.', 'how_heard' => 'partner',
+            ],
+            'شكّن (افتراضي)' => [
+                'founders_count' => 4, 'team_size' => 22, 'founders_commitment' => 'part_time', 'founders_commitment_note' => 'اثنان من المؤسسين متفرغان والبقية بدوام جزئي حتى إغلاق جولة التمويل.',
+                'prior_startup_experience' => true, 'prior_startup_experience_desc' => 'خبرة سابقة في تطوير مشاريع سكنية متوسطة الحجم.',
+                'industry_experience' => true, 'industry_experience_desc' => 'خبرة مجتمعة تتجاوز 40 عامًا في التطوير العقاري والتمويل السكني.',
+                'founders_known_years' => '5_plus', 'has_advisory_board' => true, 'advisory_board_desc' => 'مستشارون في التمويل الإسلامي والإسكان التعاوني.',
+                'dev_team_structure' => 'outsourced', 'founders_agreement_signed' => true,
+                'founders' => [$founder('فهد المالكي', 'الرئيس التنفيذي'), $founder('سلمان العنزي', 'مدير التطوير العقاري'), $founder('نوف الشمري', 'مديرة الشراكات المجتمعية', false), $founder('تركي البقمي', 'المدير المالي', false)],
+                'target_customers' => 'الأسر محدودة الدخل المؤهلة للدعم السكني والراغبة في التملك التشاركي.',
+                'market_size_desc' => 'فجوة تقدر بمئات الآلاف من الوحدات الميسّرة؛ نستهدف 300 وحدة في المرحلة الأولى.',
+                'competitors' => 'المطورون العقاريون التقليديون وبرامج الإسكان التنموي.',
+                'competitive_advantage' => 'نموذج تملك تشاركي يخفض الدفعة الأولى ويشرك السكان في الإدارة.',
+                'go_to_market' => 'شراكات مع الجمعيات الأهلية وجهات الدعم السكني.',
+                'product_stage' => 'mvp', 'technology_desc' => 'منصة لإدارة الحصص والمدفوعات والصيانة التشاركية.',
+                'traction_desc' => 'مشروع تجريبي من 40 وحدة بنسبة إشغال 100%.',
+                'scalability_desc' => 'نموذج قابل للتكرار عبر صناديق استثمار عقاري ذات أثر.',
+                'why_now' => 'برامج الإسكان الوطنية وتوجه الجهات المانحة نحو حلول السكن الميسّر.',
+                'support_needed' => ['investor_intros', 'legal'],
+                'program_expectations' => 'هيكلة تمويل مختلط يجمع المنح والاستثمار.', 'how_heard' => 'website',
+            ],
+            'حصاد (افتراضي)' => [
+                'founders_count' => 2, 'team_size' => 6, 'founders_commitment' => 'transitioning', 'founders_commitment_note' => 'تتفرغ المؤسِّسة الثانية كليًا مع بداية الموسم الزراعي القادم.',
+                'prior_startup_experience' => false, 'industry_experience' => true, 'industry_experience_desc' => 'خبرة أكاديمية وعملية في الزراعة المائية وإدارة المشاريع المجتمعية.',
+                'founders_known_years' => '1_3', 'has_advisory_board' => false, 'dev_team_structure' => 'none', 'founders_agreement_signed' => false,
+                'founders' => [$founder('نورة السبيعي', 'المديرة التنفيذية'), $founder('هند العمري', 'المسؤولة الفنية', false)],
+                'target_customers' => 'الأسر المنتجة في القرى، ومنافذ بيع الخضار المحلية.',
+                'market_size_desc' => 'طلب محلي متزايد على الخضار الطازجة في منطقة عسير بقيمة تقديرية تتجاوز 50 مليون ريال سنويًا.',
+                'competitors' => 'المزارع التقليدية والخضار المستوردة من مناطق أخرى.',
+                'competitive_advantage' => 'استهلاك مياه أقل بنسبة 80% وإنتاج على مدار العام قرب المستهلك.',
+                'go_to_market' => 'بيع مباشر لمنافذ التجزئة المحلية والأسواق الأسبوعية.',
+                'product_stage' => 'prototype', 'technology_desc' => 'أنظمة زراعة مائية منخفضة التكلفة مع حساسات لمراقبة المياه.',
+                'traction_desc' => 'وحدتان تجريبيتان تنتجان 1.5 طن شهريًا، واتفاقية مبدئية مع منفذَي بيع.',
+                'scalability_desc' => 'وحدات معيارية يمكن تركيبها لدى 50 أسرة خلال عامين.',
+                'why_now' => 'شح المياه وارتفاع أسعار الغذاء يزيدان الحاجة إلى حلول إنتاج محلي مستدام.',
+                'support_needed' => ['technical', 'mentoring', 'market_access'],
+                'program_expectations' => 'دعم فني لتحسين الإنتاجية وتمويل أول 20 وحدة.', 'how_heard' => 'social_media',
+            ],
+            'نماء (افتراضي)' => [
+                'founders_count' => 1, 'team_size' => 4, 'founders_commitment' => 'part_time',
+                'prior_startup_experience' => false, 'industry_experience' => true, 'industry_experience_desc' => 'خبرة في برامج الإقراض متناهي الصغر بإحدى الجمعيات.',
+                'founders_known_years' => 'lt_1', 'has_advisory_board' => false, 'dev_team_structure' => 'none', 'founders_agreement_signed' => false,
+                'founders' => [$founder('عبدالرحمن اليامي', 'المؤسس', false)],
+                'target_customers' => 'أصحاب المشاريع الصغيرة في الأحياء ذات الدخل المنخفض.',
+                'market_size_desc' => 'آلاف المشاريع المنزلية غير المسجلة في الأحياء المستهدفة.',
+                'competitors' => 'حاضنات الأعمال العامة وبرامج بنك التنمية الاجتماعية.',
+                'competitive_advantage' => 'حضور ميداني داخل الأحياء وبرامج قصيرة باللهجة المحلية.',
+                'go_to_market' => 'عبر المساجد والمراكز الاجتماعية في الأحياء.',
+                'product_stage' => 'mvp', 'technology_desc' => 'لا يوجد مكوّن تقني حاليًا.',
+                'traction_desc' => 'دفعة تجريبية من 15 مشروعًا.',
+                'scalability_desc' => 'يعتمد التوسع على تدريب ميسرين محليين.',
+                'why_now' => 'الحاجة إلى دعم المشاريع الصغيرة بعد ارتفاع تكاليف المعيشة.',
+                'support_needed' => ['mentoring', 'impact_measurement'],
+                'program_expectations' => 'بناء نموذج تشغيلي مستدام قبل إعادة التقديم.', 'how_heard' => 'media',
+            ],
+            'دوّر (افتراضي)' => [
+                'founders_count' => 3, 'team_size' => 28, 'founders_commitment' => 'full_time',
+                'prior_startup_experience' => true, 'prior_startup_experience_desc' => 'أسس أحد المؤسسين شركة لوجستيات عكسية واستحوذت عليها شركة إقليمية.',
+                'industry_experience' => true, 'industry_experience_desc' => 'خبرة في إدارة النفايات الإلكترونية والامتثال البيئي وتوظيف ذوي الإعاقة.',
+                'founders_known_years' => '3_5', 'has_advisory_board' => true, 'advisory_board_desc' => 'خبير بيئي ومستشار في التوظيف الدامج.',
+                'dev_team_structure' => 'hybrid', 'founders_agreement_signed' => true,
+                'founders' => [$founder('يزيد الحمدان', 'الرئيس التنفيذي'), $founder('أسماء الرشيدي', 'مديرة التوظيف الدامج'), $founder('بدر الخالدي', 'مدير العمليات')],
+                'target_customers' => 'الشركات والجهات الحكومية التي تحتاج إلى تخلص آمن من الأجهزة الإلكترونية.',
+                'market_size_desc' => 'تُنتج المملكة مئات الآلاف من أطنان النفايات الإلكترونية سنويًا ويُعاد تدوير جزء محدود منها.',
+                'competitors' => 'شركات إعادة التدوير العامة وتجار الخردة غير النظاميين.',
+                'competitive_advantage' => 'شهادات إتلاف آمن للبيانات وأثر اجتماعي موثق عبر توظيف ذوي الإعاقة.',
+                'go_to_market' => 'عقود سنوية مع الشركات الكبرى ضمن برامج الاستدامة.',
+                'product_stage' => 'launched', 'technology_desc' => 'نظام تتبع للأجهزة من الاستلام حتى الإتلاف مع تقارير للعملاء.',
+                'traction_desc' => '40 عميلًا مؤسسيًا، و700 طن معالجة سنويًا، و18 موظفًا من ذوي الإعاقة.',
+                'scalability_desc' => 'افتتاح مركز معالجة ثانٍ في المنطقة الشرقية.',
+                'why_now' => 'تشديد متطلبات الاستدامة على الشركات وتوجهات الاقتصاد الدائري.',
+                'support_needed' => ['investor_intros', 'market_access'],
+                'program_expectations' => 'تمويل خط المعالجة الثاني وتوسيع قاعدة العملاء.', 'how_heard' => 'partner',
+            ],
+            // Draft: team + part of the market answers only → the demo checklist shows the new required items.
+            'وصول (افتراضي)' => [
+                'founders_count' => 2, 'team_size' => 3, 'founders_commitment' => 'part_time',
+                'prior_startup_experience' => false, 'industry_experience' => true, 'industry_experience_desc' => 'خبرة في خدمات النقل الطبي ومراكز التأهيل.',
+                'founders_known_years' => '1_3', 'dev_team_structure' => 'outsourced',
+                'founders' => [$founder('سارة المطيري', 'المؤسسة'), $founder('فيصل العسيري', 'الشريك التشغيلي', false)],
+                'product_stage' => 'idea',
+                'target_customers' => 'الأشخاص ذوو الإعاقة الحركية الذين يتنقلون يوميًا إلى العمل ومراكز التأهيل.',
+            ],
+        ];
     }
 
     /** @return array<string, User> */

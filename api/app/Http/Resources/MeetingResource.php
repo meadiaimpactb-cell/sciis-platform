@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Meeting;
 use App\Models\MeetingAction;
 use App\Models\MeetingParticipant;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Meeting */
+/** @mixin Meeting */
 class MeetingResource extends JsonResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
         $isStaff = $request->user()?->isStaff() ?? false;
+        $viewerId = $request->user()?->id;
 
         return [
             'id' => $this->id,
@@ -38,7 +40,10 @@ class MeetingResource extends JsonResource
             ])->values()->all(),
             'minutes' => $this->when($isStaff || $this->status->value === 'held', $this->minutes),
             'actions' => $this->actions->map(fn (MeetingAction $a): array => [
-                'id' => $a->id, 'description' => $a->description, 'owner' => $a->owner?->name, 'due_at' => $a->due_at?->toIso8601String(), 'done_at' => $a->done_at?->toIso8601String(),
+                'id' => $a->id, 'description' => $a->description, 'owner' => $a->owner?->name, 'owner_user_id' => $isStaff ? $a->owner_user_id : null, 'due_at' => $a->due_at?->toIso8601String(), 'done_at' => $a->done_at?->toIso8601String(),
+                // MTG-02 — the viewer's own action / may mark it done (assignee or meeting staff).
+                'is_mine' => $viewerId !== null && $a->owner_user_id === $viewerId,
+                'can_toggle' => ($viewerId !== null && $a->owner_user_id === $viewerId) || ($isStaff && $request->user()->can('meetings.manage')),
             ])->values()->all(),
             'ics_sent_at' => $this->ics_sent_at?->toIso8601String(),
         ];

@@ -16,6 +16,7 @@ use App\Models\Nomination;
 use App\Models\Opportunity;
 use App\Models\TaxonomyTerm;
 use App\Models\User;
+use App\Notifications\AccessRevokedNotification;
 use App\Notifications\InterestDecisionNotification;
 use App\Notifications\InterestReceivedNotification;
 use Illuminate\Support\Facades\DB;
@@ -119,8 +120,58 @@ class InterestService
         });
     }
 
-    /** Investor accepts the NDA for an opportunity; activates the grant when the owner already approved. */
-    public function acceptNda(Opportunity $opportunity, User $investor, string $version, string $ip, ?string $userAgent): FileAccessGrant
+    /**
+     * ENT-06 — the owner withdraws a previously approved full-file access: the grant is revoked at once (documents
+     * and download URLs are refused from now on), the interest is closed, the investor and matching staff are told.
+     */
+    public function ownerRevoke(Interest $interest, User $owner, ?string $reason = null): Interest
+    {
+        if (! $interest->opportunity->isOwnedBy($owner)) {
+            throw new DomainException(__('messages.errors.forbidden'), 'forbidden', 403);
+        }
+
+        $grant = $interest->accessGrant();
+        if ($grant === null || $grant->granted_by_owner_at === null || $grant->revoked_at !== null) {
+            throw new DomainException(__('messages.interest.grant_not_active'), 'grant_not_active', 422);
+        }
+
+        $reason = $reason !== null && trim($reason) !== '' ? trim($reason) : null;
+
+        $interest = DB::transaction(function () use ($interest, $grant, $owner, $reason): Interest {
+            $before = ['status' => $interest->status->value, 'grant_revoked_at' => null];
+
+            $grant->revoked_at = now();
+            $grant->save();
+
+            if ($interest->isOpen()) {
+                $interest->status = InterestStatus::Closed;
+                $interest->closed_reason = $reason ?? __('messages.interest.revoked_by_owner');
+                $interest->closed_at = now();
+                $interest->save();
+            }
+
+            $this->audit->log('interest.access_revoked', $interest, $before, [
+                'status' => $interest->status->value,
+                'grant_revoked_at' => $grant->revoked_at->toIso8601String(),
+                'reason' => $reason,
+            ], $owner);
+
+            return $interest;
+        });
+
+        $this->notifications->send($interest->investor, new AccessRevokedNotification($interest));
+        $staff = User::query()->staff()->active()->permission('nominations.manage')->get();
+        $this->notifications->sendToMany($staff, new AccessRevokedNotification($interest, true, $reason));
+
+        return $interest;
+    }
+
+    /**
+     * Investor accepts the NDA for an opportunity; activates the grant when the owner already approved.
+     * MSG-02: `$version` must be the version currently in force (the one whose text the investor was shown);
+     * the consent row keeps version + hash + the full accepted text + language + time + IP + UA.
+     */
+    public function acceptNda(Opportunity $opportunity, User $investor, string $version, string $ip, ?string $userAgent, ?string $locale = null): FileAccessGrant
     {
         $grant = FileAccessGrant::query()
             ->where('opportunity_id', $opportunity->id)
@@ -132,16 +183,23 @@ class InterestService
             throw new DomainException(__('messages.interest.owner_approval_pending'), 'owner_approval_pending', 422);
         }
 
-        return DB::transaction(function () use ($grant, $opportunity, $investor, $version, $ip, $userAgent): FileAccessGrant {
-            $text = (string) $this->settings->get('legal.nda_text', 'NDA');
+        $nda = app(NdaService::class)->current($locale);
+        if ($version !== $nda['version']) {
+            $message = __('messages.interest.nda_version_mismatch', ['version' => $nda['version']]);
+            throw new DomainException($message, 'nda_version_mismatch', 422, ['version' => [$message]]);
+        }
+
+        return DB::transaction(function () use ($grant, $opportunity, $investor, $nda, $ip, $userAgent): FileAccessGrant {
             $consent = Consent::query()->create([
                 'user_id' => $investor->id,
                 'type' => ConsentType::Nda,
-                'version' => $version,
-                'text_hash' => hash('sha256', $text.'|'.$version),
+                'version' => $nda['version'],
+                'text_hash' => $nda['text_hash'],
+                'text_snapshot' => $nda['body'],
+                'locale' => $nda['locale'],
                 'accepted_at' => now(),
                 'ip' => $ip,
-                'user_agent' => $userAgent,
+                'user_agent' => $userAgent !== null ? substr($userAgent, 0, 1000) : null,
                 'subject_type' => $opportunity->getMorphClass(),
                 'subject_id' => $opportunity->id,
             ]);
@@ -149,7 +207,7 @@ class InterestService
             $grant->nda_consent_id = $consent->id;
             $grant->save();
 
-            $this->audit->log('interest.nda_accepted', $grant, null, ['consent_id' => $consent->id, 'version' => $version], $investor);
+            $this->audit->log('interest.nda_accepted', $grant, null, ['consent_id' => $consent->id, 'version' => $nda['version'], 'text_hash' => $nda['text_hash'], 'locale' => $nda['locale']], $investor);
 
             return $grant;
         });

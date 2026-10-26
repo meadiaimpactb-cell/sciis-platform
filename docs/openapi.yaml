@@ -16,7 +16,9 @@ info:
     * `Accept-Language: ar|en` selects taxonomy labels and message language (default `ar`).
     * Pagination: `?page=&per_page=` (max 100) → `{data, links, meta}`.
     * Filtering on list endpoints: `?filter[sector]=&filter[region]=&filter[stage]=&filter[type]=&sort=newest|impact|need&search=`.
-    * Errors are RFC-7807-ish `{message, errors{field:[...]}, code}`.
+    * Errors (every `api/*` status: 401 / 403 / 404 / 422 / 429 / 5xx) are RFC-7807-ish
+      `{message, errors{field:[...]}, code, request_id}` — `errors` is always present (`{}` when empty),
+      `message` and field messages follow `Accept-Language`.
     * `X-Request-Id` is echoed back on every response and written to `audit_logs`.
     * All mutating requests are audited (AUD-01).
 
@@ -25,21 +27,37 @@ info:
       first and `X-XSRF-TOKEN` on mutations.
     * **Mobile**: Sanctum personal access token returned by `POST /auth/login` with `device_name`,
       sent as `Authorization: Bearer <token>` (`bearerAuth` scheme).
-    * Staff accounts must complete TOTP 2FA (ACC-05) — a `423` with `code=two_factor_required`
-      is returned until `POST /auth/2fa/challenge` succeeds.
+    * **TOTP 2FA (ACC-05) — any user may enable it; mandatory for staff.** When 2FA is enabled, login
+      answers `200` with `two_factor_required: true` (SPA: session flag pending; mobile: a token with
+      the single ability `2fa:pending`). Until `POST /auth/2fa/challenge` succeeds, EVERY protected
+      route answers `403` `code=two_factor_challenge_required` — except `GET /me`,
+      `POST /auth/logout` and `POST /auth/2fa/challenge`. Staff without 2FA (when enforced) get
+      `403` `code=two_factor_enrolment_required` on `/admin/*`.
+
+    ## Standard verification layer / طبقة التحقق الموحّدة
+    * **Phone**: validated with libphonenumber as a real **mobile** number (default region `SA`,
+      international numbers allowed) and always stored/returned as E.164 (`+9665XXXXXXXX`).
+      Accepted input: `05XXXXXXXX`, `5XXXXXXXX`, `9665XXXXXXXX`, `009665XXXXXXXX`, `+9665XXXXXXXX`,
+      with spaces / dashes / parentheses and Arabic-Indic digits. Error: «رقم الجوال غير صحيح» /
+      "Invalid mobile number" (`errors.phone`).
+    * **Password policy** (register, reset, `PUT /me/password`, staff creation): min 10 characters,
+      upper + lower case, a number and a symbol.
+    * **OTP**: 6 random digits, valid 10 minutes, stored hashed, max 5 wrong attempts, single use
+      (deleted once verified), resend cooldown 60 s. The code is never returned by the API.
 
     ## Rate limiting / تحديد المعدل
     | Group | Limit |
     |---|---|
-    | `/auth/login`, `/auth/forgot-password`, `/auth/resend-otp` | 5 / minute / IP + email |
-    | `/auth/verify-*`, `/auth/2fa/challenge` | 10 / minute / user |
+    | `/auth/register`, `/auth/login`, `/auth/forgot-password`, `/auth/reset-password`, `PUT /me/password` | 10 / minute / IP (login: 5 failures / 5 min / IP + email) |
+    | `/auth/otp/send`, `/auth/verify-otp`, legacy `/auth/resend-otp`, `/auth/verify-*`, `/auth/2fa/*` | 5 / minute / user **per channel** (`email`, `phone`, `2fa`) |
     | `/public/contact` | 3 / 10 minutes / IP (+ honeypot) |
     | `/public/*` | 60 / minute / IP |
     | authenticated routes | 120 / minute / user |
     | `/admin/reports/*/export.xlsx` | 10 / hour / user |
     | `/webhooks/moyasar` | not rate-limited; signature-verified |
 
-    Exceeding a limit returns `429` with `Retry-After`.
+    Exceeding a limit returns `429` with `Retry-After` and the standard error body
+    `{message, errors: {}, code: too_many_requests, request_id}` (message localised).
   contact:
     name: SCIIS Engineering
     email: engineering@sciis.sa
@@ -109,11 +127,99 @@ paths:
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /auth/otp/send:
+    post:
+      tags: [Auth]
+      operationId: authOtpSend
+      summary: إرسال رمز تحقق (بريد أو جوال) — العقد الموحّد
+      description: |
+        Issues a new 6-digit code for the channel (previous code is discarded). `phone` sends an SMS
+        to the account's mobile. The code is NEVER part of the response (local/dev with the `log`
+        mail/SMS driver: it is written to the application log tagged `[OTP][dev]`).
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                channel: { type: string, enum: [email, phone], description: '`sms` accepted as a legacy alias of `phone`.' }
+      responses:
+        '200':
+          description: Code sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, message]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      channel: { type: string, enum: [email, phone] }
+                      expires_in: { type: integer, description: Seconds the code stays valid, example: 600 }
+                      resend_in: { type: integer, description: Seconds before another code may be requested, example: 60 }
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/TwoFactorChallengeRequired' }
+        '422':
+          description: Validation failed, `already_verified`, or `phone_missing`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: '`too_many_requests` (5/min per user + channel) or `otp_cooldown` (resend cooldown).'
+          headers: { Retry-After: { $ref: '#/components/headers/Retry-After' } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/verify-otp:
+    post:
+      tags: [Auth]
+      operationId: authVerifyOtp
+      summary: التحقق من رمز OTP (بريد أو جوال) — العقد الموحّد
+      description: |
+        Verifies the code for the channel and marks the email / phone as verified. The code is single
+        use (deleted on success) and burned after 5 wrong attempts. Error codes (422): `otp_invalid`,
+        `otp_expired` (expired / never requested / already used), `otp_attempts_exceeded`.
+      x-requirement: [ACC-01]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OtpChannelCodeRequest' }
+      responses:
+        '200':
+          description: Verified.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, message]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      channel: { type: string, enum: [email, phone] }
+                      verified: { type: boolean, const: true }
+                      email_verified: { type: boolean }
+                      phone_verified: { type: boolean }
+                      fully_verified: { type: boolean, description: Email AND phone verified (staff — email only) }
+                  message: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/TwoFactorChallengeRequired' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
   /auth/verify-email:
     post:
       tags: [Auth]
       operationId: authVerifyEmail
-      summary: تأكيد البريد الإلكتروني برمز OTP
+      summary: تأكيد البريد الإلكتروني برمز OTP (قديم — استخدم /auth/verify-otp)
+      deprecated: true
       x-requirement: [ACC-01]
       requestBody:
         required: true
@@ -130,7 +236,8 @@ paths:
     post:
       tags: [Auth]
       operationId: authVerifyPhone
-      summary: تأكيد رقم الجوال برمز OTP
+      summary: تأكيد رقم الجوال برمز OTP (قديم — استخدم /auth/verify-otp)
+      deprecated: true
       x-requirement: [ACC-01]
       requestBody:
         required: true
@@ -147,7 +254,8 @@ paths:
     post:
       tags: [Auth]
       operationId: authResendOtp
-      summary: إعادة إرسال رمز التحقق
+      summary: إعادة إرسال رمز التحقق (قديم — استخدم /auth/otp/send)
+      deprecated: true
       x-requirement: [ACC-01]
       requestBody:
         required: true
@@ -157,7 +265,7 @@ paths:
               type: object
               required: [channel]
               properties:
-                channel: { type: string, enum: [email, sms] }
+                channel: { type: string, enum: [email, sms, phone] }
       responses:
         '200': { $ref: '#/components/responses/OkMessage' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -177,24 +285,23 @@ paths:
             schema: { $ref: '#/components/schemas/LoginRequest' }
       responses:
         '200':
-          description: Authenticated. `token` is present only when `device_name` was sent.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AuthResponse' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '423':
-          description: Password accepted, TOTP challenge required (staff / 2FA-enabled accounts).
+          description: |
+            Password accepted. `data.token` is present for non-stateful (mobile) requests only.
+            When `data.two_factor_required` is true the session / token is **pending**: call
+            `POST /auth/2fa/challenge` next (mobile: with this token, which only carries `2fa:pending`);
+            every other protected route answers 403 `two_factor_challenge_required` meanwhile.
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Error'
-                  - type: object
-                    properties:
-                      code: { type: string, const: two_factor_required }
-                      token:
-                        type: string
-                        description: Short-lived pre-auth token (mobile only) to use on `/auth/2fa/challenge`.
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: '`account_suspended`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
@@ -202,28 +309,47 @@ paths:
     post:
       tags: [Auth]
       operationId: authTwoFactorChallenge
-      summary: التحقق من رمز TOTP بعد كلمة المرور
+      summary: التحقق من رمز TOTP (أو رمز استرداد) بعد كلمة المرور
+      description: |
+        Accepts the current 6-digit TOTP or one of the recovery codes (case-insensitive; a used
+        recovery code is invalidated). Reachable while the challenge is pending. Mobile: the pending
+        token is revoked and a full token is returned.
       x-requirement: [ACC-05]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/OtpCodeRequest' }
+            schema: { $ref: '#/components/schemas/TwoFactorCodeRequest' }
       responses:
         '200':
-          description: Fully authenticated; mobile receives the final token.
+          description: Challenge passed.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AuthResponse' }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [two_factor_passed]
+                    properties:
+                      two_factor_passed: { type: boolean, const: true }
+                      token: { type: string, description: Mobile (bearer) only — replaces the pending token }
+                      token_type: { type: string, const: Bearer }
+                      recovery_codes_remaining: { type: integer, description: Present when a recovery code was used }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422':
+          description: '`two_factor_invalid` (errors.code) or `two_factor_not_enabled`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
   /auth/2fa/enable:
     post:
       tags: [Auth]
       operationId: authTwoFactorEnable
-      summary: توليد سر TOTP ورمز QR
+      summary: توليد سر TOTP ورمز QR (لا يفعّل المصادقة بعد)
+      description: Any user (no role guard). Generates a new secret; 2FA stays OFF until `POST /auth/2fa/confirm`.
       x-requirement: [ACC-05]
       responses:
         '200':
@@ -232,18 +358,28 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [secret, qr_svg, otpauth_url]
                 properties:
-                  secret: { type: string }
-                  qr_svg: { type: string, description: Inline SVG }
-                  otpauth_url: { type: string, format: uri }
+                  data:
+                    type: object
+                    required: [secret, otpauth_url, qr]
+                    properties:
+                      secret: { type: string, description: Base32 secret for manual entry }
+                      otpauth_url: { type: string, example: 'otpauth://totp/SCIIS:user%40example.com?secret=…&issuer=SCIIS' }
+                      qr: { type: string, description: 'Server-rendered QR as an SVG data URI (`data:image/svg+xml;base64,…`) — use directly as `<img src>`' }
+                      two_factor_enabled: { type: boolean, const: false }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/TwoFactorChallengeRequired' }
+        '422':
+          description: '`two_factor_enabled` — already enabled.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /auth/2fa/confirm:
     post:
       tags: [Auth]
       operationId: authTwoFactorConfirm
-      summary: تأكيد تفعيل TOTP برمز صحيح
+      summary: تأكيد تفعيل TOTP برمز صحيح — يعيد 8 رموز استرداد
       x-requirement: [ACC-05]
       requestBody:
         required: true
@@ -252,37 +388,82 @@ paths:
             schema: { $ref: '#/components/schemas/OtpCodeRequest' }
       responses:
         '200':
-          description: 2FA confirmed; recovery codes returned once.
+          description: 2FA enabled; the 8 recovery codes are returned ONCE (stored encrypted).
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  recovery_codes:
-                    type: array
-                    items: { type: string }
+                  data:
+                    type: object
+                    required: [two_factor_enabled, recovery_codes]
+                    properties:
+                      two_factor_enabled: { type: boolean, const: true }
+                      recovery_codes:
+                        type: array
+                        minItems: 8
+                        maxItems: 8
+                        items: { type: string, pattern: '^[A-Z0-9]{10}$' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/TwoFactorChallengeRequired' }
+        '422':
+          description: '`two_factor_invalid`, `two_factor_not_started` or `two_factor_enabled`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/2fa/disable:
+    post:
+      tags: [Auth]
+      operationId: authTwoFactorDisable
+      summary: تعطيل TOTP — يتطلب كلمة المرور الحالية ورمزًا صحيحًا (غير مسموح لحسابات staff عند الإلزام)
+      x-requirement: [ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorDisableRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: '`two_factor_mandatory` (staff, enforced) or `two_factor_challenge_required`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: '`validation_failed` (errors.password — wrong/missing current password; errors.code), `two_factor_invalid`, `two_factor_not_enabled`.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /auth/2fa:
     delete:
       tags: [Auth]
-      operationId: authTwoFactorDisable
-      summary: تعطيل TOTP (غير مسموح لحسابات staff)
+      operationId: authTwoFactorDisableLegacy
+      summary: تعطيل TOTP (قديم — مرادف لـ POST /auth/2fa/disable وبنفس الشروط)
+      deprecated: true
       x-requirement: [ACC-05]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TwoFactorDisableRequest' }
       responses:
-        '204': { description: Disabled }
+        '200': { $ref: '#/components/responses/OkMessage' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
 
   /auth/logout:
     post:
       tags: [Auth]
       operationId: authLogout
-      summary: إنهاء الجلسة / إبطال الرمز الحالي
+      summary: إنهاء الجلسة / إبطال الرمز الحالي (متاح أثناء انتظار تحدي 2FA)
       x-requirement: [ACC-01]
       responses:
-        '204': { description: Logged out }
+        '200': { $ref: '#/components/responses/OkMessage' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
   /auth/forgot-password:
@@ -322,11 +503,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [token, email, password]
+              required: [token, email, password, password_confirmation]
               properties:
                 token: { type: string }
                 email: { type: string, format: email }
-                password: { type: string, format: password, minLength: 8 }
+                password: { $ref: '#/components/schemas/Password' }
+                password_confirmation: { type: string, format: password }
       responses:
         '200': { $ref: '#/components/responses/OkMessage' }
         '422': { $ref: '#/components/responses/ValidationError' }
@@ -368,6 +550,30 @@ paths:
               schema: { $ref: '#/components/schemas/Me' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/password:
+    put:
+      tags: [Me]
+      operationId: updateMyPassword
+      summary: تغيير كلمة المرور (نفس سياسة التسجيل)
+      x-requirement: [ACC-06]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string, format: password }
+                password: { $ref: '#/components/schemas/Password' }
+                password_confirmation: { type: string, format: password }
+      responses:
+        '200': { $ref: '#/components/responses/OkMessage' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/TwoFactorChallengeRequired' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
 
   /me/device-tokens:
     post:
@@ -2894,6 +3100,69 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/ContentItem' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /public/stories:
+    get:
+      tags: [Public]
+      operationId: publicListStories
+      summary: قصص الأثر المنشورة (تُخفى الأقسام عند عدم وجود عناصر)
+      security: []
+      x-requirement: [CMS-02]
+      responses:
+        '200':
+          description: Published impact stories (title, body = summary, sector, beneficiaries, impact_metric, link_url, meta.cover / meta.logo)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/partners:
+    get:
+      tags: [Public]
+      operationId: publicListPartners
+      summary: الشركاء المنشورون والمعتمد عرض أسمائهم فقط (لا شعارات دون أسماء)
+      security: []
+      x-requirement: [CMS-02]
+      responses:
+        '200':
+          description: Published partners with approved_for_display = true (name, link_url, meta.logo)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /public/resources:
+    get:
+      tags: [Public]
+      operationId: publicListResources
+      summary: الأدلة والمراجع المنشورة
+      security: []
+      x-requirement: [CMS-02]
+      parameters:
+        - name: audience
+          in: query
+          required: false
+          description: investor | entrepreneur (items marked `all` are always included)
+          schema: { type: string, enum: [investor, entrepreneur] }
+      responses:
+        '200':
+          description: Published resources (audience, url = link_url or uploaded file, file {name,size,mime})
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentItem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /public/stats:
     get:
       tags: [Public]
@@ -2933,7 +3202,7 @@ paths:
                 category: { type: string, enum: [investor, entrepreneur, partnership, media, other] }
                 name: { type: string, maxLength: 120 }
                 email: { type: string, format: email }
-                phone: { type: string }
+                phone: { $ref: '#/components/schemas/MobilePhone' }
                 message: { type: string, maxLength: 3000 }
                 website:
                   type: string
@@ -3226,7 +3495,7 @@ components:
       name: type
       in: path
       required: true
-      schema: { type: string, enum: [pages, faqs, news, events] }
+      schema: { type: string, enum: [pages, faqs, news, events, stories, partners, resources] }
 
   responses:
     OkMessage:
@@ -3267,6 +3536,13 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+          example: { message: عدد كبير من الطلبات، يرجى المحاولة لاحقًا., errors: {}, code: too_many_requests, request_id: 3f2c9a1e-7b1d-4c55-9a0e-2d6f0b1c8e44 }
+    TwoFactorChallengeRequired:
+      description: 2FA is enabled and the current session/token has not passed `POST /auth/2fa/challenge`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: يرجى إدخال رمز المصادقة الثنائية لإكمال تسجيل الدخول., errors: {}, code: two_factor_challenge_required }
     FeatureDisabled:
       description: Feature flag off (`features.payments=false`)
       content:
@@ -3386,7 +3662,7 @@ components:
       description: RFC-7807-ish error body
       properties:
         message: { type: string }
-        code: { type: string, description: 'machine code, e.g. validation_failed, invalid_transition, two_factor_required' }
+        code: { type: string, description: 'machine code, e.g. validation_failed, unauthenticated, forbidden, too_many_requests, invalid_transition, two_factor_challenge_required, two_factor_enrolment_required, otp_invalid' }
         errors:
           type: object
           additionalProperties:
@@ -3424,8 +3700,8 @@ components:
           description: '`staff` cannot self-register.'
         name: { type: string, minLength: 3, maxLength: 120 }
         email: { type: string, format: email }
-        phone: { type: string, pattern: '^\+[1-9]\d{7,14}$', description: E.164 }
-        password: { type: string, format: password, minLength: 8 }
+        phone: { $ref: '#/components/schemas/MobilePhone' }
+        password: { $ref: '#/components/schemas/Password' }
         locale: { $ref: '#/components/schemas/Locale' }
         consents:
           type: array
@@ -3444,11 +3720,40 @@ components:
           type: string
           maxLength: 60
           description: When present a personal access token is issued (mobile); absent → cookie session (web).
+    MobilePhone:
+      type: string
+      description: |
+        Real mobile number (libphonenumber, default region SA, international allowed). Input may be
+        `05XXXXXXXX`, `5XXXXXXXX`, `9665XXXXXXXX`, `009665XXXXXXXX` or E.164, with spaces/dashes;
+        always stored and returned as E.164. Invalid → 422 `errors.phone` «رقم الجوال غير صحيح» / "Invalid mobile number".
+      examples: ['+966512345678', '0512345678']
+    Password:
+      type: string
+      format: password
+      minLength: 10
+      description: Single platform policy — min 10 characters with upper + lower case letters, a number and a symbol.
     OtpCodeRequest:
       type: object
       required: [code]
       properties:
+        code: { type: string, pattern: '^[0-9]{6}$', description: Arabic-Indic digits and spaces are accepted and normalised }
+    OtpChannelCodeRequest:
+      type: object
+      required: [channel, code]
+      properties:
+        channel: { type: string, enum: [email, phone], description: '`sms` accepted as a legacy alias of `phone`.' }
         code: { type: string, pattern: '^[0-9]{6}$' }
+    TwoFactorCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 12, description: 6-digit TOTP or a 10-character recovery code }
+    TwoFactorDisableRequest:
+      type: object
+      required: [password, code]
+      properties:
+        password: { type: string, format: password, description: Current password }
+        code: { type: string, minLength: 6, maxLength: 12, description: 6-digit TOTP or an unused recovery code }
     AuthResponse:
       type: object
       required: [user]
@@ -3933,6 +4238,17 @@ components:
               properties:
                 summary: { type: [string, 'null'] }
                 full: { type: [string, 'null'], description: granted+ only }
+            product_stage: { oneOf: [{ $ref: '#/components/schemas/ProductStage' }, { type: 'null' }] }
+            target_customers: { type: [string, 'null'] }
+            competitive_advantage: { type: [string, 'null'] }
+            traction_desc: { type: [string, 'null'] }
+            market:
+              $ref: '#/components/schemas/OpportunityMarketPublic'
+            team:
+              description: Confidential (س) — null before the owner's grant (+ NDA), the full team block after.
+              oneOf:
+                - $ref: '#/components/schemas/OpportunityTeam'
+                - type: 'null'
             license_status: { type: [string, 'null'] }
             documents:
               type: object
@@ -3999,9 +4315,78 @@ components:
                 status: { $ref: '#/components/schemas/AgreementStatus' }
                 council_is_party: { type: boolean }
             completion_percent: { type: integer }
+            team:
+              description: Also exposed flat at the top level (form hydration).
+              $ref: '#/components/schemas/OpportunityTeam'
+            market:
+              description: Full market & product answers (owner / staff). Also exposed flat.
+              allOf:
+                - $ref: '#/components/schemas/OpportunityMarketPublic'
+                - type: object
+                  properties:
+                    market_size_desc: { type: [string, 'null'] }
+                    competitors: { type: [string, 'null'] }
+                    go_to_market: { type: [string, 'null'] }
+                    technology_desc: { type: [string, 'null'] }
+                    scalability_desc: { type: [string, 'null'] }
+            motivation:
+              description: Internal (د) — owner + staff only. Also exposed flat.
+              type: object
+              properties:
+                why_now: { type: [string, 'null'] }
+                support_needed: { type: array, items: { $ref: '#/components/schemas/SupportNeed' } }
+                support_needed_labels: { type: array, items: { type: string } }
+                program_expectations: { type: [string, 'null'] }
+                how_heard_id: { type: [integer, 'null'] }
+                how_heard: { oneOf: [{ $ref: '#/components/schemas/TaxonomyTerm' }, { type: 'null' }] }
             locked_sections:
               type: array
-              items: { type: string, enum: [basics, organization, impact, financials, disclosures] }
+              description: Web form steps fully locked right now (ENT-05).
+              items: { type: string, enum: [basics, organization, team, project, impact, market, financials, documents, motivation, disclosures] }
+    ProductStage:
+      type: string
+      enum: [idea, prototype, mvp, launched, scaling]
+    SupportNeed:
+      type: string
+      enum: [mentoring, investor_intros, market_access, technical, legal, impact_measurement]
+    OpportunityFounder:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 120 }
+        role: { type: [string, 'null'], maxLength: 120 }
+        linkedin_url: { type: [string, 'null'], format: uri }
+        is_full_time: { type: boolean }
+    OpportunityTeam:
+      type: object
+      description: Team & founders — confidential (س). Owner, staff/evaluators and granted investors only.
+      properties:
+        founders_count: { type: [integer, 'null'], minimum: 1 }
+        team_size: { type: [integer, 'null'], minimum: 1, description: '>= founders_count' }
+        founders_commitment: { type: [string, 'null'], enum: [full_time, part_time, transitioning, null] }
+        founders_commitment_label: { type: [string, 'null'] }
+        founders_commitment_note: { type: [string, 'null'], maxLength: 500 }
+        prior_startup_experience: { type: [boolean, 'null'] }
+        prior_startup_experience_desc: { type: [string, 'null'] }
+        industry_experience: { type: [boolean, 'null'] }
+        industry_experience_desc: { type: [string, 'null'] }
+        founders_known_years: { type: [string, 'null'], enum: [lt_1, '1_3', '3_5', 5_plus, null], description: '<1 / 1–3 / 3–5 / 5+ years' }
+        founders_known_years_label: { type: [string, 'null'] }
+        has_advisory_board: { type: [boolean, 'null'] }
+        advisory_board_desc: { type: [string, 'null'] }
+        dev_team_structure: { type: [string, 'null'], enum: [in_house, outsourced, hybrid, none, null] }
+        dev_team_structure_label: { type: [string, 'null'] }
+        founders_agreement_signed: { type: [boolean, 'null'] }
+        founders: { type: array, maxItems: 6, items: { $ref: '#/components/schemas/OpportunityFounder' } }
+    OpportunityMarketPublic:
+      type: object
+      description: The only market & product answers investors see (approved_member+).
+      properties:
+        product_stage: { oneOf: [{ $ref: '#/components/schemas/ProductStage' }, { type: 'null' }] }
+        product_stage_label: { type: [string, 'null'] }
+        target_customers: { type: [string, 'null'] }
+        competitive_advantage: { type: [string, 'null'] }
+        traction_desc: { type: [string, 'null'] }
     OpportunityInput:
       type: object
       description: Partial update keyed by section (ENT-05 locking applies).
@@ -4068,6 +4453,43 @@ components:
             operational_risks: { type: string }
             council_relationship: { type: boolean }
             council_relationship_desc: { type: string }
+        team:
+          type: object
+          description: Same keys as OpportunityTeam (without the *_label fields); founders max 6, each needs a name.
+          properties:
+            founders_count: { type: integer, minimum: 1, maximum: 50 }
+            team_size: { type: integer, minimum: 1 }
+            founders_commitment: { type: string, enum: [full_time, part_time, transitioning] }
+            founders_commitment_note: { type: string, maxLength: 500 }
+            prior_startup_experience: { type: boolean }
+            prior_startup_experience_desc: { type: string }
+            industry_experience: { type: boolean }
+            industry_experience_desc: { type: string }
+            founders_known_years: { type: string, enum: [lt_1, '1_3', '3_5', 5_plus] }
+            has_advisory_board: { type: boolean }
+            advisory_board_desc: { type: string }
+            dev_team_structure: { type: string, enum: [in_house, outsourced, hybrid, none] }
+            founders_agreement_signed: { type: boolean }
+            founders: { type: array, maxItems: 6, items: { $ref: '#/components/schemas/OpportunityFounder' } }
+        market:
+          type: object
+          properties:
+            target_customers: { type: string }
+            market_size_desc: { type: string }
+            competitors: { type: string }
+            competitive_advantage: { type: string }
+            go_to_market: { type: string }
+            product_stage: { $ref: '#/components/schemas/ProductStage' }
+            technology_desc: { type: string }
+            traction_desc: { type: string }
+            scalability_desc: { type: string }
+        motivation:
+          type: object
+          properties:
+            why_now: { type: string }
+            support_needed: { type: array, uniqueItems: true, items: { $ref: '#/components/schemas/SupportNeed' } }
+            program_expectations: { type: string }
+            how_heard_id: { type: integer, description: taxonomy term of group `how_heard` }
     OwnedOpportunity:
       type: object
       required: [uuid, name, status, completion_percent]

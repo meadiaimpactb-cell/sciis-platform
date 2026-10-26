@@ -7,6 +7,7 @@ namespace App\Notifications;
 use App\Enums\MembershipStatus;
 use App\Models\Membership;
 use App\Notifications\Concerns\RespectsPreferences;
+use App\Services\WhatsApp\WhatsAppMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -41,12 +42,18 @@ class MembershipDecisionNotification extends Notification implements ShouldQueue
             $mail->line(__('notifications.membership.note', ['note' => $this->note]));
         }
 
-        return $mail->action(__('notifications.membership.action'), $this->frontendUrl('/investor/membership'));
+        return $mail->action(__('notifications.membership.action'), $this->frontendUrl('/app/investor/dashboard'));
     }
 
     public function toSms(object $notifiable): string
     {
         return __('notifications.membership.sms', ['status' => $this->status->label()]);
+    }
+
+    /** NTF-04 — template `membership_decision`: {{1}} status. */
+    public function toWhatsApp(object $notifiable): ?WhatsAppMessage
+    {
+        return WhatsAppMessage::forKey('membership_decision', (string) ($notifiable->locale ?? 'ar'), [$this->status->label()], $this->toSms($notifiable));
     }
 
     /** @return array<string, mixed> */

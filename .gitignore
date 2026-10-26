@@ -55,3 +55,6 @@ mobile/android/key.properties
 # ── tooling ──
 node_modules/
 .redocly-cache/
+
+# Local database dumps (contain data — never commit)
+database-export/

@@ -35,7 +35,7 @@ class InterestReceivedNotification extends Notification implements ShouldQueue
             ->greeting(__('notifications.greeting', ['name' => $notifiable->name ?? '']))
             ->line(__('notifications.interest_received.line', ['name' => $opportunity->name]))
             ->line(__('notifications.interest_received.privacy'))
-            ->action(__('notifications.interest_received.action'), $this->frontendUrl('/entrepreneur/access-requests'));
+            ->action(__('notifications.interest_received.action'), $this->frontendUrl('/app/entrepreneur/access-requests'));
     }
 
     public function toSms(object $notifiable): string

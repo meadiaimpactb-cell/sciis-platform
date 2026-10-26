@@ -4,6 +4,9 @@ const props = withDefaults(defineProps<{ tabs: { key: string; label: string; cou
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>()
 const btns = ref<HTMLButtonElement[]>([])
 const idx = computed(() => props.tabs.findIndex((t) => t.key === props.modelValue))
+// UX-04 — `aria-controls` only points at panels the page actually renders (`id="panel-<key>"`), never at a missing id.
+const panels = ref<Record<string, boolean>>({})
+onMounted(() => nextTick(() => { panels.value = Object.fromEntries(props.tabs.map((t) => [t.key, !!document.getElementById(`panel-${t.key}`)])) }))
 const onKey = (e: KeyboardEvent) => {
   const { locale } = useNuxtApp().$i18n
   const rtl = locale.value === 'ar'
@@ -32,7 +35,7 @@ const onKey = (e: KeyboardEvent) => {
       type="button"
       :id="`tab-${t.key}`"
       :aria-selected="modelValue === t.key"
-      :aria-controls="`panel-${t.key}`"
+      :aria-controls="panels[t.key] ? `panel-${t.key}` : undefined"
       :tabindex="modelValue === t.key ? 0 : -1"
       class="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium transition kbd-focus"
       :class="[

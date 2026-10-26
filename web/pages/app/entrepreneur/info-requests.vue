@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import type { InfoRequest } from '~/types/api'
+import { toastSuccess } from '~/utils/notify'
 definePageMeta({ layout: 'portal', middleware: ['entrepreneur'] })
 const { t } = useI18n()
 useHead({ title: t('entrepreneur.infoRequests.metaTitle') })
 const api = useApi()
-const toast = useToast()
 const { dateTime } = useFormat()
 const { data, loading, refresh } = useAsyncResource(() => api.get<{ data: InfoRequest[] }>('/entrepreneur/info-requests').then((r) => r.data))
-const answers = reactive<Record<number, string>>({})
-const busy = ref<number | null>(null)
-const answer = async (r: InfoRequest) => {
-  busy.value = r.id
-  try { await api.post(`/entrepreneur/info-requests/${r.id}/answer`, { answer: answers[r.id] }); toast.success(t('entrepreneur.infoRequests.answered')); await refresh() } catch (e) { toast.error((e as Error).message) } finally { busy.value = null }
+/** Validated by TextReplyForm (AnswerInfoRequestRequest: 5..5000); a 422 lands under the textarea. */
+const answer = async (r: InfoRequest, text: string) => {
+  await api.post(`/entrepreneur/info-requests/${r.id}/answer`, { answer: text })
+  toastSuccess(t('notify.sent', { item: t('notify.entities.answer') }))
 }
 </script>
 <template>
@@ -25,10 +24,17 @@ const answer = async (r: InfoRequest) => {
         <h2 class="mt-2 font-semibold">{{ r.subject }}</h2>
         <p class="text-sm leading-6 mt-1">{{ r.body }}</p>
         <div v-if="r.owner_answer" class="mt-3 rounded-lg bg-success/5 border border-success/20 p-3 text-sm"><p class="text-xs text-muted mb-1">{{ $t('entrepreneur.infoRequests.answer') }}</p>{{ r.owner_answer }}</div>
-        <form v-else class="mt-3 space-y-2" @submit.prevent="answer(r)">
-          <FormField v-model="answers[r.id]" :name="`answer-${r.id}`" type="textarea" :label="$t('entrepreneur.infoRequests.answer')" :placeholder="$t('entrepreneur.infoRequests.answerPlaceholder')" :rows="3" required />
-          <AppButton type="submit" size="sm" :loading="busy === r.id">{{ $t('entrepreneur.infoRequests.sendAnswer') }}</AppButton>
-        </form>
+        <!-- §6.3 — a request the council closed takes no more answers -->
+        <p v-else-if="r.status === 'closed'" class="mt-3 text-sm text-muted">{{ $t('entrepreneur.infoRequests.closedByCouncil') }}</p>
+        <TextReplyForm
+          v-else
+          class="mt-3"
+          label-key="entrepreneur.infoRequests.answer"
+          :placeholder="$t('entrepreneur.infoRequests.answerPlaceholder')"
+          :submit-label="$t('entrepreneur.infoRequests.sendAnswer')"
+          :action="(text: string) => answer(r, text)"
+          @done="refresh"
+        />
       </article>
     </div>
   </div>

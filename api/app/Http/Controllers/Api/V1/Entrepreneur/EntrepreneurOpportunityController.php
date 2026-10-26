@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Entrepreneur;
 
+use App\Enums\ConsentType;
 use App\Enums\DocumentKind;
 use App\Enums\InvestorAccessLevel;
 use App\Enums\OpportunityStatus;
 use App\Exceptions\DomainException;
+use App\Http\Controllers\Api\V1\Entrepreneur\Concerns\BuildsChecklist;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Entrepreneur\StoreIndicatorRequest;
 use App\Http\Requests\Entrepreneur\StoreOpportunityRequest;
@@ -17,34 +19,40 @@ use App\Http\Resources\DocumentResource;
 use App\Http\Resources\OpportunityCardResource;
 use App\Http\Resources\OpportunityDetailResource;
 use App\Http\Resources\OpportunityFullResource;
+use App\Models\Consent;
 use App\Models\ImpactIndicator;
 use App\Models\Opportunity;
 use App\Models\Organization;
 use App\Services\AuditLogger;
 use App\Services\DocumentService;
+use App\Services\FormSchemaService;
 use App\Services\OpportunityStateMachine;
+use App\Services\SettingsService;
 use App\Services\TeaserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * ENT-01 (sections), ENT-02 (checklist), ENT-03 (submit → reference no), ENT-05 (lock per status),
+ * ENT-01 (sections: basics, organization, team, impact, market, financials, motivation, disclosures), ENT-02 (checklist), ENT-03 (submit → reference no), ENT-05 (lock per status),
  * ENT-07 (withdraw), ENT-09 (preview), DOC-01 (upload), MAT-05 (owner teaser approval).
  */
 class EntrepreneurOpportunityController extends Controller
 {
+    use BuildsChecklist;
+
     public function __construct(
         private readonly OpportunityStateMachine $stateMachine,
         private readonly DocumentService $documents,
         private readonly TeaserService $teasers,
         private readonly AuditLogger $audit,
+        private readonly SettingsService $settings,
     ) {}
 
     /** GET /entrepreneur/opportunities */
     public function index(Request $request): JsonResponse
     {
-        $paginator = $request->user()->opportunities()
+        $paginator = Opportunity::query()->ofAccount($request->user()) // ACC-08 — entity colleagues share the files
             ->with(['sector', 'regions', 'investmentTypes', 'beneficiaryGroups', 'sdgs', 'organization', 'teaser', 'fundingRange', 'indicators', 'completionRequests'])
             ->latest('updated_at')
             ->paginate($this->perPage($request));
@@ -60,7 +68,12 @@ class EntrepreneurOpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
-        $opportunity = Opportunity::query()->create($request->validated() + [
+        $data = $request->validated();
+        if (! isset($data['name']) || trim((string) $data['name']) === '') {
+            $data['name'] = __('messages.opportunity.default_name');
+        }
+
+        $opportunity = Opportunity::query()->create($data + [
             'owner_user_id' => $request->user()->id,
             'organization_id' => $request->user()->organization_id,
             'status' => OpportunityStatus::Draft,
@@ -108,6 +121,26 @@ class EntrepreneurOpportunityController extends Controller
                 }
             }
 
+            if (isset($data['team'])) {
+                $team = $data['team'];
+                if (array_key_exists('founders', $team)) {
+                    $team['founders'] = $team['founders'] === null ? null : Opportunity::normalizeFounders($team['founders']);
+                }
+                $opportunity->fill($team);
+            }
+
+            if (isset($data['market'])) {
+                $opportunity->fill($data['market']);
+            }
+
+            if (isset($data['motivation'])) {
+                $motivation = $data['motivation'];
+                if (array_key_exists('support_needed', $motivation)) {
+                    $motivation['support_needed'] = $motivation['support_needed'] === null ? null : Opportunity::normalizeSupportNeeded($motivation['support_needed']);
+                }
+                $opportunity->fill($motivation);
+            }
+
             if (isset($data['impact'])) {
                 $impact = $data['impact'];
                 $opportunity->fill(collect($impact)->except(['beneficiary_group_ids', 'sdg_ids'])->all());
@@ -125,10 +158,30 @@ class EntrepreneurOpportunityController extends Controller
 
             if (isset($data['disclosures'])) {
                 $disclosures = $data['disclosures'];
-                $opportunity->fill(collect($disclosures)->except(['data_accuracy_declared'])->all());
+                $opportunity->fill(collect($disclosures)->except(['data_accuracy_declared', 'teaser_publication_consent'])->all());
                 if (! empty($disclosures['data_accuracy_declared'])) {
                     $opportunity->data_accuracy_declared_at = now();
                 }
+                // PRV-02: the teaser-publication consent is a separate, versioned consent record (not a column).
+                if (! empty($disclosures['teaser_publication_consent']) && ! $opportunity->hasTeaserPublicationConsent()) {
+                    $version = (string) $this->settings->get('legal.terms_version', '1.0');
+                    Consent::query()->create([
+                        'user_id' => $request->user()->id,
+                        'type' => ConsentType::TeaserPublication,
+                        'version' => $version,
+                        'text_hash' => hash('sha256', ConsentType::TeaserPublication->value.'|'.$version),
+                        'accepted_at' => now(),
+                        'ip' => $request->ip(),
+                        'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+                        'subject_type' => $opportunity->getMorphClass(),
+                        'subject_id' => $opportunity->id,
+                    ]);
+                }
+            }
+
+            // FRM-01 — additional questions (types validated by FormAnswers), stamped with the schema version.
+            if (array_key_exists('extra_answers', $data) && is_array($data['extra_answers'])) {
+                $opportunity->forceFill(['extra_answers' => app(FormSchemaService::class)->record('opportunity', $data['extra_answers'], $opportunity->extra_answers)]);
             }
 
             $opportunity->save();
@@ -188,6 +241,7 @@ class EntrepreneurOpportunityController extends Controller
     public function storeIndicator(StoreIndicatorRequest $request, Opportunity $opportunity): JsonResponse
     {
         $this->authorize('manageIndicators', $opportunity);
+        $this->assertIndicatorsEditable($opportunity);
         $data = $request->validated();
 
         $indicator = DB::transaction(function () use ($opportunity, $data): ImpactIndicator {
@@ -207,6 +261,7 @@ class EntrepreneurOpportunityController extends Controller
     public function destroyIndicator(Request $request, Opportunity $opportunity, ImpactIndicator $indicator): JsonResponse
     {
         $this->authorize('manageIndicators', $opportunity);
+        $this->assertIndicatorsEditable($opportunity);
         if ((int) $indicator->opportunity_id !== (int) $opportunity->id) {
             throw new DomainException(__('messages.errors.not_found'), 'not_found', 404);
         }
@@ -253,49 +308,12 @@ class EntrepreneurOpportunityController extends Controller
         return $this->ok(['version' => $teaser->version, 'approved_by_owner_at' => $teaser->approved_by_owner_at?->toIso8601String(), 'approved_by_council_at' => $teaser->approved_by_council_at?->toIso8601String()]);
     }
 
-    /** @return array{complete: bool, percent: int, missing: array<int, array{key: string, section: string, label: string}>} */
-    private function buildChecklist(Opportunity $opportunity): array
+    /** ENT-05: while `needs_completion`, indicators may only change when the completion request reopened them. */
+    private function assertIndicatorsEditable(Opportunity $opportunity): void
     {
-        $missing = [];
-        foreach (Opportunity::REQUIRED_FOR_SUBMIT as $field) {
-            $value = $opportunity->getAttribute($field);
-            if ($value === null || $value === '' || $value === []) {
-                $missing[] = ['key' => $field, 'section' => $this->sectionOf($field), 'label' => __("validation.attributes.{$field}")];
-            }
+        if ($opportunity->status === OpportunityStatus::NeedsCompletion && ! $opportunity->isFieldEditable('indicators')) {
+            throw new DomainException(__('messages.opportunity.locked_indicators'), 'validation_failed', 422, ['locked_fields' => ['indicators']]);
         }
-        foreach (Opportunity::REQUIRED_RELATIONS_FOR_SUBMIT as $relation) {
-            if (! $opportunity->{$relation}()->exists()) {
-                $missing[] = ['key' => $relation, 'section' => 'basics', 'label' => __("validation.attributes.{$relation}")];
-            }
-        }
-        foreach (Opportunity::REQUIRED_DOCUMENT_KINDS as $kind) {
-            if (! $opportunity->documents()->where('kind', $kind)->where('status', '!=', 'rejected')->exists()) {
-                $missing[] = ['key' => 'document:'.$kind, 'section' => 'documents', 'label' => DocumentKind::from($kind)->label()];
-            }
-        }
-        if (! $opportunity->indicators()->where('is_primary', true)->exists()) {
-            $missing[] = ['key' => 'primary_indicator', 'section' => 'impact', 'label' => __('validation.attributes.primary_indicator')];
-        }
-
-        $total = count(Opportunity::REQUIRED_FOR_SUBMIT) + count(Opportunity::REQUIRED_RELATIONS_FOR_SUBMIT) + count(Opportunity::REQUIRED_DOCUMENT_KINDS) + 1;
-
-        return [
-            'complete' => $missing === [],
-            'percent' => (int) round(($total - count($missing)) / $total * 100),
-            'missing' => $missing,
-            'required_now' => $opportunity->completionRequests()->open()->get()->map(fn ($c): array => ['id' => $c->id, 'items' => $c->items, 'due_at' => $c->due_at?->toIso8601String()])->all(),
-        ];
-    }
-
-    private function sectionOf(string $field): string
-    {
-        foreach (Opportunity::SECTIONS as $section => $fields) {
-            if (in_array($field, $fields, true)) {
-                return $section;
-            }
-        }
-
-        return 'basics';
     }
 
     /** @return array<string, mixed> */
@@ -305,6 +323,7 @@ class EntrepreneurOpportunityController extends Controller
             'id' => $i->id, 'name' => $i->name, 'definition' => $i->definition, 'unit' => $i->unit,
             'baseline' => $i->baseline !== null ? (float) $i->baseline : null, 'target' => $i->target !== null ? (float) $i->target : null,
             'data_source' => $i->data_source, 'frequency' => $i->frequency?->value, 'verification_method' => $i->verification_method,
+            'iris_code' => $i->iris_code, // IMP-03
             'sdg_id' => $i->sdg_id, 'is_primary' => $i->is_primary, 'is_disclosed' => $i->is_disclosed,
         ];
     }

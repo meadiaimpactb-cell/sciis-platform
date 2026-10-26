@@ -36,7 +36,7 @@ class NominationSentNotification extends Notification implements ShouldQueue
             ->line(__('notifications.nomination.line', ['name' => $opportunity->name]))
             ->line(__('notifications.nomination.rationale', ['rationale' => (string) $this->nomination->rationale]))
             ->line(__('notifications.nomination.score', ['score' => $this->nomination->match_score, 'criteria' => implode('، ', array_map(fn (string $c): string => __('enums.match_criteria.'.$c), (array) $this->nomination->matched_criteria))]))
-            ->action(__('notifications.nomination.action'), $this->frontendUrl('/investor/nominations'));
+            ->action(__('notifications.nomination.action'), $this->frontendUrl('/app/investor/nominations'));
     }
 
     public function toSms(object $notifiable): string

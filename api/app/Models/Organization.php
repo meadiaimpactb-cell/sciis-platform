@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\InstitutionType;
 use App\Enums\LegalForm;
+use App\Enums\UserType;
 use App\Models\Concerns\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -58,8 +59,22 @@ class Organization extends Model
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    /** ACC-08 — colleagues invited by the representative. */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(OrganizationInvitation::class);
+    }
+
     public function foundedYear(): ?int
     {
         return $this->founded_on?->year;
+    }
+
+    /** INV-01 — an institutional investor's organization (its documents belong to the membership file). */
+    public function isInvestorOrganization(): bool
+    {
+        $representative = $this->relationLoaded('representative') ? $this->representative : $this->representative()->first();
+
+        return $representative?->type === UserType::InvestorInstitutional || ($representative === null && $this->institution_type !== null);
     }
 }

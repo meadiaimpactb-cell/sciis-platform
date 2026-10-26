@@ -74,6 +74,9 @@ return [
         'agreement' => 'اتفاقية',
         'progress_evidence' => 'أدلة التقدم',
         'other' => 'أخرى',
+        'investor_cv' => 'السيرة الذاتية',
+        'impact_policy' => 'سياسة الأثر والحوكمة البيئية والاجتماعية',
+        'message_attachment' => 'مرفق رسالة',
     ],
     'document_status' => [
         'pending_review' => 'بانتظار المراجعة',
@@ -91,6 +94,11 @@ return [
         'delayed' => 'متأخر',
         'stalled' => 'متوقف',
     ],
+    // PRJ-01 / PRJ-02 / ENT-10
+    'milestone_plan_status' => ['draft' => 'مسودة', 'submitted' => 'بانتظار الاعتماد', 'approved' => 'معتمدة', 'changes_requested' => 'مطلوب تعديلها'],
+    'milestone_status' => ['planned' => 'مخطط لها', 'in_progress' => 'قيد التنفيذ', 'done' => 'منجزة', 'delayed' => 'متأخرة'],
+    'progress_report_status' => ['submitted' => 'بانتظار المراجعة', 'accepted' => 'مقبول', 'changes_requested' => 'مطلوب تعديله'],
+    'investor_update_status' => ['pending_review' => 'بانتظار المراجعة', 'published' => 'مُرسل', 'rejected' => 'لم يُعتمد'],
     'meeting_status' => [
         'scheduled' => 'مجدول',
         'held' => 'انعقد',
@@ -98,11 +106,16 @@ return [
     ],
     'agreement_status' => [
         'draft' => 'مسودة',
-        'legal_review' => 'مراجعة قانونية',
+        'legal_review' => 'قيد المراجعة القانونية',
+        'changes_requested' => 'مطلوب تعديلات',
         'approved' => 'معتمدة',
+        'sent_for_signature' => 'مرسلة للتوقيع',
         'signed' => 'موقّعة',
         'archived' => 'مؤرشفة',
+        'cancelled' => 'ملغاة',
     ],
+    'agreement_party' => ['owner' => 'صاحب المشروع', 'investor' => 'المستثمر'],
+    'agreement_review_decision' => ['approved' => 'اعتماد', 'changes_requested' => 'طلب تعديلات'],
     'consent_type' => [
         'privacy_policy' => 'سياسة الخصوصية',
         'terms' => 'الشروط والأحكام',
@@ -115,6 +128,7 @@ return [
         'database' => 'داخل المنصة',
         'mail' => 'البريد الإلكتروني',
         'sms' => 'رسالة نصية',
+        'whatsapp' => 'واتساب',
     ],
     'payment_status' => [
         'pending' => 'قيد الانتظار',
@@ -256,5 +270,38 @@ return [
         'region' => 'المنطقة',
         'investment_type' => 'نوع الاستثمار',
         'funding_range' => 'شريحة التمويل',
+    ],
+    // Opportunity application — team / market / motivation sections.
+    'product_stage' => [
+        'idea' => 'فكرة',
+        'prototype' => 'نموذج أولي',
+        'mvp' => 'منتج أولي قابل للاستخدام (MVP)',
+        'launched' => 'تم الإطلاق',
+        'scaling' => 'مرحلة التوسع',
+    ],
+    'founders_commitment' => [
+        'full_time' => 'تفرّغ كامل',
+        'part_time' => 'دوام جزئي',
+        'transitioning' => 'في طور التفرّغ',
+    ],
+    'founders_known_years' => [
+        'lt_1' => 'أقل من سنة',
+        '1_3' => 'من سنة إلى 3 سنوات',
+        '3_5' => 'من 3 إلى 5 سنوات',
+        '5_plus' => 'أكثر من 5 سنوات',
+    ],
+    'dev_team_structure' => [
+        'in_house' => 'فريق داخلي',
+        'outsourced' => 'تعهيد خارجي',
+        'hybrid' => 'مزيج داخلي وخارجي',
+        'none' => 'لا يوجد فريق تطوير',
+    ],
+    'support_need' => [
+        'mentoring' => 'الإرشاد والتوجيه',
+        'investor_intros' => 'التعريف بالمستثمرين',
+        'market_access' => 'الوصول إلى السوق والعملاء',
+        'technical' => 'الدعم التقني',
+        'legal' => 'الدعم القانوني والتنظيمي',
+        'impact_measurement' => 'قياس الأثر',
     ],
 ];

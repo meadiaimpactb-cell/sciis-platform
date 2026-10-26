@@ -114,6 +114,8 @@ return [
         'symbols' => 'The :attribute field must contain at least one symbol.',
         'uncompromised' => 'The given :attribute has appeared in a data leak. Please choose a different :attribute.',
     ],
+    // propaganistas/laravel-phone (libphonenumber) — standard verification layer, mirrors the web client.
+    'phone' => 'Invalid mobile number',
     'present' => 'The :attribute field must be present.',
     'present_if' => 'The :attribute field must be present when :other is :value.',
     'present_unless' => 'The :attribute field must be present unless :other is :value.',
@@ -152,8 +154,10 @@ return [
     'uuid' => 'The :attribute field must be a valid UUID.',
 
     'custom' => [
-        'consents' => ['required_both' => 'Both the privacy policy and the terms must be accepted.'],
+        'consents' => ['required_both' => 'Both the privacy policy and the terms must be accepted.', 'data_accuracy' => 'You must confirm that the information provided is accurate.'],
+        'iris_code' => ['regex' => 'Invalid IRIS+ code — format: two letters (OD, PD, OI, PI or FP) followed by 4 digits, e.g. PI1234.'],
         'use_of_funds' => ['sum_100' => 'Use-of-funds percentages must add up to 100%.'],
+        'team_size' => ['gte_founders' => 'The team size cannot be smaller than the number of founders.'],
         'completion_items' => ['field_or_document' => 'Each item must specify a field or a document kind.'],
         'website' => ['prohibited' => 'Automated submission detected.'],
     ],
@@ -168,9 +172,25 @@ return [
         'use_of_funds' => 'use of funds', 'data_accuracy_declared_at' => 'data accuracy declaration', 'primary_indicator' => 'primary impact indicator',
         'file' => 'file', 'kind' => 'document kind', 'to' => 'target status', 'reason' => 'reason', 'items' => 'items',
         'evaluator_ids' => 'evaluators', 'scores' => 'scores', 'recommendation' => 'recommendation', 'result' => 'result',
+        'improvement_plan' => 'improvement plan', 'improvement_plan.*.text' => 'improvement plan item', 'improvement_plan.*.due_at' => 'item target date', 'done' => 'done state',
         'summary_ar' => 'summary (Arabic)', 'investor_user_ids' => 'investors', 'rationale' => 'rationale',
         'starts_at' => 'start time', 'ends_at' => 'end time', 'participant_user_ids' => 'participants', 'minutes' => 'minutes',
         'roles' => 'roles', 'settings' => 'settings', 'key' => 'key', 'label_ar' => 'label (Arabic)', 'slug' => 'slug',
         'title_ar' => 'title (Arabic)', 'message' => 'message', 'purpose' => 'purpose', 'amount' => 'amount', 'idempotency_key' => 'idempotency key',
+        // Team & founders
+        'founders_count' => 'number of founders', 'team_size' => 'team size', 'founders_commitment' => 'founders\' commitment',
+        'founders_commitment_note' => 'commitment note', 'prior_startup_experience' => 'prior startup experience',
+        'prior_startup_experience_desc' => 'prior startup experience details', 'industry_experience' => 'industry experience',
+        'industry_experience_desc' => 'industry experience details', 'founders_known_years' => 'how long the founders have known each other',
+        'has_advisory_board' => 'advisory board', 'advisory_board_desc' => 'advisory board details', 'dev_team_structure' => 'development team structure',
+        'founders_agreement_signed' => 'founders\' agreement', 'founders' => 'founders list', 'team.founders.*.name' => 'founder name',
+        'team.founders.*.role' => 'founder role', 'team.founders.*.linkedin_url' => 'LinkedIn URL', 'team.founders.*.is_full_time' => 'full-time',
+        // Market & product
+        'target_customers' => 'target customers', 'market_size_desc' => 'market size', 'competitors' => 'competitors',
+        'competitive_advantage' => 'competitive advantage', 'go_to_market' => 'go-to-market strategy', 'product_stage' => 'product stage',
+        'technology_desc' => 'technology', 'traction_desc' => 'traction (users, pilots, partnerships)', 'scalability_desc' => 'scalability',
+        // Motivation & commitment
+        'why_now' => 'why now', 'support_needed' => 'support needed', 'program_expectations' => 'expectations from the platform',
+        'how_heard_id' => 'how you heard about us', 'team' => 'team & founders', 'market' => 'market & product', 'motivation' => 'motivation & commitment',
     ],
 ];

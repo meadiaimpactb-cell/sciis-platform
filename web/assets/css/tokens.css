@@ -1,40 +1,83 @@
-/* SCIIS brand tokens — SPEC §10 (doc §8). Mirrored in the Flutter theme. BRD-01..03 */
+/* SCII brand tokens — derived from the official logo (navy #24306C · teal #58B4A8 · teal→navy gradient).
+   Single source of truth (BRD-01). Mirrored in tailwind.config.ts and the Flutter theme. */
 :root {
-  --ink: #0A1020;
-  --navy: #101B33;
-  --blue: #1F5BFF;
-  --blue-hover: #1548D6;
-  --blue-soft: #E8EEFF;
-  --bg: #F4F6FA;
+  /* Brand */
+  --navy-950: #0E1330;
+  --navy-900: #121A3F;   /* ink: headings, dark sections */
+  --navy-800: #1B2555;
+  --navy-700: #24306C;   /* brand navy (logo) — primary */
+  --navy-600: #33428A;
+  --navy-100: #E7EAF5;   /* soft navy tint */
+  --navy-50: #F2F4FA;
+
+  --teal-700: #2F7D74;   /* teal for text on white (AA) */
+  --teal-600: #3F9A8F;
+  --teal-500: #58B4A8;   /* brand teal (logo) — accent */
+  --teal-400: #7FCBC0;
+  --teal-100: #E3F3F0;
+  --teal-50: #F1F9F8;
+
+  /* Aliases kept for existing components */
+  --ink: var(--navy-900);
+  --navy: var(--navy-700);
+  --blue: var(--navy-700);
+  --blue-hover: var(--navy-800);
+  --blue-soft: var(--navy-100);
+  --teal: var(--teal-500);
+  --teal-hover: var(--teal-600);
+  --teal-soft: var(--teal-100);
+
+  --bg: #F5F7FB;
   --surface: #FFFFFF;
-  --text: #0A1020;
-  --muted: #5B6478;
-  --border: #E3E7EF;
+  --text: #141B3F;
+  --muted: #5F6888;
+  --border: #E3E7F0;
+
+  /* Semantic tokens as RGB channels — what the Tailwind colours read (`rgb(var(--c-x) / <alpha>)`), so a theme
+     (BRD-04 portal dark mode, assets/css/theme-dark.css) swaps them in one place. Values = the hex tokens above. */
+  --c-ink: 18 26 63;
+  --c-text: 20 27 63;
+  --c-muted: 95 104 136;
+  --c-border: 227 231 240;
+  --c-bg: 245 247 251;
+  --c-surface: 255 255 255;
+  --c-navy-50: 242 244 250;
+  --c-navy-100: 231 234 245;
+  --c-teal-50: 241 249 248;
+  --c-teal-100: 227 243 240;
+  --c-teal-700: 47 125 116;
+  /* UX-04 — form control outline: 3.2:1 on white / 3.0:1 on bg (WCAG 1.4.11 non-text contrast) */
+  --c-input-border: 133 142 171;
+
+  /* Brand gradients */
+  --gradient-brand: linear-gradient(135deg, #58B4A8 0%, #3C6E8E 45%, #24306C 100%);
+  --gradient-hero: linear-gradient(120deg, #0E1330 0%, #1B2555 45%, #24306C 100%);
 
   /* Opportunity status colors (OpportunityStatus) */
   --status-draft: #94A3B8;
-  --status-new: #1F5BFF;
+  --status-new: #24306C;
   --status-under_review: #B45309;
   --status-needs_completion: #D97706;
   --status-not_eligible: #B91C1C;
-  --status-eligible: #047857;
+  --status-eligible: #2F7D74;
   --status-connected: #0F766E;
   --status-negotiating: #6D28D9;
-  --status-in_execution: #1D4ED8;
+  --status-in_execution: #33428A;
   --status-operating: #065F46;
   --status-withdrawn: #6B7280;
   --status-closed: #374151;
 
   /* Semantic */
-  --success: #047857;
+  --success: #1F7A5C;
   --warning: #B45309;
   --danger: #B91C1C;
-  --info: #1F5BFF;
+  --info: #24306C;
 
   --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
 
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --shadow-card: 0 1px 2px rgba(10, 16, 32, 0.04), 0 1px 1px rgba(10, 16, 32, 0.02);
-  --shadow-pop: 0 12px 32px -12px rgba(10, 16, 32, 0.25);
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgba(18, 26, 63, 0.05), 0 4px 16px -8px rgba(18, 26, 63, 0.08);
+  --shadow-pop: 0 20px 48px -16px rgba(18, 26, 63, 0.3);
+  --shadow-glow: 0 0 0 1px rgba(88, 180, 168, 0.35), 0 16px 40px -12px rgba(88, 180, 168, 0.35);
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AccessPolicy;
+use App\Enums\ConsentType;
 use App\Enums\EvaluationResult;
 use App\Enums\ExecutionStatus;
 use App\Enums\FundingDisplay;
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -42,28 +44,113 @@ class Opportunity extends Model
 
     protected $fillable = [
         'reference_no', 'owner_user_id', 'organization_id', 'name', 'short_description', 'sector_id', 'stage', 'status', 'is_listed',
+        'name_en', 'short_description_en', // OPP-11 — optional English card fields
         'website', 'social_links', 'problem_statement', 'solution', 'expected_change', 'beneficiaries_desc',
         'beneficiaries_current', 'beneficiaries_target', 'revenue_model_type', 'revenue_model_desc', 'revenue_state',
         'last_year_revenue_band_id', 'funding_amount', 'funding_amount_display', 'funding_range_id', 'use_of_funds',
         'prior_funding', 'prior_funding_desc', 'legal_disputes', 'legal_disputes_desc', 'license_required',
         'license_status', 'operational_risks', 'council_relationship', 'council_relationship_desc',
         'data_accuracy_declared_at', 'submitted_at', 'assigned_reviewer_id', 'review_due_at', 'completion_due_at',
-        'evaluation_due_at', 'evaluation_result', 'evaluation_approved_at', 'execution_status',
+        'evaluation_due_at', 'stage_due_at', 'evaluation_result', 'evaluation_approved_at', 'execution_status',
+        // team (confidential)
+        'founders_count', 'team_size', 'founders_commitment', 'founders_commitment_note', 'prior_startup_experience',
+        'prior_startup_experience_desc', 'industry_experience', 'industry_experience_desc', 'founders_known_years',
+        'has_advisory_board', 'advisory_board_desc', 'dev_team_structure', 'founders_agreement_signed', 'founders',
+        // market & product
+        'target_customers', 'market_size_desc', 'competitors', 'competitive_advantage', 'go_to_market', 'product_stage',
+        'technology_desc', 'traction_desc', 'scalability_desc',
+        // motivation (internal)
+        'why_now', 'support_needed', 'program_expectations', 'how_heard_id',
     ];
+
+    /** Team & founders (sensitivity "س" — never on the card / detail before grant). */
+    public const TEAM_FIELDS = [
+        'founders_count', 'team_size', 'founders_commitment', 'founders_commitment_note', 'prior_startup_experience',
+        'prior_startup_experience_desc', 'industry_experience', 'industry_experience_desc', 'founders_known_years',
+        'has_advisory_board', 'advisory_board_desc', 'dev_team_structure', 'founders_agreement_signed', 'founders',
+    ];
+
+    /** Market & product. Only MARKET_PUBLIC_FIELDS reach investors (detail resource); the rest are staff/owner only. */
+    public const MARKET_FIELDS = [
+        'target_customers', 'market_size_desc', 'competitors', 'competitive_advantage', 'go_to_market', 'product_stage',
+        'technology_desc', 'traction_desc', 'scalability_desc',
+    ];
+
+    public const MARKET_PUBLIC_FIELDS = ['product_stage', 'target_customers', 'competitive_advantage', 'traction_desc'];
+
+    /** Motivation & commitment (sensitivity "د" — council only). */
+    public const MOTIVATION_FIELDS = ['why_now', 'support_needed', 'program_expectations', 'how_heard_id'];
+
+    public const FOUNDERS_COMMITMENTS = ['full_time', 'part_time', 'transitioning'];
+
+    public const FOUNDERS_KNOWN_YEARS = ['lt_1', '1_3', '3_5', '5_plus'];
+
+    public const DEV_TEAM_STRUCTURES = ['in_house', 'outsourced', 'hybrid', 'none'];
+
+    public const PRODUCT_STAGES = ['idea', 'prototype', 'mvp', 'launched', 'scaling'];
+
+    public const SUPPORT_NEEDS = ['mentoring', 'investor_intros', 'market_access', 'technical', 'legal', 'impact_measurement'];
+
+    public const MAX_FOUNDERS = 6;
 
     /** Sections → fields map used for PATCH + checklist (ENT-02, ENT-05). */
     public const SECTIONS = [
-        'basics' => ['name', 'short_description', 'sector_id', 'stage', 'website', 'social_links', 'regions', 'investment_types'],
+        'basics' => ['name', 'short_description', 'name_en', 'short_description_en', 'sector_id', 'stage', 'website', 'social_links', 'regions', 'investment_types'],
         'organization' => ['organization_id'],
+        'team' => self::TEAM_FIELDS,
         'impact' => ['problem_statement', 'solution', 'expected_change', 'beneficiaries_desc', 'beneficiaries_current', 'beneficiaries_target', 'beneficiary_groups', 'sdgs'],
+        'market' => self::MARKET_FIELDS,
         'financials' => ['revenue_model_type', 'revenue_model_desc', 'revenue_state', 'last_year_revenue_band_id', 'funding_amount', 'funding_amount_display', 'funding_range_id', 'use_of_funds', 'prior_funding', 'prior_funding_desc'],
+        'motivation' => self::MOTIVATION_FIELDS,
         'disclosures' => ['legal_disputes', 'legal_disputes_desc', 'license_required', 'license_status', 'operational_risks', 'council_relationship', 'council_relationship_desc', 'data_accuracy_declared_at'],
     ];
 
-    /** Fields required before submit (ENT-02 checklist). */
+    /**
+     * Web/mobile form steps → fields (the clients split the API `impact` section into `project` + `impact`
+     * and have `documents` as its own step). Used for `locked_sections` / checklist `items[].section`.
+     * Order = wizard order: team after basics/organization, market after impact, motivation before disclosures.
+     */
+    public const WEB_SECTIONS = [
+        'basics' => ['name', 'short_description', 'name_en', 'short_description_en', 'sector_id', 'stage', 'website', 'social_links', 'regions', 'investment_types', 'region_ids', 'investment_type_ids', 'investment_type_keys'],
+        'organization' => ['organization_id', 'organization'],
+        'team' => self::TEAM_FIELDS,
+        'project' => ['problem_statement', 'solution', 'expected_change', 'beneficiaries_desc', 'beneficiaries_current', 'beneficiaries_target', 'beneficiary_groups', 'beneficiary_group_ids', 'sdgs', 'sdg_ids', 'revenue_model_type', 'revenue_model_desc', 'revenue_state'],
+        'impact' => ['indicators', 'primary_indicator'],
+        'market' => self::MARKET_FIELDS,
+        'financials' => ['last_year_revenue_band_id', 'funding_amount', 'funding_amount_display', 'funding_range_id', 'use_of_funds', 'prior_funding', 'prior_funding_desc'],
+        'documents' => ['documents'],
+        'motivation' => ['why_now', 'support_needed', 'program_expectations', 'how_heard_id', 'how_heard'],
+        'disclosures' => ['legal_disputes', 'legal_disputes_desc', 'license_required', 'license_status', 'operational_risks', 'council_relationship', 'council_relationship_desc', 'data_accuracy_declared_at', 'data_accuracy_declared', 'teaser_publication_consent'],
+    ];
+
+    /** Request-key ↔ column aliases so a completion item `field` may name either spelling. */
+    public const FIELD_ALIASES = [
+        'regions' => ['regions', 'region_ids'],
+        'region_ids' => ['regions', 'region_ids'],
+        'investment_types' => ['investment_types', 'investment_type_ids', 'investment_type_keys', 'investmentTypes'],
+        'investment_type_ids' => ['investment_types', 'investment_type_ids', 'investment_type_keys', 'investmentTypes'],
+        'investment_type_keys' => ['investment_types', 'investment_type_ids', 'investment_type_keys', 'investmentTypes'],
+        'investmentTypes' => ['investment_types', 'investment_type_ids', 'investment_type_keys', 'investmentTypes'],
+        'beneficiary_groups' => ['beneficiary_groups', 'beneficiary_group_ids'],
+        'beneficiary_group_ids' => ['beneficiary_groups', 'beneficiary_group_ids'],
+        'sdgs' => ['sdgs', 'sdg_ids'],
+        'sdg_ids' => ['sdgs', 'sdg_ids'],
+        'data_accuracy_declared_at' => ['data_accuracy_declared_at', 'data_accuracy_declared'],
+        'data_accuracy_declared' => ['data_accuracy_declared_at', 'data_accuracy_declared'],
+        'primary_indicator' => ['primary_indicator', 'indicators'],
+        'indicators' => ['primary_indicator', 'indicators'],
+        'how_heard' => ['how_heard', 'how_heard_id'],
+        'how_heard_id' => ['how_heard', 'how_heard_id'],
+    ];
+
+    /** Fields required before submit (ENT-02 checklist) — in wizard order. */
     public const REQUIRED_FOR_SUBMIT = [
-        'name', 'short_description', 'sector_id', 'stage', 'problem_statement', 'solution', 'expected_change',
-        'beneficiaries_desc', 'beneficiaries_target', 'revenue_state', 'funding_amount', 'use_of_funds',
+        'name', 'short_description', 'sector_id', 'stage',
+        'founders_count', 'team_size', 'founders_commitment',
+        'problem_statement', 'solution', 'expected_change', 'beneficiaries_desc', 'beneficiaries_target', 'revenue_state',
+        'product_stage', 'target_customers', 'competitive_advantage',
+        'funding_amount', 'use_of_funds',
+        'why_now',
         'data_accuracy_declared_at',
     ];
 
@@ -74,6 +161,7 @@ class Opportunity extends Model
     protected function casts(): array
     {
         return [
+            'extra_answers' => 'array', // FRM-01 — {key, version, answers, answered_at}
             'stage' => ProjectStage::class,
             'status' => OpportunityStatus::class,
             'revenue_state' => RevenueState::class,
@@ -89,12 +177,21 @@ class Opportunity extends Model
             'council_relationship' => 'boolean',
             'beneficiaries_current' => 'integer',
             'beneficiaries_target' => 'integer',
+            'founders_count' => 'integer',
+            'team_size' => 'integer',
+            'prior_startup_experience' => 'boolean',
+            'industry_experience' => 'boolean',
+            'has_advisory_board' => 'boolean',
+            'founders_agreement_signed' => 'boolean',
+            'founders' => 'array',
+            'support_needed' => 'array',
             'funding_amount' => 'decimal:2',
             'data_accuracy_declared_at' => 'datetime',
             'submitted_at' => 'datetime',
             'review_due_at' => 'datetime',
             'completion_due_at' => 'datetime',
             'evaluation_due_at' => 'datetime',
+            'stage_due_at' => 'datetime',
             'evaluation_approved_at' => 'datetime',
             'anonymized_at' => 'datetime',
         ];
@@ -135,6 +232,12 @@ class Opportunity extends Model
     public function assignedReviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_reviewer_id');
+    }
+
+    /** Acquisition channel (taxonomy `how_heard`) — motivation section, internal. */
+    public function howHeard(): BelongsTo
+    {
+        return $this->belongsTo(TaxonomyTerm::class, 'how_heard_id');
     }
 
     public function regions(): BelongsToMany
@@ -190,6 +293,18 @@ class Opportunity extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /** Consents whose subject is this opportunity (teaser publication, NDA). PRV-02 */
+    public function consents(): MorphMany
+    {
+        return $this->morphMany(Consent::class, 'subject');
+    }
+
+    /** PRV-02: the owner explicitly agreed to show the teaser to approved investors. */
+    public function hasTeaserPublicationConsent(): bool
+    {
+        return $this->consents()->where('type', ConsentType::TeaserPublication->value)->exists();
     }
 
     public function evaluationAssignments(): HasMany
@@ -289,7 +404,7 @@ class Opportunity extends Model
                     $eligible->where('status', OpportunityStatus::Eligible->value)
                         ->withApprovedTeaser();
                     if ($policy === AccessPolicy::NominationOnly) {
-                        $eligible->whereHas('nominations', fn (Builder $n) => $n->where('investor_user_id', $user->id));
+                        $eligible->whereHas('nominations', fn (Builder $n) => $n->whereIn('investor_user_id', $user->organizationPeerIds())); // ACC-08
                     }
                 });
 
@@ -298,12 +413,23 @@ class Opportunity extends Model
                     $later->whereIn('status', array_map(fn (OpportunityStatus $s): string => $s->value, OpportunityStatus::connectedOrLater()))
                         ->where(function (Builder $w) use ($user): void {
                             $w->where('is_listed', true)
-                                ->orWhereHas('interests', fn (Builder $i) => $i->where('investor_user_id', $user->id)
+                                ->orWhereHas('interests', fn (Builder $i) => $i->whereIn('investor_user_id', $user->organizationPeerIds())
                                     ->whereIn('status', [InterestStatus::Connected->value, InterestStatus::Meeting->value]));
                         });
                 });
             });
     }
+
+    /**
+     * ADM-03 — post-evaluation stages with an SLA kept in `stage_due_at`: status → overdue kind (days in `sla.<kind>_days`).
+     *
+     * @var array<string, string>
+     */
+    public const STAGE_SLA_KINDS = [
+        'eligible' => 'matching',
+        'connected' => 'connection',
+        'negotiating' => 'negotiation',
+    ];
 
     public function scopeOverdue(Builder $query): Builder
     {
@@ -312,11 +438,28 @@ class Opportunity extends Model
         return $query->where(function (Builder $q) use ($now): void {
             $q->where(fn (Builder $w) => $w->where('status', OpportunityStatus::New->value)->where('review_due_at', '<', $now))
                 ->orWhere(fn (Builder $w) => $w->where('status', OpportunityStatus::NeedsCompletion->value)->where('completion_due_at', '<', $now))
-                ->orWhere(fn (Builder $w) => $w->where('status', OpportunityStatus::UnderReview->value)->where('evaluation_due_at', '<', $now));
+                ->orWhere(fn (Builder $w) => $w->where('status', OpportunityStatus::UnderReview->value)->where('evaluation_due_at', '<', $now))
+                ->orWhere(fn (Builder $w) => $w->whereIn('status', array_keys(self::STAGE_SLA_KINDS))->where('stage_due_at', '<', $now));
         });
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** OPP-11 — investor-facing name: the English version when the locale is `en` and one was entered, else Arabic. */
+    public function displayName(?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+
+        return ($locale === 'en' && filled($this->name_en)) ? (string) $this->name_en : (string) $this->name;
+    }
+
+    /** OPP-11 — investor-facing short description, same fallback rule as displayName(). */
+    public function displayShortDescription(?string $locale = null): ?string
+    {
+        $locale ??= app()->getLocale();
+
+        return ($locale === 'en' && filled($this->short_description_en)) ? (string) $this->short_description_en : $this->short_description;
+    }
 
     public function hasApprovedTeaser(): bool
     {
@@ -325,9 +468,35 @@ class Opportunity extends Model
         return $teaser !== null && $teaser->isFullyApproved();
     }
 
+    /** ACC-08 — the owner, or a colleague of the owning entity whom the representative allowed to act. */
     public function isOwnedBy(User $user): bool
     {
-        return $this->owner_user_id === $user->id;
+        if ($this->owner_user_id === $user->id) {
+            return true;
+        }
+
+        return $this->isSharedWithColleague($user) && $user->canActForOrganization();
+    }
+
+    /** ACC-08 — an active colleague of the entrepreneur entity that owns the file (read-only unless "can act"). */
+    public function isSharedWithColleague(User $user): bool
+    {
+        return $this->organization_id !== null
+            && $user->organization_id === $this->organization_id
+            && $user->isEntrepreneur()
+            && $user->isActive()
+            && $user->organization_disabled_at === null;
+    }
+
+    /** ACC-08 — the files of the caller's account: own ones plus, for an entity colleague, the entity's. */
+    public function scopeOfAccount(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $q) use ($user): void {
+            $q->where('owner_user_id', $user->id);
+            if ($user->organization_id !== null && $user->isEntrepreneur()) {
+                $q->orWhere('organization_id', $user->organization_id);
+            }
+        });
     }
 
     public function activeGrantFor(User $user): ?FileAccessGrant
@@ -383,6 +552,7 @@ class Opportunity extends Model
             $this->status === OpportunityStatus::New && $this->review_due_at !== null && $this->review_due_at->lt($now) => 'review',
             $this->status === OpportunityStatus::NeedsCompletion && $this->completion_due_at !== null && $this->completion_due_at->lt($now) => 'completion',
             $this->status === OpportunityStatus::UnderReview && $this->evaluation_due_at !== null && $this->evaluation_due_at->lt($now) => 'evaluation',
+            isset(self::STAGE_SLA_KINDS[$this->status->value]) && $this->stage_due_at !== null && $this->stage_due_at->lt($now) => self::STAGE_SLA_KINDS[$this->status->value],
             default => null,
         };
     }
@@ -390,5 +560,157 @@ class Opportunity extends Model
     public function fundingDisplay(): FundingDisplay
     {
         return $this->funding_amount_display ?? app(SettingsService::class)->fundingDisplay();
+    }
+
+    /**
+     * Canonical founders list `[{name, role, linkedin_url, is_full_time}]` (trimmed, empty names dropped, max 6) —
+     * used when saving and when comparing a re-sent list for the ENT-05 "unchanged" check.
+     *
+     * @return array<int, array{name: string, role: ?string, linkedin_url: ?string, is_full_time: bool}>
+     */
+    public static function normalizeFounders(mixed $founders): array
+    {
+        $clean = static fn (mixed $v): ?string => is_scalar($v) && trim((string) $v) !== '' ? trim((string) $v) : null;
+
+        return collect(is_array($founders) ? $founders : [])
+            ->filter(fn ($f): bool => is_array($f) && $clean($f['name'] ?? null) !== null)
+            ->map(fn (array $f): array => [
+                'name' => (string) $clean($f['name']),
+                'role' => $clean($f['role'] ?? null),
+                'linkedin_url' => $clean($f['linkedin_url'] ?? null),
+                'is_full_time' => filter_var($f['is_full_time'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ])
+            ->take(self::MAX_FOUNDERS)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Support-needed keys, de-duplicated, restricted to SUPPORT_NEEDS and kept in the canonical list order.
+     *
+     * @return array<int, string>
+     */
+    public static function normalizeSupportNeeded(mixed $keys): array
+    {
+        $keys = array_map('strval', is_array($keys) ? $keys : []);
+
+        return array_values(array_filter(self::SUPPORT_NEEDS, fn (string $k): bool => in_array($k, $keys, true)));
+    }
+
+    // ---------------------------------------------------------------- ENT-05 field-level lock
+
+    /**
+     * Items of the open completion requests: `[{field?, document_kind?, note?}]` (ADM-04).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function openCompletionItems(): array
+    {
+        $requests = $this->relationLoaded('completionRequests')
+            ? $this->completionRequests->whereNull('resolved_at')
+            : $this->completionRequests()->open()->get();
+
+        return $requests->flatMap(fn (CompletionRequest $c): array => array_values(array_filter((array) $c->items, 'is_array')))->values()->all();
+    }
+
+    /**
+     * Field keys the owner may edit while `needs_completion` (expanded with aliases; a section name opens the
+     * whole section). Document kinds are returned as `document:<kind>`. Empty when nothing is reopened.
+     *
+     * @return array<int, string>
+     */
+    public function reopenedFields(): array
+    {
+        $keys = [];
+        foreach ($this->openCompletionItems() as $item) {
+            $field = isset($item['field']) ? trim((string) $item['field']) : '';
+            if ($field !== '') {
+                $sectionFields = array_merge(self::WEB_SECTIONS[$field] ?? [], self::SECTIONS[$field] ?? []);
+                if ($sectionFields !== []) {
+                    foreach ($sectionFields as $f) {
+                        array_push($keys, ...(self::FIELD_ALIASES[$f] ?? [$f]));
+                    }
+                } else {
+                    array_push($keys, ...(self::FIELD_ALIASES[$field] ?? [$field]));
+                }
+            }
+            if (! empty($item['document_kind'])) {
+                $keys[] = 'document:'.$item['document_kind'];
+            }
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    /** True when the owner may edit the given request key in the current status (ENT-05). */
+    public function isFieldEditable(string $field): bool
+    {
+        return match ($this->status) {
+            OpportunityStatus::Draft => true,
+            OpportunityStatus::NeedsCompletion => in_array($field, $this->reopenedFields(), true),
+            default => false,
+        };
+    }
+
+    /** True when the owner may upload the given document kind in the current status (ENT-05). */
+    public function isDocumentKindEditable(string $kind): bool
+    {
+        return match ($this->status) {
+            OpportunityStatus::NeedsCompletion => in_array('document:'.$kind, $this->reopenedFields(), true) || in_array('documents', $this->reopenedFields(), true),
+            default => ! $this->status->isTerminal(),
+        };
+    }
+
+    /**
+     * Web form steps that are fully locked for the owner right now: none in draft, those without a reopened
+     * field in needs_completion, all of them otherwise.
+     *
+     * @return array<int, string>
+     */
+    public function lockedWebSections(): array
+    {
+        if ($this->status === OpportunityStatus::Draft) {
+            return [];
+        }
+        $sections = array_keys(self::WEB_SECTIONS);
+        if ($this->status !== OpportunityStatus::NeedsCompletion) {
+            return $sections;
+        }
+        $reopened = $this->reopenedFields();
+        $hasDocs = (bool) array_filter($reopened, fn (string $k): bool => str_starts_with($k, 'document:'));
+
+        return array_values(array_filter($sections, function (string $section) use ($reopened, $hasDocs): bool {
+            if ($section === 'documents' && $hasDocs) {
+                return false;
+            }
+
+            return array_intersect(self::WEB_SECTIONS[$section], $reopened) === [];
+        }));
+    }
+
+    // ---------------------------------------------------------------- SLA
+
+    /** The SLA deadline that applies to the current status (ADM-02 / ENT-04). */
+    public function slaDueAt(): ?Carbon
+    {
+        return match ($this->status) {
+            OpportunityStatus::New => $this->review_due_at,
+            OpportunityStatus::NeedsCompletion => $this->completion_due_at,
+            OpportunityStatus::UnderReview => $this->evaluation_due_at,
+            OpportunityStatus::Eligible, OpportunityStatus::Connected, OpportunityStatus::Negotiating => $this->stage_due_at,
+            default => null,
+        };
+    }
+
+    /** Whole days until the SLA deadline (negative when late); null when no SLA applies. */
+    public function slaDaysLeft(): ?int
+    {
+        $due = $this->slaDueAt();
+        if ($due === null) {
+            return null;
+        }
+        $diff = now()->startOfDay()->diffInDays($due->copy()->startOfDay(), false);
+
+        return (int) ($diff < 0 ? ceil($diff) : floor($diff));
     }
 }

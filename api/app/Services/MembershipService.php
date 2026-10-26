@@ -43,6 +43,11 @@ class MembershipService
             throw new DomainException(__('messages.membership.already_submitted'), 'membership_already_submitted', 422);
         }
 
+        // FRM-01 — required additional questions of the investor profile must be answered before review.
+        if (app(FormSchemaService::class)->missingRequired('investor_profile', $profile->extra_answers) !== []) {
+            throw new DomainException(__('messages.forms.extra_answers_incomplete'), 'extra_answers_incomplete', 422);
+        }
+
         if (! $acceptTerms) {
             throw new DomainException(__('messages.membership.terms_required'), 'terms_required', 422);
         }

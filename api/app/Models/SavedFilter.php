@@ -4,13 +4,27 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** P2 */
+/**
+ * OPP-08 — a named catalogue search (`kind = filter`, `filters` = App\Support\OpportunityFilters::normalize() shape);
+ * OPP-07 — `notify` sends an alert when a newly listed opportunity matches. One `kind = profile` row per investor is
+ * the "any new opportunity matching my profile" switch (no filters).
+ */
 class SavedFilter extends Model
 {
-    protected $fillable = ['user_id', 'name', 'filters', 'notify'];
+    public const KIND_FILTER = 'filter';
+
+    public const KIND_PROFILE = 'profile';
+
+    /** Saved searches per investor. */
+    public const MAX_PER_USER = 20;
+
+    protected $fillable = ['user_id', 'kind', 'name', 'filters', 'notify'];
+
+    protected $attributes = ['kind' => self::KIND_FILTER];
 
     protected function casts(): array
     {
@@ -20,5 +34,15 @@ class SavedFilter extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function scopeSearches(Builder $query): Builder
+    {
+        return $query->where('kind', self::KIND_FILTER);
+    }
+
+    public function scopeProfileSwitch(Builder $query): Builder
+    {
+        return $query->where('kind', self::KIND_PROFILE);
     }
 }

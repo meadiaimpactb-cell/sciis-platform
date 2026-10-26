@@ -1,15 +1,19 @@
 <script setup lang="ts">
-/** Facet filters with counts per option (OPP-02). Collapsible on mobile; keyboard navigable. */
+/** Facet filters with counts per option (OPP-02 / OPP-10). Collapsible on mobile; keyboard navigable. */
 export interface FilterGroup {
   key: string
   label: string
   options: { value: string; label: string; count?: number }[]
+  /** Long lists (SDGs, beneficiary groups) start folded unless one of their options is selected. */
+  collapsed?: boolean
 }
 const props = defineProps<{ groups: FilterGroup[]; modelValue: Record<string, string | null> }>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: Record<string, string | null>): void; (e: 'reset'): void }>()
 const open = ref(false)
 const expanded = reactive<Record<string, boolean>>({})
-props.groups.forEach((g) => (expanded[g.key] = true))
+props.groups.forEach((g) => (expanded[g.key] = !g.collapsed || !!props.modelValue[g.key]))
+// A selection applied from outside (a saved search) unfolds its group.
+watch(() => props.modelValue, (v) => { for (const g of props.groups) if (v[g.key]) expanded[g.key] = true }, { deep: true })
 const active = computed(() => Object.values(props.modelValue).filter(Boolean).length)
 const set = (k: string, v: string | null) => emit('update:modelValue', { ...props.modelValue, [k]: props.modelValue[k] === v ? null : v })
 </script>

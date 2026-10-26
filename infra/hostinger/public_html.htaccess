@@ -1,0 +1,78 @@
+# SCIIS — sciis.org (Hostinger, LiteSpeed)
+# Static Nuxt site (prerendered pages + SPA fallback) and the Laravel API (/api, /sanctum) via laravel.php.
+
+AddHandler application/x-httpd-alt-php83___lsphp .php
+DirectoryIndex index.html laravel.php
+
+# Correct types for files the server doesn't know (the web app manifest was sent as text/plain)
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType font/woff2 .woff2
+</IfModule>
+Options -Indexes
+DirectorySlash Off
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Bearer tokens (mobile app) must reach PHP
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Canonical host: https://sciis.org (no www)
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} ^www\. [NC]
+  RewriteRule ^ https://sciis.org%{REQUEST_URI} [L,R=301]
+
+  # Never serve dotfiles (except ACME challenges)
+  RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+  # Laravel API + Sanctum CSRF cookie + health check
+  RewriteRule ^(api|sanctum)(/.*)?$ laravel.php [L,QSA]
+  RewriteRule ^up$ laravel.php [L,QSA]
+
+  # Trailing slash → clean URL (prerendered pages are written as page.html)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(.+)/$ /$1 [L,R=301]
+
+  # Home page → prerendered index.html (the SPA fallback below must not catch "/")
+  RewriteRule ^$ index.html [L]
+
+  # Existing files (assets, uploads via /storage symlink)
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # Prerendered page: /about → about.html, /en/news/x → en/news/x.html
+  RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+  RewriteRule ^(.+)$ $1.html [L]
+
+  # News / events published after the last build: Laravel checks the slug → SPA shell (200) or the 404 page (404)
+  RewriteRule ^(en/)?(news|events)/[A-Za-z0-9_-]+$ laravel.php [L,QSA]
+
+  # Client-only routes (portal, auth) → SPA shell
+  RewriteRule ^(en/)?(app|auth)(/.*)?$ 200.html [L]
+
+  # Anything else does not exist → real 404 status (no soft-404s for search engines)
+  RewriteRule ^ - [R=404,L]
+</IfModule>
+
+# Caching: hashed build assets are immutable; HTML always revalidates
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|svg|webp|png|jpg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(html|xml|txt)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml application/xml text/plain
+</IfModule>
+
+ErrorDocument 404 /404.html

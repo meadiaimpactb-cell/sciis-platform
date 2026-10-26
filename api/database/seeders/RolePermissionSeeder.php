@@ -17,8 +17,9 @@ class RolePermissionSeeder extends Seeder
         'evaluations.assign', 'evaluations.score', 'evaluations.approve',
         'memberships.review', 'memberships.approve',
         'nominations.manage', 'teasers.approve', 'meetings.manage',
-        'agreements.manage', 'impact.verify',
+        'agreements.manage', 'agreements.approve', 'impact.verify',
         'reports.view', 'reports.export',
+        'reports.approve', // journey 11.10 — approve & publish periodic reports (super_admin via '*')
         'settings.manage', 'users.manage', 'audit.view',
     ];
 

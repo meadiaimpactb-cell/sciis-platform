@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** ADM-04 / ENT-04 — "المطلوب منك الآن". */
 class CompletionRequest extends Model
 {
-    protected $fillable = ['opportunity_id', 'requested_by', 'due_at', 'items', 'resolved_at'];
+    protected $fillable = ['opportunity_id', 'requested_by', 'due_at', 'items', 'resolved_at', 'reminders_sent'];
 
     protected function casts(): array
     {
@@ -19,6 +19,8 @@ class CompletionRequest extends Model
             'items' => 'array',
             'due_at' => 'datetime',
             'resolved_at' => 'datetime',
+            // Journey 11.3 — reminder thresholds (days before due) already sent to the owner.
+            'reminders_sent' => 'array',
         ];
     }
 

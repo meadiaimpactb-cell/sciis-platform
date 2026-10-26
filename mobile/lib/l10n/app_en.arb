@@ -202,5 +202,7 @@
   "dataRequestAccess": "Request a copy of my data",
   "dataRequestRectify": "Request rectification of my data",
   "dataRequestErase": "Request deletion of my account and data",
-  "dataRequestSent": "Your request was recorded; the council team will contact you"
+  "dataRequestSent": "Your request was recorded; the council team will contact you",
+  "consentDataAccuracy": "I declare that the information I provide is accurate and up to date",
+  "ndaReadConfirm": "I have read the agreement and agree to abide by it"
 }

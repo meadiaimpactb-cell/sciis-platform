@@ -67,5 +67,5 @@ it('derives the membership fee from settings, ignoring the client amount', funct
     $this->actingAs($user, 'api');
 
     $this->postJson('/api/v1/payments/intents', ['purpose' => 'membership_fee', 'amount' => 1, 'idempotency_key' => 'idem-key-0002'])
-        ->assertCreated()->assertJsonPath('data.amount', 750.0);
+        ->assertCreated()->assertJsonPath('data.amount', 750); // JSON has no zero fraction: 750.0 encodes as 750
 });

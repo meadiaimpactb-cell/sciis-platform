@@ -1,9 +1,10 @@
 <script setup lang="ts">
-/** Accessible modal dialog: focus trap (basic), Escape to close, aria-modal. */
+/** Accessible modal dialog: focus trap (basic), Escape to close, aria-modal; focus returns to the opener on close (UX-04). */
 const props = withDefaults(defineProps<{ open: boolean; title?: string; size?: 'sm' | 'md' | 'lg' }>(), { size: 'md' })
 const emit = defineEmits<{ (e: 'close'): void }>()
 const panel = ref<HTMLElement | null>(null)
 const titleId = `m-${useId()}`
+let opener: HTMLElement | null = null
 
 const onKey = (e: KeyboardEvent) => {
   if (e.key === 'Escape') emit('close')
@@ -21,12 +22,15 @@ watch(
   (v) => {
     if (!import.meta.client) return
     if (v) {
+      opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
       document.addEventListener('keydown', onKey)
       document.body.style.overflow = 'hidden'
       nextTick(() => panel.value?.querySelector<HTMLElement>('input,textarea,select,button')?.focus())
     } else {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
+      if (opener?.isConnected) nextTick(() => opener?.focus())
+      opener = null
     }
   },
 )

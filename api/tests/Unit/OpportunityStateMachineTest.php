@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Enums\ConsentType;
 use App\Enums\EvaluationResult;
 use App\Enums\InterestStatus;
 use App\Enums\OpportunityStatus;
 use App\Events\OpportunityStatusChanged;
 use App\Exceptions\InvalidTransitionException;
 use App\Models\AuditLog;
+use App\Models\Consent;
 use App\Models\Interest;
 use App\Models\Opportunity;
 use App\Models\Teaser;
@@ -91,11 +93,19 @@ it('does not let an owner perform staff transitions', function (): void {
 })->throws(AuthorizationException::class);
 
 it('requires a reason for not_eligible', function (): void {
+    // ADM-07 — not_eligible is signed by the supervisor (evaluations.approve); the reason guard still applies.
+    $supervisor = $this->staff('super_admin');
+    $opportunity = Opportunity::factory()->status(OpportunityStatus::New)->create();
+
+    app(OpportunityStateMachine::class)->transition($opportunity, OpportunityStatus::NotEligible, $supervisor, null);
+})->throws(InvalidTransitionException::class);
+
+it('does not let a reviewer sign not_eligible without the supervisor permission (ADM-07)', function (): void {
     $reviewer = $this->staff('reviewer');
     $opportunity = Opportunity::factory()->status(OpportunityStatus::New)->create();
 
-    app(OpportunityStateMachine::class)->transition($opportunity, OpportunityStatus::NotEligible, $reviewer, null);
-})->throws(InvalidTransitionException::class);
+    app(OpportunityStateMachine::class)->transition($opportunity, OpportunityStatus::NotEligible, $reviewer, 'خارج النطاق');
+})->throws(AuthorizationException::class);
 
 it('guards eligible with evaluation result and approved teaser', function (): void {
     $reviewer = $this->staff('reviewer');
@@ -108,6 +118,14 @@ it('guards eligible with evaluation result and approved teaser', function (): vo
     expect(fn () => $sm->transition($opportunity->fresh(), OpportunityStatus::Eligible, $reviewer))->toThrow(InvalidTransitionException::class);
 
     Teaser::query()->create(['opportunity_id' => $opportunity->id, 'summary_ar' => 'ملخص', 'version' => 1, 'approved_by_owner_at' => now(), 'approved_by_council_at' => now()]);
+    // PRV-02: an approved teaser is not enough — the owner must have consented to its publication.
+    expect(fn () => $sm->transition($opportunity->fresh(), OpportunityStatus::Eligible, $reviewer))->toThrow(InvalidTransitionException::class);
+
+    Consent::query()->create([
+        'user_id' => $opportunity->owner_user_id, 'type' => ConsentType::TeaserPublication, 'version' => '1.0',
+        'text_hash' => hash('sha256', 'teaser_publication|1.0'), 'accepted_at' => now(),
+        'subject_type' => $opportunity->getMorphClass(), 'subject_id' => $opportunity->id,
+    ]);
     $result = $sm->transition($opportunity->fresh(), OpportunityStatus::Eligible, $reviewer);
 
     expect($result->status)->toBe(OpportunityStatus::Eligible);

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EvaluationCriteriaSeeder::class,
             SettingsSeeder::class,
             LegalPagesSeeder::class,
+            PublicPagesContentSeeder::class,
         ]);
     }
 }

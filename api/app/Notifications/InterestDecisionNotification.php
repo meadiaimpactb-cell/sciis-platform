@@ -39,7 +39,7 @@ class InterestDecisionNotification extends Notification implements ShouldQueue
 
         if ($this->decision === OwnerDecision::Approved) {
             $mail->line(__('notifications.interest_decision.approved.nda'))
-                ->action(__('notifications.interest_decision.approved.action'), $this->frontendUrl('/investor/opportunities/'.$opportunity->uuid));
+                ->action(__('notifications.interest_decision.approved.action'), $this->frontendUrl('/app/investor/opportunities/'.$opportunity->uuid));
         }
 
         return $mail;

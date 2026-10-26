@@ -20,6 +20,7 @@ class NominationResource extends JsonResource
             'opportunity' => (new OpportunityCardResource($this->opportunity))->resolve($request),
             'match_score' => $this->match_score,
             'matched_criteria' => array_map(fn (string $c): array => ['key' => $c, 'label' => __('enums.match_criteria.'.$c)], (array) $this->matched_criteria),
+            'matched' => \App\Services\MatchingService::matchedFlags((array) $this->matched_criteria),
             'rationale' => $this->rationale,
             'teaser_version' => $this->teaser_version,
             'sent_at' => $this->sent_at?->toIso8601String(),

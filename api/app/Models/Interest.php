@@ -24,6 +24,10 @@ class Interest extends Model
         'owner_decision_due_at', 'decline_reason_id', 'note', 'closed_reason', 'closed_at',
     ];
 
+    private ?FileAccessGrant $resolvedGrant = null;
+
+    private bool $grantResolved = false;
+
     protected function casts(): array
     {
         return [
@@ -68,6 +72,29 @@ class Interest extends Model
     public function scopeOpen(Builder $query): Builder
     {
         return $query->where('status', '!=', InterestStatus::Closed->value);
+    }
+
+    /** ENT-06 — the investor's full-file grant on this opportunity (one row per pair; memoised per instance). */
+    public function accessGrant(): ?FileAccessGrant
+    {
+        if (! $this->grantResolved) {
+            $this->resolvedGrant = FileAccessGrant::query()
+                ->where('opportunity_id', $this->opportunity_id)
+                ->where('investor_user_id', $this->investor_user_id)
+                ->latest('id')
+                ->first();
+            $this->grantResolved = true;
+        }
+
+        return $this->resolvedGrant;
+    }
+
+    /** ENT-06 — the owner approved sharing and has not revoked it (the NDA may still be pending). */
+    public function hasOwnerGrant(): bool
+    {
+        $grant = $this->accessGrant();
+
+        return $grant !== null && $grant->granted_by_owner_at !== null && $grant->revoked_at === null;
     }
 
     public function isOpen(): bool

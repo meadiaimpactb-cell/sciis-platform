@@ -18,7 +18,7 @@ class Consent extends Model
     public const UPDATED_AT = null;
 
     protected $fillable = [
-        'user_id', 'type', 'version', 'text_hash', 'accepted_at', 'ip', 'user_agent', 'subject_type', 'subject_id',
+        'user_id', 'type', 'version', 'text_hash', 'text_snapshot', 'locale', 'accepted_at', 'ip', 'user_agent', 'subject_type', 'subject_id',
     ];
 
     protected function casts(): array

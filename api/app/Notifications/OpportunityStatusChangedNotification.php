@@ -7,6 +7,7 @@ namespace App\Notifications;
 use App\Enums\OpportunityStatus;
 use App\Models\Opportunity;
 use App\Notifications\Concerns\RespectsPreferences;
+use App\Services\WhatsApp\WhatsAppMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -42,12 +43,20 @@ class OpportunityStatusChangedNotification extends Notification implements Shoul
             $mail->line(__('notifications.status_changed.reason', ['reason' => $this->reason]));
         }
 
-        return $mail->action(__('notifications.status_changed.action'), $this->frontendUrl('/entrepreneur/opportunities/'.$this->opportunity->uuid));
+        return $mail->action(__('notifications.status_changed.action'), $this->frontendUrl('/app/entrepreneur/opportunities/'.$this->opportunity->uuid));
     }
 
     public function toSms(object $notifiable): string
     {
         return __('notifications.status_changed.sms', ['ref' => $this->opportunity->reference_no ?? '', 'status' => $this->to->label()]);
+    }
+
+    /** NTF-04 — template `opportunity_status`: {{1}} name, {{2}} reference, {{3}} status. */
+    public function toWhatsApp(object $notifiable): ?WhatsAppMessage
+    {
+        return WhatsAppMessage::forKey('opportunity_status', (string) ($notifiable->locale ?? 'ar'), [
+            $this->opportunity->name, $this->opportunity->reference_no, $this->to->label(),
+        ], $this->toSms($notifiable));
     }
 
     /** @return array<string, mixed> */

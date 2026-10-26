@@ -10,35 +10,33 @@ use App\Http\Resources\OpportunityDetailResource;
 use App\Models\Opportunity;
 use App\Models\SavedOpportunity;
 use App\Services\AuditLogger;
-use Illuminate\Database\Eloquent\Builder;
+use App\Support\OpportunityFilters;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * OPP-01..04 / OPP-06 — browse (filtered by access policy), detail at caller's access level, save/unsave.
+ * OPP-01..04 / OPP-06 / OPP-10 — browse (filtered by access policy), detail at caller's access level, save/unsave.
  * Visibility is enforced by `Opportunity::visibleTo()` + OpportunityPolicy::view (ACC-04).
  */
 class OpportunityBrowseController extends Controller
 {
     public function __construct(private readonly AuditLogger $audit) {}
 
-    /** GET /opportunities — cards. Filters: sector, region, stage, type; sort newest|impact|need; search. */
+    /**
+     * GET /opportunities — cards.
+     * Filters (App\Support\OpportunityFilters): `filter[sector|region|stage|type|range|beneficiary|sdg]` (taxonomy key
+     * or id, comma list = any of; stage = enum), `filter[nominated]=1`; `sort` newest|impact|need; `search`.
+     * `meta.counts.{facet}[key]` (OPP-10) reflect the applied filters: each facet is counted with every other filter
+     * applied (its own selection excluded), over what the caller may see.
+     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $filters = (array) $request->input('filter', []);
+        $filters = OpportunityFilters::normalize(array_merge((array) $request->input('filter', []), ['search' => $request->input('search')]));
+        $visible = Opportunity::query()->visibleTo($user);
 
-        $query = Opportunity::query()
-            ->visibleTo($user)
-            ->with(['sector', 'regions', 'investmentTypes', 'beneficiaryGroups', 'organization', 'teaser', 'fundingRange'])
-            ->when($filters['sector'] ?? null, fn (Builder $q, $v) => $q->whereHas('sector', fn ($s) => $s->where('key', $v)->orWhere('id', (int) $v)))
-            ->when($filters['region'] ?? null, fn (Builder $q, $v) => $q->whereHas('regions', fn ($r) => $r->where('key', $v)->orWhere('taxonomy_terms.id', (int) $v)))
-            ->when($filters['stage'] ?? null, fn (Builder $q, $v) => $q->where('stage', $v))
-            ->when($filters['type'] ?? null, fn (Builder $q, $v) => $q->whereHas('investmentTypes', fn ($t) => $t->where('key', $v)->orWhere('taxonomy_terms.id', (int) $v)))
-            ->when($request->filled('search'), function (Builder $q) use ($request): void {
-                $term = '%'.str_replace(['%', '_'], ['\%', '\_'], (string) $request->input('search')).'%';
-                $q->where(fn (Builder $w) => $w->where('name', 'like', $term)->orWhere('short_description', 'like', $term)->orWhereHas('teaser', fn ($t) => $t->where('summary_ar', 'like', $term)));
-            });
+        $query = OpportunityFilters::apply((clone $visible), $filters, $user)
+            ->with(['sector', 'regions', 'investmentTypes', 'beneficiaryGroups', 'organization', 'teaser', 'fundingRange']);
 
         match ((string) $request->input('sort', 'newest')) {
             'impact' => $query->orderByDesc('beneficiaries_target'),
@@ -50,7 +48,14 @@ class OpportunityBrowseController extends Controller
 
         return response()->json([
             'data' => OpportunityCardResource::collection($paginator->items())->resolve($request),
-            'meta' => ['current_page' => $paginator->currentPage(), 'last_page' => $paginator->lastPage(), 'per_page' => $paginator->perPage(), 'total' => $paginator->total(), 'access_policy' => setting('opportunity.access_policy')],
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'access_policy' => setting('opportunity.access_policy'),
+                'counts' => OpportunityFilters::facetCounts($visible, $filters, $user),
+            ],
         ]);
     }
 

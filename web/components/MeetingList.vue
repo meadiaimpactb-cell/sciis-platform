@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { Meeting } from '~/types/api'
 const props = defineProps<{ meetings: Meeting[] }>()
-const { dateTime } = useFormat()
+/** MTG-02 — an action was marked done / reopened; the page reloads the list. */
+defineEmits<{ (e: 'changed'): void }>()
+const { date, dateTime } = useFormat()
 const upcoming = computed(() => props.meetings.filter((m) => m.status === 'scheduled' && new Date(m.starts_at) >= new Date()).sort((a, b) => a.starts_at.localeCompare(b.starts_at)))
 const past = computed(() => props.meetings.filter((m) => !upcoming.value.includes(m)).sort((a, b) => b.starts_at.localeCompare(a.starts_at)))
-const ics = (m: Meeting) => {
-  const fmt = (d: string) => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-  const body = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${fmt(m.starts_at)}\nDTEND:${fmt(m.ends_at)}\nSUMMARY:${m.title}\nLOCATION:${m.video_url ?? m.location ?? ''}\nEND:VEVENT\nEND:VCALENDAR`
-  const a = document.createElement('a'); a.href = `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`; a.download = `meeting-${m.id}.ics`; a.click()
-}
+/** MTG-05 — Google / Outlook / .ics for a scheduled meeting. */
+const calendarItem = (m: Meeting) => ({ title: m.title, starts_at: m.starts_at, ends_at: m.ends_at, location: m.video_url ?? m.location ?? null, details: m.opportunity.name })
 </script>
 
 <template>
@@ -24,11 +23,19 @@ const ics = (m: Meeting) => {
               <h3 class="mt-1 font-semibold">{{ m.title }}</h3>
               <p class="text-sm text-muted">{{ m.opportunity.name }} · {{ m.location ?? m.video_url ?? '' }}</p>
               <p class="text-xs text-muted mt-2">{{ $t('investor.meetings.participants') }}: {{ m.participants.map((p) => p.name).join('، ') }}</p>
-              <div v-if="m.minutes" class="mt-3 rounded-lg bg-bg p-3 text-sm"><p class="text-xs font-medium text-muted mb-1">{{ $t('investor.meetings.minutes') }}</p><p class="leading-6">{{ m.minutes }}</p><ul v-if="m.actions?.length" class="mt-2 space-y-1"><li v-for="a in m.actions" :key="a.description" class="flex items-center gap-2 text-xs"><span class="h-1.5 w-1.5 rounded-full" :class="a.done_at ? 'bg-success' : 'bg-warning'" />{{ a.description }} — {{ a.owner }}</li></ul></div>
+              <div v-if="m.minutes" class="mt-3 rounded-lg bg-bg p-3 text-sm"><p class="text-xs font-medium text-muted mb-1">{{ $t('investor.meetings.minutes') }}</p><p class="leading-6">{{ m.minutes }}</p><ul v-if="m.actions?.length" class="mt-3 space-y-2">
+                <li v-for="a in m.actions" :key="a.id ?? a.description" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <span class="h-1.5 w-1.5 rounded-full shrink-0" :class="a.done_at ? 'bg-success' : 'bg-warning'" aria-hidden="true" />
+                  <span :class="a.done_at && 'line-through text-muted'">{{ a.description }}</span>
+                  <span class="text-muted">— {{ a.owner ?? '—' }}<template v-if="a.is_mine"> ({{ $t('components.meetingActions.mine') }})</template></span>
+                  <span v-if="a.due_at && !a.done_at" class="text-muted">· {{ $t('components.meetingActions.dueAt') }}: <span class="num">{{ date(a.due_at) }}</span></span>
+                  <MeetingActionToggle v-if="a.can_toggle && a.id" :id="a.id" class="ms-auto" :done="!!a.done_at" :description="a.description" @changed="$emit('changed')" />
+                </li>
+              </ul></div>
             </div>
             <div class="flex sm:flex-col gap-2 shrink-0">
               <AppButton v-if="m.video_url && m.status === 'scheduled'" :href="m.video_url" size="sm">{{ $t('investor.dashboard.joinMeeting') }}</AppButton>
-              <AppButton v-if="m.status === 'scheduled'" size="sm" variant="secondary" @click="ics(m)">{{ $t('investor.meetings.addToCalendar') }}</AppButton>
+              <AddToCalendar v-if="m.status === 'scheduled'" :item="calendarItem(m)" class="sm:flex-col" />
             </div>
           </div>
         </article>

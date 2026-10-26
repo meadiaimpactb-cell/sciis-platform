@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /en/app/
+Disallow: /auth/
+Disallow: /en/auth/
+Disallow: /prototype
+Disallow: /en/prototype
+Disallow: /api/
+
+Sitemap: /sitemap.xml

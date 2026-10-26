@@ -3,7 +3,7 @@
  * OpportunityCardResource / OpportunityDetailResource($accessLevel) / OpportunityFullResource.
  */
 import type { AccessLevel } from '~/types/enums'
-import type { Interest, InfoRequest, Meeting, Membership, Me, Nomination, OpportunityCard, OpportunityDetail, OpportunityFull, QueueItem } from '~/types/api'
+import type { Interest, InfoRequest, Meeting, Membership, Me, Nomination, OpportunityCard, OpportunityDetail, OpportunityFull, OpportunityMarket, OpportunityMarketPublic, OpportunityMotivation, OpportunityTeam, QueueItem } from '~/types/api'
 import {
   type MockUser,
   type OpportunityRow,
@@ -97,6 +97,47 @@ export const serializeCard = (o: OpportunityRow, viewer?: MockUser | null): Oppo
   }
 }
 
+/** Team & founders (س) — mirrors FormatsOpportunity::teamBlock(). */
+export const teamOf = (o: OpportunityRow): OpportunityTeam => ({
+  founders_count: o.founders_count ?? null,
+  team_size: o.team_size ?? null,
+  founders_commitment: o.founders_commitment ?? null,
+  founders_commitment_note: o.founders_commitment_note ?? null,
+  prior_startup_experience: o.prior_startup_experience ?? null,
+  prior_startup_experience_desc: o.prior_startup_experience_desc ?? null,
+  industry_experience: o.industry_experience ?? null,
+  industry_experience_desc: o.industry_experience_desc ?? null,
+  founders_known_years: o.founders_known_years ?? null,
+  has_advisory_board: o.has_advisory_board ?? null,
+  advisory_board_desc: o.advisory_board_desc ?? null,
+  dev_team_structure: o.dev_team_structure ?? null,
+  founders_agreement_signed: o.founders_agreement_signed ?? null,
+  founders: (o.founders ?? []).slice(0, 6),
+})
+/** Public market subset — the only market answers investors see. */
+export const marketPublicOf = (o: OpportunityRow): OpportunityMarketPublic => ({
+  product_stage: o.product_stage ?? null,
+  target_customers: o.target_customers ?? null,
+  competitive_advantage: o.competitive_advantage ?? null,
+  traction_desc: o.traction_desc ?? null,
+})
+export const marketOf = (o: OpportunityRow): OpportunityMarket => ({
+  ...marketPublicOf(o),
+  market_size_desc: o.market_size_desc ?? null,
+  competitors: o.competitors ?? null,
+  go_to_market: o.go_to_market ?? null,
+  technology_desc: o.technology_desc ?? null,
+  scalability_desc: o.scalability_desc ?? null,
+})
+/** Motivation (د) — owner + staff only. */
+export const motivationOf = (o: OpportunityRow): OpportunityMotivation => ({
+  why_now: o.why_now ?? null,
+  support_needed: o.support_needed ?? [],
+  program_expectations: o.program_expectations ?? null,
+  how_heard_id: o.how_heard_id ?? null,
+  how_heard: o.how_heard_id ? txById('how_heard', o.how_heard_id) ?? null : null,
+})
+
 export const serializeDetail = (o: OpportunityRow, viewer: MockUser | null, forcedLevel?: AccessLevel): OpportunityDetail => {
   const level = forcedLevel ?? accessLevelFor(viewer, o)
   const granted = level === 'granted' || level === 'connected'
@@ -131,6 +172,9 @@ export const serializeDetail = (o: OpportunityRow, viewer: MockUser | null, forc
         }
       : null,
     documents: granted ? { locked: false, items: o.documents.filter((d) => d.status === 'accepted') } : { locked: true, items: [] },
+    ...marketPublicOf(o),
+    market: marketPublicOf(o),
+    team: granted ? teamOf(o) : null,
     owner_contact: level === 'connected' && owner ? { name: owner.name, email: owner.email, phone: owner.phone } : null,
     teaser_highlights: o.teaser?.highlights ?? [],
     my_interest: myInterest ? serializeInterest(myInterest) : null,
@@ -149,6 +193,9 @@ export const serializeFull = (o: OpportunityRow): OpportunityFull & { completion
     owner: owner ? { uuid: owner.uuid, name: owner.name, email: owner.email, phone: owner.phone, type: owner.type } : undefined,
     assigned_reviewer: reviewer ? { id: reviewer.id, name: reviewer.name } : null,
     is_overdue: isOverdue,
+    team: teamOf(o),
+    market: marketOf(o),
+    motivation: motivationOf(o),
     completion_percent: checklistFor(o).completion_percent,
   }
 }
@@ -161,16 +208,23 @@ export const checklistFor = (o: OpportunityRow) => {
     { key: 'stage', label: 'المرحلة', section: 'basics', done: !!o.stage, kind: 'field' },
     { key: 'region_ids', label: 'المناطق', section: 'basics', done: o.region_ids.length > 0, kind: 'field' },
     { key: 'investment_type_keys', label: 'أنواع الاستثمار', section: 'basics', done: o.investment_type_keys.length > 0, kind: 'field' },
+    { key: 'founders_count', label: 'عدد المؤسسين', section: 'team', done: o.founders_count != null, kind: 'field' },
+    { key: 'team_size', label: 'حجم الفريق', section: 'team', done: o.team_size != null, kind: 'field' },
+    { key: 'founders_commitment', label: 'مدى تفرّغ المؤسسين', section: 'team', done: !!o.founders_commitment, kind: 'field' },
     { key: 'problem_statement', label: 'المشكلة', section: 'project', done: !!o.problem_statement, kind: 'field' },
     { key: 'solution', label: 'الحل', section: 'project', done: !!o.solution, kind: 'field' },
     { key: 'expected_change', label: 'التغيير المتوقع', section: 'project', done: !!o.expected_change, kind: 'field' },
     { key: 'beneficiaries_desc', label: 'وصف المستفيدين', section: 'project', done: !!o.beneficiaries_desc, kind: 'field' },
     { key: 'beneficiaries_target', label: 'عدد المستفيدين المستهدف', section: 'project', done: o.beneficiaries_target != null, kind: 'field' },
     { key: 'indicators', label: 'مؤشر أثر رئيسي', section: 'impact', done: o.indicators.some((i) => i.is_primary), kind: 'field' },
+    { key: 'product_stage', label: 'مرحلة المنتج أو الخدمة', section: 'market', done: !!o.product_stage, kind: 'field' },
+    { key: 'target_customers', label: 'العملاء المستهدفون', section: 'market', done: !!o.target_customers, kind: 'field' },
+    { key: 'competitive_advantage', label: 'الميزة التنافسية', section: 'market', done: !!o.competitive_advantage, kind: 'field' },
     { key: 'funding_amount', label: 'مبلغ التمويل', section: 'financials', done: o.funding_amount != null, kind: 'field' },
-    { key: 'use_of_funds', label: 'استخدام التمويل (100٪)', section: 'financials', done: o.use_of_funds.reduce((a, b) => a + (b.percent || 0), 0) === 100, kind: 'field' },
+    { key: 'use_of_funds', label: 'استخدام التمويل (100%)', section: 'financials', done: o.use_of_funds.reduce((a, b) => a + (b.percent || 0), 0) === 100, kind: 'field' },
     { key: 'pitch_deck', label: 'العرض التعريفي', section: 'documents', done: o.documents.some((d) => d.kind === 'pitch_deck' && d.status !== 'rejected'), kind: 'document' },
     { key: 'team_cv', label: 'السير الذاتية للفريق', section: 'documents', done: o.documents.some((d) => d.kind === 'team_cv' && d.status !== 'rejected'), kind: 'document' },
+    { key: 'why_now', label: 'لماذا الآن', section: 'motivation', done: !!o.why_now, kind: 'field' },
     { key: 'data_accuracy', label: 'إقرار صحة البيانات', section: 'disclosures', done: !!o.data_accuracy_declared_at, kind: 'field' },
     { key: 'teaser_consent', label: 'الموافقة على نشر الملخص', section: 'disclosures', done: o.teaser_publication_consent, kind: 'field' },
   ]

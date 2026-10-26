@@ -66,7 +66,7 @@ return new class extends Migration
             $table->foreignId('nda_consent_id')->nullable()->constrained('consents')->nullOnDelete();
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
-            $table->index(['opportunity_id', 'investor_user_id', 'revoked_at']);
+            $table->index(['opportunity_id', 'investor_user_id', 'revoked_at'], 'fag_opp_investor_revoked_idx');
         });
     }
 

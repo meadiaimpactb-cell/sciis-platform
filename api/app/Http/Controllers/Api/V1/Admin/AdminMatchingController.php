@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\InfoRequestStatus;
 use App\Enums\InterestStatus;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\NominateRequest;
 use App\Http\Requests\Admin\ReplyInfoRequestRequest;
@@ -18,6 +19,7 @@ use App\Models\InfoRequest;
 use App\Models\Interest;
 use App\Models\Opportunity;
 use App\Notifications\InfoRequestAnsweredNotification;
+use App\Notifications\InfoRequestClosedNotification;
 use App\Notifications\InfoRequestForwardedNotification;
 use App\Services\AuditLogger;
 use App\Services\InterestService;
@@ -57,19 +59,27 @@ class AdminMatchingController extends Controller
         return $this->ok($teaser->toArray());
     }
 
-    /** GET /admin/opportunities/{uuid}/candidates — MAT-02 ranked, MAT-04 COI excluded. */
+    /**
+     * GET /admin/opportunities/{uuid}/candidates — MAT-02 ranked, MAT-04 COI excluded.
+     * MAT-01 manual search: `search` (name / email), `sector`, `region`, `type` (investment type), `investor_type`
+     * (`filter[x]` or top-level) — still approved members only, still ranked, COI still excluded.
+     */
     public function candidates(Request $request, Opportunity $opportunity): JsonResponse
     {
         $this->authorize('nominate', $opportunity);
 
-        $rows = $this->matching->candidates($opportunity, (int) $request->integer('limit', 50))->map(fn (array $row): array => [
-            'user' => ['id' => $row['user']->id, 'uuid' => $row['user']->uuid, 'name' => $row['user']->name, 'type' => $row['user']->type->value, 'type_label' => $row['user']->type->label()],
-            'match_score' => $row['score'],
-            'matched_criteria' => array_map(fn (string $c): array => ['key' => $c, 'label' => __('enums.match_criteria.'.$c)], $row['matched']),
-            'already_nominated' => $row['already_nominated'],
-        ])->values()->all();
+        $filters = [];
+        foreach (['search', 'sector', 'region', 'type', 'investor_type'] as $key) {
+            $value = $request->input('filter.'.$key, $request->input($key));
+            if (filled($value)) {
+                $filters[$key] = is_array($value) ? $value : mb_substr(trim((string) $value), 0, 120);
+            }
+        }
+        $limit = max(1, min(200, (int) $request->integer('limit', 50)));
 
-        return $this->ok(['criteria' => MatchingService::CRITERIA, 'max_nominations' => (int) setting('opportunity.max_nominations_per_opportunity', 5), 'current_nominations' => $opportunity->nominations()->count(), 'candidates' => $rows]);
+        $rows = $this->matching->candidateRows($opportunity, $limit, $filters);
+
+        return $this->ok(['criteria' => MatchingService::CRITERIA, 'max_nominations' => (int) setting('opportunity.max_nominations_per_opportunity', 5), 'current_nominations' => $opportunity->nominations()->count(), 'filters' => (object) $filters, 'candidates' => $rows]);
     }
 
     /** POST /admin/opportunities/{uuid}/nominations — MAT-01/03 */
@@ -88,10 +98,14 @@ class AdminMatchingController extends Controller
             abort(403, __('messages.errors.forbidden'));
         }
 
+        // Filters are accepted both as `filter[x]` (web) and top-level `x`.
+        $status = $request->input('filter.status', $request->input('status'));
+        $opportunity = $request->input('filter.opportunity', $request->input('opportunity'));
+
         $paginator = Interest::query()
             ->with(['opportunity', 'investor', 'declineReason'])
-            ->when($request->filled('status'), fn (Builder $q) => $q->whereIn('status', (array) $request->input('status')))
-            ->when($request->filled('opportunity'), fn (Builder $q) => $q->whereHas('opportunity', fn ($o) => $o->where('uuid', $request->input('opportunity'))))
+            ->when(filled($status), fn (Builder $q) => $q->whereIn('status', (array) $status))
+            ->when(filled($opportunity), fn (Builder $q) => $q->whereHas('opportunity', fn ($o) => $o->where('uuid', $opportunity)))
             ->latest('id')
             ->paginate($this->perPage($request));
 
@@ -117,9 +131,11 @@ class AdminMatchingController extends Controller
             abort(403, __('messages.errors.forbidden'));
         }
 
+        $status = $request->input('filter.status', $request->input('status'));
+
         $paginator = InfoRequest::query()
             ->with(['opportunity', 'investor', 'handler'])
-            ->when($request->filled('status'), fn (Builder $q) => $q->whereIn('status', (array) $request->input('status')))
+            ->when(filled($status), fn (Builder $q) => $q->whereIn('status', (array) $status))
             ->latest('id')
             ->paginate($this->perPage($request));
 
@@ -136,6 +152,8 @@ class AdminMatchingController extends Controller
             abort(403, __('messages.errors.forbidden'));
         }
 
+        $this->assertInfoRequestOpen($infoRequest);
+
         $infoRequest->fill(['status' => InfoRequestStatus::Processing, 'handled_by' => $request->user()->id, 'forwarded_to_owner_at' => now()])->save();
         $this->audit->log('info_request.forwarded', $infoRequest, null, null, $request->user());
         $this->notifications->send($infoRequest->opportunity->owner, new InfoRequestForwardedNotification($infoRequest));
@@ -150,10 +168,36 @@ class AdminMatchingController extends Controller
             abort(403, __('messages.errors.forbidden'));
         }
 
+        $this->assertInfoRequestOpen($infoRequest);
+
         $infoRequest->fill(['status' => InfoRequestStatus::Answered, 'handled_by' => $request->user()->id, 'owner_answer' => $request->validated('answer'), 'answered_at' => now()])->save();
         $this->audit->log('info_request.replied', $infoRequest, null, null, $request->user());
         $this->notifications->send($infoRequest->investor, new InfoRequestAnsweredNotification($infoRequest));
 
         return $this->ok((new InfoRequestResource($infoRequest))->resolve($request));
+    }
+
+    /** POST /admin/info-requests/{id}/close — §6.3: staff close a request at any stage; an unanswered one is notified. */
+    public function closeInfoRequest(Request $request, InfoRequest $infoRequest): JsonResponse
+    {
+        if (! $request->user()->can('nominations.manage')) {
+            abort(403, __('messages.errors.forbidden'));
+        }
+        $this->assertInfoRequestOpen($infoRequest);
+
+        $wasAnswered = $infoRequest->status === InfoRequestStatus::Answered;
+        $infoRequest->close($request->user());
+        if (! $wasAnswered) {
+            $this->notifications->send($infoRequest->investor, new InfoRequestClosedNotification($infoRequest));
+        }
+
+        return $this->ok((new InfoRequestResource($infoRequest->load(['opportunity', 'investor', 'handler'])))->resolve($request));
+    }
+
+    private function assertInfoRequestOpen(InfoRequest $infoRequest): void
+    {
+        if ($infoRequest->isClosed()) {
+            throw new DomainException(__('messages.info_request.already_closed'), 'info_request_closed', 422);
+        }
     }
 }

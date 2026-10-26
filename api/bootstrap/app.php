@@ -3,13 +3,19 @@
 declare(strict_types=1);
 
 use App\Exceptions\DomainException;
+use App\Http\Controllers\SiteShellController;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureFullyVerified;
 use App\Http\Middleware\EnsureMemberApproved;
+use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\EnsureTwoFactor;
+use App\Http\Middleware\EnsureTwoFactorPassed;
+use App\Http\Middleware\IdleTimeout;
+use App\Http\Middleware\LatinDigits;
 use App\Http\Middleware\RequestId;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use App\Services\AuditLogger;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -19,7 +25,11 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -29,6 +39,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         apiPrefix: 'api',
+        // Static hosting only: existence check for news/event pages built after the last site build (no middleware).
+        then: function (): void {
+            Route::get('{locale}/{kind}/{slug}', SiteShellController::class)
+                ->where(['locale' => 'en', 'kind' => 'news|events', 'slug' => '[A-Za-z0-9\-_]+']);
+            Route::get('{kind}/{slug}', SiteShellController::class)
+                ->where(['kind' => 'news|events', 'slug' => '[A-Za-z0-9\-_]+']);
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
@@ -37,7 +54,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(prepend: [
             RequestId::class,
+            IdleTimeout::class,
             SetLocale::class,
+            LatinDigits::class,
         ]);
 
         $middleware->api(append: [
@@ -45,12 +64,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
             'verified.full' => EnsureFullyVerified::class,
             'member.approved' => EnsureMemberApproved::class,
+            'staff' => EnsureStaff::class,
             '2fa.enforced' => EnsureTwoFactor::class,
+            '2fa' => EnsureTwoFactorPassed::class,
             'feature' => EnsureFeatureEnabled::class,
         ]);
     })
@@ -126,6 +147,11 @@ return Application::configure(basePath: dirname(__DIR__))
                     'code' => 'server_error',
                 ],
             };
+
+            // ACC-04 — a 403 to an authenticated user is audited as `access.denied` (once per request, never for guests).
+            if ($payload['status'] === 403) {
+                app(AuditLogger::class)->accessDenied($request, (string) $payload['code']);
+            }
 
             $body = [
                 'message' => $payload['message'],

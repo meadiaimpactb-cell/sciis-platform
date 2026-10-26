@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\DocumentKind;
 use App\Enums\RiskAppetite;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class InvestorProfile extends Model
 {
@@ -17,7 +21,7 @@ class InvestorProfile extends Model
     protected $fillable = [
         'user_id', 'country', 'city', 'employer', 'job_title', 'linkedin_url', 'experience_years', 'experience_desc',
         'prior_investments_count', 'prior_investments_desc', 'has_social_investments', 'social_investments_desc',
-        'risk_appetite', 'mentoring_available', 'mentoring_areas', 'accredited_declaration', 'investment_range_id',
+        'risk_appetite', 'mentoring_available', 'mentoring_areas', 'impact_policy', 'accredited_declaration', 'investment_range_id',
         'annual_investment_band_id', 'preferred_contact', 'how_heard_id', 'cv_document_id', 'conflicts_disclosure',
         'commit_meetings', 'completion_percent', 'reminder_last_sent_at',
     ];
@@ -34,6 +38,7 @@ class InvestorProfile extends Model
             'accredited_declaration' => 'array',
             'completion_percent' => 'integer',
             'reminder_last_sent_at' => 'datetime',
+            'extra_answers' => 'array', // FRM-01 — {key, version, answers, answered_at}
         ];
     }
 
@@ -93,6 +98,36 @@ class InvestorProfile extends Model
     public function cvDocument(): BelongsTo
     {
         return $this->belongsTo(Document::class, 'cv_document_id');
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
+
+    /**
+     * INV-01 — every version of the membership documents: the CV (on the profile) and, for an institution,
+     * the commercial register / authorization letter / impact policy (on the organization). Newest first.
+     *
+     * @return Collection<int, Document>
+     */
+    public function membershipDocuments(): Collection
+    {
+        $user = $this->relationLoaded('user') ? $this->user : $this->user()->first();
+        $orgKinds = array_map(fn (DocumentKind $k): string => $k->value, DocumentKind::forInvestor(true));
+
+        return Document::query()
+            ->with(['owner:id,name,type', 'supersedes:id,uuid'])
+            ->where(function (Builder $q) use ($user, $orgKinds): void {
+                $q->where(fn (Builder $p) => $p->where('documentable_type', $this->getMorphClass())->where('documentable_id', $this->getKey()));
+                if ($user?->organization_id !== null) {
+                    $q->orWhere(fn (Builder $o) => $o->where('documentable_type', (new Organization)->getMorphClass())
+                        ->where('documentable_id', $user->organization_id)
+                        ->whereIn('kind', $orgKinds));
+                }
+            })
+            ->orderByDesc('id')
+            ->get();
     }
 
     /** Recomputes completion_percent from filled fields + taxonomy selections. */
