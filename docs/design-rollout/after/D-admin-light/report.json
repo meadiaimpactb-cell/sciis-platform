@@ -1,0 +1,68 @@
+[
+ {
+  "route": "LOGIN",
+  "landed": "/app/admin/dashboard",
+  "consoleErrors": [],
+  "badRequests": []
+ },
+ {
+  "route": "/app/admin/dashboard",
+  "path": "/app/admin/dashboard",
+  "title": "لوحة الإدارة | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "لوحة العمليات",
+  "overflow": 0,
+  "textLen": 2004,
+  "loading": false,
+  "dashes": 20,
+  "suspicious": false,
+  "snippet": "بوابة الإدارة لوحة العمليات مدير النظام تصدير Excel اليوم · 27 أكتوبر 2026 طلبات جديدة 1 متأخرة عن SLA 3 عضويات بانتظار المراجعة 1 معدل الاهتمام 67% الفرص حسب ا",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/D-admin-light/app_admin_dashboard.png"
+ },
+ {
+  "route": "/app/admin/opportunities",
+  "path": "/app/admin/opportunities",
+  "title": "الفرص | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "جميع الفرص",
+  "overflow": 0,
+  "textLen": 1544,
+  "loading": false,
+  "dashes": 8,
+  "suspicious": false,
+  "snippet": "جميع الفرص الحالة: الكل مسودة جديد قيد المراجعة يحتاج استكمالًا غير مؤهّل مؤهّل تم الربط قيد التفاوض قيد التنفيذ قيد التشغيل مسحوب مغلق القطاع: الكل التعليم وال",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/D-admin-light/app_admin_opportunities.png"
+ },
+ {
+  "route": "/app/admin/users",
+  "path": "/app/admin/users",
+  "title": "المستخدمون | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "المستخدمون والأدوار",
+  "overflow": 0,
+  "textLen": 1552,
+  "loading": false,
+  "dashes": 8,
+  "suspicious": false,
+  "snippet": "المستخدمون والأدوار إدارة حسابات فريق المجلس وصلاحياتهم. إضافة عضو فريق المستخدمون الأدوار والصلاحيات مصفوفة صلاحيات الاعتماد النوع: الكل فريق المجلس فقط مستثمر",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/D-admin-light/app_admin_users.png"
+ },
+ {
+  "route": "/app/admin/settings",
+  "path": "/app/admin/settings",
+  "title": "الإعدادات | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "الإعدادات",
+  "overflow": 0,
+  "textLen": 6477,
+  "loading": false,
+  "dashes": 3,
+  "suspicious": false,
+  "snippet": "الإعدادات مفاتيح النظام والتصنيفات القابلة للتعديل دون كود. مفاتيح الإعدادات التصنيفات قوالب الإشعارات الأسئلة الإضافية حالة النظام التحليلات المفتاح القيمة الو",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/D-admin-light/app_admin_settings.png"
+ }
+]

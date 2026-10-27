@@ -1,0 +1,38 @@
+[
+ {
+  "route": "LOGIN",
+  "landed": "/app/entrepreneur/dashboard",
+  "consoleErrors": [],
+  "badRequests": []
+ },
+ {
+  "route": "/app/entrepreneur/dashboard",
+  "path": "/app/entrepreneur/dashboard",
+  "title": "لوحة صاحب المشروع | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "مرحبًا، سارة (صاحبة مشروع — افتراضي)",
+  "overflow": 0,
+  "textLen": 1183,
+  "loading": false,
+  "dashes": 10,
+  "suspicious": false,
+  "snippet": "بوابة صاحب المشروع مرحبًا، سارة (صاحبة مشروع — افتراضي) سحب المشروع معاينة كاملة تعديل المشروع رحلة المشروع مسار المشروع مشروع جديد مسودة قائمة التحقق قبل الإرس",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/C-entrepreneur-dark/app_entrepreneur_dashboard.png"
+ },
+ {
+  "route": "/app/entrepreneur/opportunities/new",
+  "path": "/app/entrepreneur/opportunities/new",
+  "title": "تقديم مشروع جديد | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "تقديم مشروع جديد",
+  "overflow": 0,
+  "textLen": 714,
+  "loading": false,
+  "dashes": 2,
+  "suspicious": false,
+  "snippet": "تقديم مشروع جديد ابدأ بالمعلومات الأساسية، ثم أكمل ملف المشروع خطوة بخطوة — يُحفظ تلقائيًا كمسودة ولا يراه أحد قبل إرساله للمراجعة. اسم المشروع * 0/190 القطاع *",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/after/C-entrepreneur-dark/app_entrepreneur_opportunities_new.png"
+ }
+]
