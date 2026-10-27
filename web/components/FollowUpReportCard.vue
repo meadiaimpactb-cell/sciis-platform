@@ -15,7 +15,7 @@ const sections = computed(() => [
 </script>
 
 <template>
-  <article class="rounded-xl border border-border p-4">
+  <article class="rounded-2xl border border-border bg-glass p-4">
     <header class="flex flex-col sm:flex-row sm:items-start gap-3">
       <div class="flex-1 min-w-0">
         <div class="flex flex-wrap items-center gap-2">
@@ -23,13 +23,13 @@ const sections = computed(() => [
           <span v-if="report.is_late" class="text-xs text-danger">{{ $t('followUp.reports.late') }}</span>
           <span v-if="report.submitted_at" class="text-xs text-muted num">{{ $t('followUp.reports.submittedAt', { date: date(report.submitted_at) }) }}</span>
         </div>
-        <h3 class="mt-1.5 font-semibold num">{{ $t('followUp.reports.periodLabel', { start: date(report.period_start), end: date(report.period_end) }) }}</h3>
+        <h3 class="mt-1.5 text-base text-ink num">{{ $t('followUp.reports.periodLabel', { start: date(report.period_start), end: date(report.period_end) }) }}</h3>
       </div>
       <div v-if="$slots.actions" class="flex flex-wrap gap-2 shrink-0"><slot name="actions" /></div>
     </header>
     <p v-if="report.narrative" class="mt-3 text-sm whitespace-pre-line">{{ report.narrative }}</p>
     <dl v-if="sections.length" class="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
-      <div v-for="s in sections" :key="s.key" class="rounded-lg bg-bg p-3"><dt class="text-xs text-muted mb-0.5">{{ s.label }}</dt><dd class="whitespace-pre-line">{{ s.text }}</dd></div>
+      <div v-for="s in sections" :key="s.key" class="rounded-xl border border-border bg-surface p-3"><dt class="text-xs text-muted mb-0.5">{{ s.label }}</dt><dd class="whitespace-pre-line">{{ s.text }}</dd></div>
     </dl>
     <div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
       <span v-if="report.spend_amount != null">{{ $t('followUp.reports.spendLabel') }}: <span class="num text-ink font-medium">{{ sar(report.spend_amount) }}</span></span>

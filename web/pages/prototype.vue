@@ -57,6 +57,8 @@ const roleHint: Record<string, string> = { investor: 'investor', investorInst: '
 
 <template>
   <div class="container-x py-10">
+    <!-- design v3 living styleguide (both palettes), then the screen map -->
+    <DesignStyleguide />
     <PageHeader :title="$t('prototype.title')" :sub="$t('prototype.sub')">
       <template #actions><AppBadge kind="generic" :value="mock ? 'active' : 'suspended'" :label="mock ? $t('prototype.mockOn') : $t('prototype.mockOff')" size="md" /></template>
     </PageHeader>
@@ -64,26 +66,26 @@ const roleHint: Record<string, string> = { investor: 'investor', investorInst: '
       <div class="space-y-6">
         <SectionCard :title="$t('prototype.loginAs')" :sub="`${$t('prototype.currentUser')}: ${auth.me?.name ?? $t('prototype.notLoggedIn')}`">
           <div class="flex flex-wrap gap-2">
-            <AppButton v-for="r in roles" :key="r.key" variant="secondary" size="sm" :loading="busy === r.key" @click="loginAs(r)">{{ $t(`auth.login.demoRoles.${r.key}`) }}<span v-if="r.twoFactor" class="text-[10px] text-muted">2FA</span></AppButton>
+            <AppButton v-for="r in roles" :key="r.key" variant="secondary" size="sm" :loading="busy === r.key" @click="loginAs(r)">{{ $t(`auth.login.demoRoles.${r.key}`) }}<span v-if="r.twoFactor" class="text-xs text-muted">2FA</span></AppButton>
             <AppButton v-if="auth.isAuthenticated" variant="ghost" size="sm" @click="logout">{{ $t('common.logout') }}</AppButton>
           </div>
         </SectionCard>
         <SectionCard v-for="s in sections" :key="s.key" :title="$t(`prototype.sections.${s.key}`)" flush>
           <ul class="divide-y divide-border">
             <li v-for="sc in s.screens" :key="sc.path" class="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
-              <div class="min-w-0"><NuxtLink :to="localePath(sc.path)" class="font-medium hover:text-blue">{{ sc.title }}</NuxtLink><span v-if="sc.note" class="text-xs text-muted ms-2">{{ sc.note }}</span><span class="block text-[11px] text-muted ltr text-start num">{{ sc.path }}</span></div>
-              <div class="flex items-center gap-2 shrink-0"><span v-if="s.key !== 'public' && s.key !== 'auth'" class="text-[10px] rounded-full bg-bg px-2 py-0.5 text-muted">{{ $t(`auth.login.demoRoles.${s.key === 'investor' ? 'investor' : s.key === 'entrepreneur' ? 'entrepreneur' : 'admin'}`) }}</span><AppButton size="sm" variant="outline" :to="sc.path">{{ $t('common.view') }}</AppButton></div>
+              <div class="min-w-0"><NuxtLink :to="localePath(sc.path)" class="font-medium text-ink hover:text-accent-text">{{ sc.title }}</NuxtLink><span v-if="sc.note" class="text-xs text-muted ms-2">{{ sc.note }}</span><span class="block text-xs text-muted ltr text-start num">{{ sc.path }}</span></div>
+              <div class="flex items-center gap-2 shrink-0"><span v-if="s.key !== 'public' && s.key !== 'auth'" class="text-xs rounded-full border border-ink/15 bg-ink/5 px-2 py-0.5 text-muted">{{ $t(`auth.login.demoRoles.${s.key === 'investor' ? 'investor' : s.key === 'entrepreneur' ? 'entrepreneur' : 'admin'}`) }}</span><AppButton size="sm" variant="outline" :to="sc.path">{{ $t('common.view') }}</AppButton></div>
             </li>
           </ul>
         </SectionCard>
       </div>
       <aside class="space-y-4 lg:sticky lg:top-24">
         <div class="card card-pad">
-          <h2 class="font-semibold">{{ $t('prototype.howTo') }}</h2>
+          <h2 class="card-title">{{ $t('prototype.howTo') }}</h2>
           <ol class="mt-3 space-y-2 text-sm list-decimal ps-5"><li v-for="h in howTo" :key="h" class="leading-6">{{ h }}</li></ol>
         </div>
         <div class="card card-pad text-sm">
-          <h2 class="font-semibold">{{ $t('auth.login.demoAccounts') }}</h2>
+          <h2 class="card-title">{{ $t('auth.login.demoAccounts') }}</h2>
           <ul class="mt-2 space-y-1 text-xs text-muted"><li v-for="r in roles" :key="r.email" class="flex justify-between gap-2"><span>{{ $t(`auth.login.demoRoles.${r.key}`) }}</span><code class="ltr">{{ r.email }}</code></li></ul>
           <p class="mt-2 text-xs text-muted">{{ $t('auth.login.demoHint') }} · 2FA: 123456</p>
         </div>

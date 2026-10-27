@@ -75,7 +75,7 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
   <div class="min-w-0">
     <!-- checkbox -->
     <label v-if="type === 'checkbox'" :for="id" class="flex items-start gap-3 cursor-pointer select-none" :class="disabled && 'opacity-60 cursor-not-allowed'">
-      <input :id="id" type="checkbox" :name="name" :checked="!!modelValue" :disabled="disabled" :aria-invalid="!!error" :aria-required="required || undefined" :aria-describedby="describedBy" class="mt-1 h-4 w-4 rounded border-border text-blue focus:ring-blue" @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)" />
+      <input :id="id" type="checkbox" :name="name" :checked="!!modelValue" :disabled="disabled" :aria-invalid="!!error" :aria-required="required || undefined" :aria-describedby="describedBy" class="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-navy disabled:cursor-not-allowed" @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)" />
       <span class="text-sm text-ink leading-6">
         <slot name="label">{{ label }}</slot>
         <span v-if="required" class="text-danger ms-0.5" aria-hidden="true">*</span>
@@ -111,12 +111,12 @@ const charCount = computed(() => (typeof props.modelValue === 'string' ? props.m
 
       <!-- radio cards -->
       <div v-else-if="type === 'radio-cards'" role="radiogroup" :aria-labelledby="`${id}-label`" :aria-describedby="describedBy" :aria-required="required || undefined" class="grid gap-3 sm:grid-cols-2" @keydown="onRadioKey">
-        <button v-for="(o, i) in options" :key="o.value" :ref="(el) => { if (el) radioRefs[i] = el as HTMLButtonElement }" type="button" role="radio" :aria-checked="modelValue === o.value" :tabindex="radioTabindex(o.value, i)" class="text-start rounded-xl border p-4 transition kbd-focus" :class="modelValue === o.value ? 'border-blue bg-blue-soft/60 ring-1 ring-blue' : 'border-border bg-surface hover:border-blue/50'" :disabled="disabled" @click="emit('update:modelValue', o.value)">
+        <button v-for="(o, i) in options" :key="o.value" :ref="(el) => { if (el) radioRefs[i] = el as HTMLButtonElement }" type="button" role="radio" :aria-checked="modelValue === o.value" :tabindex="radioTabindex(o.value, i)" class="text-start rounded-xl border p-4 transition kbd-focus disabled:cursor-not-allowed disabled:opacity-60" :class="modelValue === o.value ? 'border-accent bg-accent/10 ring-1 ring-accent' : 'border-border bg-field hover:border-accent/60 hover:bg-ink/5'" :disabled="disabled" @click="emit('update:modelValue', o.value)">
           <span class="flex items-center gap-2">
-            <span class="h-4 w-4 rounded-full border-2 flex items-center justify-center" :class="modelValue === o.value ? 'border-blue' : 'border-border'" aria-hidden="true"><span v-if="modelValue === o.value" class="h-2 w-2 rounded-full bg-blue" /></span>
-            <span class="font-medium text-ink">{{ o.label }}</span>
+            <span class="h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center" :class="modelValue === o.value ? 'border-accent-text' : 'border-ink/30'" aria-hidden="true"><span v-if="modelValue === o.value" class="h-2 w-2 rounded-full bg-accent-text" /></span>
+            <span class="font-semibold text-ink">{{ o.label }}</span>
           </span>
-          <span v-if="o.hint" class="block text-sm text-muted mt-1 ps-6">{{ o.hint }}</span>
+          <span v-if="o.hint" class="block text-sm leading-6 text-muted mt-1 ps-6">{{ o.hint }}</span>
         </button>
       </div>
 

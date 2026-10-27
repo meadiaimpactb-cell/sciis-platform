@@ -45,10 +45,10 @@ const messagesFor = ref<Interest | null>(null)
     <PageHeader :title="$t('admin.interests.title')" :sub="$t('admin.interests.sub')" />
     <DataTable :columns="columns" :rows="data ?? []" :loading="loading">
       <template #cell-investor="{ row }"><span class="font-medium">{{ row.investor?.name ?? '—' }}</span></template>
-      <template #cell-opportunity="{ row }"><NuxtLink :to="$localePath(`/app/admin/opportunities/${row.opportunity.uuid}`)" class="hover:text-blue">{{ row.opportunity.name }}</NuxtLink></template>
+      <template #cell-opportunity="{ row }"><NuxtLink :to="$localePath(`/app/admin/opportunities/${row.opportunity.uuid}`)" class="text-ink hover:text-accent-text">{{ row.opportunity.name }}</NuxtLink></template>
       <template #cell-status="{ value }"><AppBadge kind="interest" :value="value" /></template>
       <template #cell-owner_decision="{ value }">{{ value ? label('ownerDecision', value) : '—' }}</template>
-      <template #cell-created_at="{ value }">{{ date(value) }}</template>
+      <template #cell-created_at="{ value }"><span class="num text-muted whitespace-nowrap">{{ date(value) }}</span></template>
       <template #cell-transition="{ row }"><div class="flex flex-wrap gap-1"><AppButton v-for="s in row.allowed_transitions ?? []" :key="s" size="sm" :variant="s === 'closed' ? 'ghost' : 'outline'" :loading="busy === row.id && s !== 'closed'" @click="transition(row as Interest, s)">{{ label('interestStatus', s) }}</AppButton><span v-if="!(row.allowed_transitions ?? []).length" class="text-xs text-muted">—</span></div></template>
       <template #cell-messages="{ row }"><AppButton size="sm" variant="ghost" @click="messagesFor = row as Interest">{{ $t('collab.messages.button') }}</AppButton></template>
     </DataTable>

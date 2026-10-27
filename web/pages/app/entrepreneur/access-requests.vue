@@ -57,10 +57,10 @@ const revoke = () => revokeForm.submit(async (v) => {
     <div v-else class="space-y-4">
       <article v-for="i in data" :key="i.id" class="card card-pad flex flex-col md:flex-row md:items-center gap-4">
         <div class="flex-1 min-w-0">
-          <div class="flex flex-wrap items-center gap-2"><AppBadge kind="interest" :value="i.status" size="md" /><span class="text-xs text-muted">{{ date(i.created_at) }}</span></div>
-          <p class="mt-2 font-semibold">{{ investorName(i) }}</p>
+          <div class="flex flex-wrap items-center gap-2"><AppBadge kind="interest" :value="i.status" size="md" /><span class="text-xs text-muted num">{{ date(i.created_at) }}</span></div>
+          <h2 class="mt-2 card-title">{{ investorName(i) }}</h2>
           <p class="text-sm text-muted">{{ i.opportunity.name }}</p>
-          <p v-if="i.note" class="mt-2 text-sm text-text/85">{{ i.note }}</p>
+          <p v-if="i.note" class="mt-2 text-sm text-text">{{ i.note }}</p>
           <p v-if="i.owner_decision" class="mt-2 text-xs text-muted">{{ $t('admin.interests.ownerDecision') }}: {{ $t(`enums.ownerDecision.${i.owner_decision}`) }} · <span class="num">{{ date(i.owner_decided_at) }}</span></p>
           <p v-if="i.access_active" class="mt-1 text-xs text-success">{{ $t('entrepreneur.accessRequests.accessActive') }}</p>
           <p v-else-if="i.access_revoked_at" class="mt-1 text-xs text-muted">{{ $t('entrepreneur.accessRequests.accessRevokedAt') }}: <span class="num">{{ date(i.access_revoked_at) }}</span></p>

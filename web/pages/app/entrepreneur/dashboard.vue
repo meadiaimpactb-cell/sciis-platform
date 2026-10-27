@@ -88,7 +88,7 @@ const createProject = async () => {
           <template #actions><AppButton v-if="['negotiating', 'in_execution', 'operating'].includes(primary.status)" size="sm" :to="`/app/entrepreneur/follow-up/${primary.uuid}`">{{ $t('followUp.owner.open') }}</AppButton><AppButton size="sm" variant="outline" :to="`/app/entrepreneur/opportunities/${primary.uuid}`">{{ $t('entrepreneur.journey.open') }}</AppButton></template>
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
             <div class="flex flex-wrap items-center gap-3">
-              <h3 class="text-lg font-semibold">{{ primary.name }}</h3>
+              <h3 class="font-display text-lg font-bold text-ink">{{ primary.name }}</h3>
               <AppBadge kind="opportunity" :value="primary.status" size="md" :soft="false" />
             </div>
             <dl class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
@@ -99,7 +99,7 @@ const createProject = async () => {
           </div>
           <StatusStrip :status="primary.status" />
           <div v-if="opportunities.length > 1" class="mt-4 flex flex-wrap gap-2 text-xs">
-            <NuxtLink v-for="o in opportunities" :key="o.uuid" :to="$localePath(`/app/entrepreneur/opportunities/${o.uuid}`)" class="chip !py-0.5">{{ o.name }} <AppBadge kind="opportunity" :value="o.status" :dot="false" /></NuxtLink>
+            <NuxtLink v-for="o in opportunities" :key="o.uuid" :to="$localePath(`/app/entrepreneur/opportunities/${o.uuid}`)" class="chip !py-1">{{ o.name }} <AppBadge kind="opportunity" :value="o.status" :dot="false" /></NuxtLink>
           </div>
         </SectionCard>
 
@@ -114,9 +114,9 @@ const createProject = async () => {
           <ul v-else class="divide-y divide-border">
             <li v-for="it in requiredNow" :key="it.id" class="py-3 flex flex-col sm:flex-row sm:items-center gap-3">
               <div class="flex-1 min-w-0">
-                <p class="font-medium">{{ it.title }}</p>
+                <p class="font-medium text-ink">{{ it.title }}</p>
                 <p v-if="it.note" class="text-sm text-muted">{{ it.note }}</p>
-                <p v-if="it.due_at" class="text-xs mt-0.5" :class="(daysUntil(it.due_at) ?? 1) < 0 ? 'text-danger' : 'text-muted'">{{ $t('common.dueAt') }}: {{ date(it.due_at) }} ({{ (daysUntil(it.due_at) ?? 0) < 0 ? $t('common.overdueBy', { n: Math.abs(daysUntil(it.due_at) ?? 0) }) : $t('common.daysLeft', { n: daysUntil(it.due_at) }) }})</p>
+                <p v-if="it.due_at" class="text-xs mt-0.5 num" :class="(daysUntil(it.due_at) ?? 1) < 0 ? 'text-danger' : 'text-muted'">{{ $t('common.dueAt') }}: {{ date(it.due_at) }} ({{ (daysUntil(it.due_at) ?? 0) < 0 ? $t('common.overdueBy', { n: Math.abs(daysUntil(it.due_at) ?? 0) }) : $t('common.daysLeft', { n: daysUntil(it.due_at) }) }})</p>
               </div>
               <AppButton v-if="it.action === 'meeting_action'" size="sm" variant="outline" :loading="busy === `action-${it.id}`" @click="markActionDone(it)">{{ $t('components.meetingActions.markDone') }}</AppButton>
               <AppButton v-else size="sm" :to="actionHref(it)">{{ $t(`entrepreneur.dashboard.actions.${it.action}`) }}</AppButton>
@@ -127,29 +127,29 @@ const createProject = async () => {
         <!-- preview card -->
         <SectionCard :title="$t('entrepreneur.dashboard.previewTitle')" :sub="$t('entrepreneur.dashboard.previewText')">
           <OpportunityCard v-if="data.preview" :opportunity="data.preview" :to="`/app/entrepreneur/opportunities/${data.preview.uuid}/preview`" :show-status="false" />
-          <div class="mt-3 grid grid-cols-2 gap-3 text-center">
-            <NuxtLink :to="$localePath('/app/entrepreneur/info-requests')" class="rounded-lg bg-bg p-3"><p class="text-2xl font-semibold num">{{ number(data.info_requests_open ?? data.pending_info_requests ?? 0) }}</p><p class="text-xs text-muted">{{ $t('entrepreneur.dashboard.infoOpen') }}</p></NuxtLink>
-            <NuxtLink :to="$localePath('/app/entrepreneur/meetings')" class="rounded-lg bg-bg p-3"><p class="text-2xl font-semibold num">{{ number(data.meetings_upcoming ?? data.counters?.meetings ?? 0) }}</p><p class="text-xs text-muted">{{ $t('entrepreneur.dashboard.meetingsUpcoming') }}</p></NuxtLink>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <StatCard :label="$t('entrepreneur.dashboard.infoOpen')" :value="number(data.info_requests_open ?? data.pending_info_requests ?? 0)" to="/app/entrepreneur/info-requests" tone="blue" />
+            <StatCard :label="$t('entrepreneur.dashboard.meetingsUpcoming')" :value="number(data.meetings_upcoming ?? data.counters?.meetings ?? 0)" to="/app/entrepreneur/meetings" tone="success" />
           </div>
         </SectionCard>
 
         <!-- documents -->
         <SectionCard :title="$t('entrepreneur.dashboard.documents')" class="lg:col-span-2" flush>
-          <table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('common.notes') }}</th></tr></thead>
+          <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('common.notes') }}</th></tr></thead>
             <tbody>
-              <tr v-for="d in documents" :key="d.uuid"><td>{{ label('documentKind', d.kind) }}</td><td class="font-medium">{{ d.title }}<span class="block text-xs text-muted num">v{{ d.version }} · {{ date(d.created_at ?? d.uploaded_at) }}</span></td><td><AppBadge kind="document" :value="d.status" /></td><td class="text-muted text-xs max-w-xs">{{ d.reviewer_note ?? '—' }}</td></tr>
+              <tr v-for="d in documents" :key="d.uuid"><td>{{ label('documentKind', d.kind) }}</td><td class="font-medium text-ink">{{ d.title }}<span class="block text-xs text-muted num">v{{ d.version }} · {{ date(d.created_at ?? d.uploaded_at) }}</span></td><td><AppBadge kind="document" :value="d.status" /></td><td class="text-muted text-xs max-w-xs">{{ d.reviewer_note ?? '—' }}</td></tr>
               <tr v-if="!documents.length"><td colspan="4" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr>
-            </tbody></table>
+            </tbody></table></div>
           <div class="px-4 py-3 border-t border-border"><AppButton size="sm" variant="outline" :to="`/app/entrepreneur/opportunities/${primary.uuid}/edit?step=documents`">{{ $t('common.upload') }}</AppButton></div>
         </SectionCard>
 
         <!-- access requests -->
         <SectionCard :title="$t('entrepreneur.dashboard.accessRequests')" :sub="$t('entrepreneur.dashboard.accessRequestsText')">
           <ul class="space-y-3">
-            <li v-for="i in accessRequests" :key="i.id" class="rounded-lg border border-border p-3 text-sm">
-              <div class="flex items-center justify-between gap-2"><span class="font-medium">{{ i.investor?.name ?? $t('entrepreneur.dashboard.investorLabel') }}</span><AppBadge kind="interest" :value="i.status" /></div>
-              <p class="text-xs text-muted mt-1">{{ i.opportunity.name }} · {{ date(i.created_at) }}</p>
-              <p v-if="i.note" class="text-xs mt-1 text-text/80">{{ i.note }}</p>
+            <li v-for="i in accessRequests" :key="i.id" class="rounded-xl border border-border bg-glass p-3 text-sm">
+              <div class="flex items-center justify-between gap-2"><span class="font-medium text-ink">{{ i.investor?.name ?? $t('entrepreneur.dashboard.investorLabel') }}</span><AppBadge kind="interest" :value="i.status" /></div>
+              <p class="text-xs text-muted mt-1">{{ i.opportunity.name }} · <span class="num">{{ date(i.created_at) }}</span></p>
+              <p v-if="i.note" class="text-xs mt-1 text-text">{{ i.note }}</p>
               <div v-if="i.status === 'awaiting_owner_approval'" class="mt-2 flex gap-2"><AppButton size="sm" :loading="busy === `approve-${i.id}`" @click="decide(i, 'approve')">{{ $t('common.approve') }}</AppButton><AppButton size="sm" variant="ghost" :loading="busy === `decline-${i.id}`" @click="decide(i, 'decline')">{{ $t('common.decline') }}</AppButton></div>
             </li>
             <li v-if="!accessRequests.length" class="text-sm text-muted">{{ $t('common.noData') }}</li>

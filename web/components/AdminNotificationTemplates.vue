@@ -69,8 +69,8 @@ const restore = async (it: Item, l: Locale) => {
       <summary class="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none">
         <span class="card-title">{{ g.title }}</span>
         <span class="flex items-center gap-2 text-xs text-muted">
-          <span v-if="g.edited" class="rounded-full bg-teal-soft text-teal-text px-2 py-0.5">{{ $t('admin.templates.editedCount', { n: g.edited }) }}</span>
-          <span class="num">{{ g.rows.length }}</span>
+          <span v-if="g.edited" class="rounded-full border border-accent/30 bg-accent/10 text-accent-text px-2.5 py-0.5">{{ $t('admin.templates.editedCount', { n: g.edited }) }}</span>
+          <span class="num rounded-full border border-ink/15 px-2 py-0.5">{{ g.rows.length }}</span>
           <svg class="h-4 w-4 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.3 7.3a1 1 0 011.4 0L10 10.6l3.3-3.3a1 1 0 111.4 1.4l-4 4a1 1 0 01-1.4 0l-4-4a1 1 0 010-1.4z" clip-rule="evenodd" /></svg>
         </span>
       </summary>
@@ -78,13 +78,13 @@ const restore = async (it: Item, l: Locale) => {
         <li v-for="it in g.rows" :key="it.key" class="px-5 py-4">
           <div class="flex flex-wrap items-center gap-2 mb-3">
             <code class="text-xs text-muted ltr" dir="ltr">{{ it.key }}</code>
-            <span v-for="p in it.placeholders" :key="p" class="rounded bg-bg border border-border px-1.5 text-[11px] ltr" dir="ltr">:{{ p }}</span>
+            <span v-for="p in it.placeholders" :key="p" class="rounded-full bg-ink/5 border border-border px-2 py-0.5 text-xs text-muted ltr" dir="ltr">:{{ p }}</span>
           </div>
           <div class="grid lg:grid-cols-2 gap-4">
             <div v-for="l in LOCALES" :key="l">
               <label :for="`tpl-${l}-${it.key}`" class="label flex items-center gap-2">
                 {{ $t(`admin.templates.locale.${l}`) }}
-                <span v-if="it[l].value" class="rounded-full bg-teal-soft text-teal-text text-[11px] px-2">{{ $t('admin.templates.edited') }}</span>
+                <span v-if="it[l].value" class="rounded-full border border-accent/30 bg-accent/10 text-accent-text text-xs font-normal px-2 py-0.5">{{ $t('admin.templates.edited') }}</span>
               </label>
               <textarea
                 :id="`tpl-${l}-${it.key}`"

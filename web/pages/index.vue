@@ -39,8 +39,8 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
             <svg class="hero__orbits" viewBox="0 0 1200 1200">
               <defs>
                 <radialGradient id="home-halo" cx="50%" cy="50%" r="50%">
-                  <stop offset="0" stop-color="#58B0A8" stop-opacity=".5" />
-                  <stop offset="1" stop-color="#58B0A8" stop-opacity="0" />
+                  <stop offset="0" stop-color="var(--scii-teal)" stop-opacity=".5" />
+                  <stop offset="1" stop-color="var(--scii-teal)" stop-opacity="0" />
                 </radialGradient>
               </defs>
               <circle cx="600" cy="600" r="300" fill="url(#home-halo)" />
@@ -115,7 +115,7 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
   padding-inline: 16px;
   border-radius: 999px;
   border: 1px solid rgba(var(--accent-rgb), 0.35);
-  background: rgba(88, 176, 168, 0.08);
+  background: rgba(var(--scii-teal-rgb), 0.08);
   font: 500 14px var(--fb);
   color: var(--accent-text);
 }
@@ -140,8 +140,8 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
 .hero__side--investors { text-align: end; align-items: flex-end; justify-self: end; }
 .hero__side--projects { text-align: start; align-items: flex-start; justify-self: start; }
 .hero__label-muted { color: var(--t2); }
-.hero__side-title { font: 800 32px/1.4 var(--fd); }
-.hero__side-text { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); }
+.hero__side-title { font: 800 var(--fs-heading)/1.45 var(--fd); }
+.hero__side-text { margin: 0; font: 400 var(--fs-desc)/1.85 var(--fb); color: var(--t2); }
 .hero__side .site-btn { margin-top: 6px; }
 
 .hero__emblem {
@@ -191,9 +191,9 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
   gap: 18px;
   padding-bottom: 72px;
 }
-.hero__title { max-width: 980px; font: 800 clamp(34px, 5.2vw, 54px)/1.35 var(--fd); text-wrap: balance; }
-.hero__lead { max-width: 720px; margin: 0; font: 400 18px/1.8 var(--fb); color: var(--t2); }
-.hero__disclaimer { margin: 6px 0 0; font: 400 13px/1.6 var(--fb); color: var(--t3); }
+.hero__title { max-width: 980px; font: 800 var(--fs-display)/1.35 var(--fd); text-wrap: balance; }
+.hero__lead { max-width: 720px; margin: 0; font: 400 var(--fs-lead)/1.8 var(--fb); color: var(--t2); }
+.hero__disclaimer { margin: 6px 0 0; font: 400 var(--fs-body)/1.6 var(--fb); color: var(--t3); }
 
 /* Stacked (one column): centre both texts around the emblem. */
 @media (max-width: 860px) {
@@ -202,12 +202,11 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
 }
 @media (max-width: 640px) {
   .hero__inner { padding-top: 48px; gap: 40px; }
-  .hero__side-title { font-size: 26px; }
   .hero__emblem { width: 220px; height: 300px; }
   .hero__mark { width: 220px; height: 300px; }
   /* the orbits scale with the emblem (300 → 220 px) so the arcs stay clear of the texts above and below */
   .hero__orbits { width: 880px; height: 880px; }
-  .hero__lead { font-size: 16px; }
+  .hero__lead { font-size: var(--fs-desc); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero__pulse { animation: none; }

@@ -189,9 +189,9 @@ const save = () => sectionsForm.submit(async (v) => {
     <template v-else>
       <SectionCard v-for="(g, gi) in groups" :key="`${slug}-${gi}`" :title="g.name ?? def.label">
         <div class="space-y-6">
-          <div v-for="s in g.sections" :key="s.key" class="rounded-xl border border-border p-4">
+          <div v-for="s in g.sections" :key="s.key" class="rounded-xl border border-border bg-ink/[0.03] p-4">
             <div class="flex items-center justify-between gap-3 mb-3">
-              <h3 class="font-semibold text-sm">{{ s.label }}<span v-if="fromDefault[s.key]" class="ms-2 text-xs font-normal rounded-full bg-bg text-muted px-2 py-0.5">{{ $t('admin.content.sections.fromDefault') }}</span></h3>
+              <h3 class="font-display font-bold text-base text-ink">{{ s.label }}<span v-if="fromDefault[s.key]" class="ms-2 text-xs font-normal font-sans rounded-full border border-ink/15 text-muted px-2.5 py-0.5">{{ $t('admin.content.sections.fromDefault') }}</span></h3>
               <AppButton size="sm" variant="ghost" @click="resetSection(s)">{{ $t('admin.content.sections.reset') }}</AppButton>
             </div>
             <div class="grid lg:grid-cols-2 gap-4">
@@ -211,7 +211,7 @@ const save = () => sectionsForm.submit(async (v) => {
                     <FormField v-model="listOf(s.key, loc)[i]" :name="path(s.key, loc, i)" :label="`${s.label} ${i + 1}`" :error="errs[path(s.key, loc, i)]" :maxlength="SECTION_LIMITS.maxString" :ltr="loc === 'en'" class="flex-1 [&_label]:sr-only" />
                     <AppButton size="sm" variant="ghost" icon :disabled="i === 0" :aria-label="$t('admin.content.hero.moveUp')" @click="move(s.key, loc, i, -1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6" /></svg></AppButton>
                     <AppButton size="sm" variant="ghost" icon :disabled="i === listOf(s.key, loc).length - 1" :aria-label="$t('admin.content.hero.moveDown')" @click="move(s.key, loc, i, 1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></AppButton>
-                    <AppButton size="sm" variant="ghost" icon class="text-danger" :aria-label="$t('common.delete')" @click="removeAt(s, loc, i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
+                    <AppButton size="sm" variant="ghost" icon class="!text-danger hover:!bg-danger/10" :aria-label="$t('common.delete')" @click="removeAt(s, loc, i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
                   </div>
                   <p v-if="errs[path(s.key, loc)]" class="error-text" role="alert">{{ errs[path(s.key, loc)] }}</p>
                   <AppButton size="sm" variant="secondary" :disabled="listOf(s.key, loc).length >= SECTION_LIMITS.maxItems" @click="addRow(s, loc)">{{ $t('admin.content.sections.addItem') }}</AppButton>
@@ -219,13 +219,13 @@ const save = () => sectionsForm.submit(async (v) => {
 
                 <!-- list of objects -->
                 <div v-else class="space-y-3">
-                  <div v-for="(item, i) in itemsOf(s.key, loc)" :key="i" class="rounded-lg border border-border bg-bg/40 p-3">
+                  <div v-for="(item, i) in itemsOf(s.key, loc)" :key="i" class="rounded-xl border border-border bg-surface p-3">
                     <div class="flex items-center justify-between gap-2 mb-2">
                       <span class="num text-xs font-semibold text-teal-text">{{ String(i + 1).padStart(2, '0') }}</span>
                       <div class="flex gap-1">
                         <AppButton size="sm" variant="ghost" icon :disabled="i === 0" :aria-label="$t('admin.content.hero.moveUp')" @click="move(s.key, loc, i, -1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6" /></svg></AppButton>
                         <AppButton size="sm" variant="ghost" icon :disabled="i === itemsOf(s.key, loc).length - 1" :aria-label="$t('admin.content.hero.moveDown')" @click="move(s.key, loc, i, 1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></AppButton>
-                        <AppButton size="sm" variant="ghost" icon class="text-danger" :aria-label="$t('common.delete')" @click="removeAt(s, loc, i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
+                        <AppButton size="sm" variant="ghost" icon class="!text-danger hover:!bg-danger/10" :aria-label="$t('common.delete')" @click="removeAt(s, loc, i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
                       </div>
                     </div>
                     <div class="space-y-2">
@@ -245,7 +245,7 @@ const save = () => sectionsForm.submit(async (v) => {
       </SectionCard>
 
       <FormAlert :message="sectionsForm.formError.value" />
-      <div class="sticky bottom-4 flex justify-end gap-2">
+      <div class="sticky bottom-4 z-10 ms-auto flex w-fit justify-end gap-2 rounded-full border border-border bg-[rgba(var(--bg1-rgb),0.92)] p-1.5 shadow-pop backdrop-blur-md">
         <AppButton :href="previewHref" variant="ghost">{{ $t('admin.content.sections.preview') }}</AppButton>
         <AppButton :loading="sectionsForm.submitting.value" @click="save">{{ $t('common.save') }}</AppButton>
       </div>

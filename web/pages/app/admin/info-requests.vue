@@ -43,8 +43,8 @@ const close = async (r: InfoRequest) => {
           <AppBadge kind="info" :value="r.status" /><span class="text-xs text-muted num">{{ dateTime(r.created_at) }}</span><span class="text-sm">{{ r.investor?.name }} → <NuxtLink :to="$localePath(`/app/admin/opportunities/${r.opportunity.uuid}`)" class="link">{{ r.opportunity.name }}</NuxtLink></span>
           <AppButton v-if="canClose && r.can_close" size="sm" variant="ghost" class="ms-auto" :loading="busy === `close-${r.id}`" @click="close(r)">{{ $t('admin.infoRequests.close') }}</AppButton>
         </div>
-        <h2 class="mt-2 font-semibold">{{ r.subject }}</h2><p class="text-sm leading-6">{{ r.body }}</p>
-        <div v-if="r.owner_answer" class="mt-3 rounded-lg bg-success/5 border border-success/20 p-3 text-sm">{{ r.owner_answer }}</div>
+        <h2 class="mt-3 card-title">{{ r.subject }}</h2><p class="mt-1 text-sm leading-6 text-text">{{ r.body }}</p>
+        <div v-if="r.owner_answer" class="mt-3 rounded-xl bg-success/10 border border-success/30 p-3 text-sm text-ink">{{ r.owner_answer }}</div>
         <p v-if="r.status === 'closed' && r.closed_at" class="mt-3 text-xs text-muted">{{ $t('admin.infoRequests.closedAt') }}: <span class="num">{{ dateTime(r.closed_at) }}</span></p>
         <div v-else-if="r.status !== 'answered' && r.status !== 'closed'" class="mt-3 space-y-3">
           <AppButton v-if="r.status === 'sent'" size="sm" variant="secondary" :loading="busy === `forward-${r.id}`" @click="forward(r)">{{ $t('admin.infoRequests.forward') }}</AppButton>

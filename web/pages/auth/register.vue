@@ -283,10 +283,10 @@ const reviewRows = computed(() => {
 </script>
 
 <template>
-  <div class="card card-pad">
-    <h1 class="text-2xl font-semibold">{{ $t('auth.register.title') }}</h1>
-    <p class="text-muted mt-1">{{ $t('auth.register.sub') }}</p>
-    <Stepper class="mt-5" :steps="steps" :current="step" clickable @go="step = $event" />
+  <div class="card p-6 sm:p-8">
+    <h1 class="text-2xl">{{ $t('auth.register.title') }}</h1>
+    <p class="mt-2 text-base text-muted">{{ $t('auth.register.sub') }}</p>
+    <Stepper class="mt-6 border-y border-border py-4" :steps="steps" :current="step" clickable @go="step = $event" />
 
     <form class="mt-6 space-y-5" novalidate @submit.prevent="stepKey === 'review' ? submitAll() : next()">
       <!-- STEP: account type -->
@@ -355,8 +355,8 @@ const reviewRows = computed(() => {
           <FormField v-model="exp.values.preferred_contact" name="preferred_contact" type="select" :label="$t('auth.register.preferredContact')" :options="contactOpts" :error="exp.errors.value.preferred_contact" required />
         </div>
         <DynamicQuestions ref="extraForm" v-model="extraAnswers" form-key="investor_profile" :errors="extraErrors" error-prefix="profile.extra_answers." />
-        <fieldset class="rounded-xl border border-border p-4 space-y-3">
-          <legend class="px-1 text-sm font-medium">{{ $t('auth.register.declarations') }}</legend>
+        <fieldset class="rounded-xl border border-border p-4 sm:p-5 space-y-3">
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('auth.register.declarations') }}</legend>
           <FormField v-model="exp.values.commit_meetings" name="commit_meetings" type="checkbox" :label="$t('auth.register.commitMeetings')" :error="exp.errors.value.commit_meetings" required />
           <FormField v-model="exp.values.consent_accuracy" name="consent_accuracy" type="checkbox" :label="$t('auth.register.consentAccuracy')" :error="exp.errors.value.consent_accuracy" required />
           <FormField v-model="exp.values.consent_privacy" name="consent_privacy" type="checkbox" :error="exp.errors.value.consent_privacy" required>
@@ -381,8 +381,8 @@ const reviewRows = computed(() => {
           <FormField v-model="proj.values.sector_id" name="sector_id" type="select" :label="$t('auth.register.projectSector')" :options="sectorOpts.map((o) => ({ ...o, value: String(o.value) }))" :error="proj.errors.value.sector_id" required />
           <FormField v-model="proj.values.stage" name="stage" type="select" :label="$t('auth.register.projectStage')" :options="stageOpts" :error="proj.errors.value.stage" required />
         </div>
-        <fieldset class="rounded-xl border border-border p-4 space-y-3">
-          <legend class="px-1 text-sm font-medium">{{ $t('auth.register.declarations') }}</legend>
+        <fieldset class="rounded-xl border border-border p-4 sm:p-5 space-y-3">
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('auth.register.declarations') }}</legend>
           <FormField v-model="proj.values.project_consent_privacy" name="project_consent_privacy" type="checkbox" :error="proj.errors.value.project_consent_privacy" required>
             <template #label>{{ $t('auth.register.consentPrivacy') }} (<NuxtLink :to="$localePath('/legal/privacy')" class="link" target="_blank">{{ $t('footer.privacy') }}</NuxtLink>)</template>
           </FormField>
@@ -394,21 +394,21 @@ const reviewRows = computed(() => {
 
       <!-- STEP: review -->
       <template v-else>
-        <h2 class="font-semibold">{{ $t('auth.register.reviewTitle') }}</h2>
+        <h2 class="text-xl">{{ $t('auth.register.reviewTitle') }}</h2>
         <p class="text-sm text-muted -mt-3">{{ $t('auth.register.reviewHint') }}</p>
-        <dl class="divide-y divide-border rounded-xl border border-border">
-          <div v-for="r in reviewRows" :key="r.label" class="grid sm:grid-cols-[180px_1fr] gap-1 px-4 py-2.5 text-sm"><dt class="text-muted">{{ r.label }}</dt><dd class="font-medium break-words">{{ r.value || '—' }}</dd></div>
+        <dl class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-ink/5">
+          <div v-for="r in reviewRows" :key="r.label" class="grid sm:grid-cols-[180px_1fr] gap-1 px-4 py-3 text-sm"><dt class="text-muted">{{ r.label }}</dt><dd class="font-medium text-ink break-words">{{ r.value || '—' }}</dd></div>
         </dl>
         <Disclaimer variant="box" />
       </template>
 
       <FormAlert :message="rateLimited" />
-      <div class="flex items-center justify-between gap-3 pt-2">
-        <AppButton v-if="step > 0" type="button" variant="ghost" @click="prev">{{ $t('common.previous') }}</AppButton>
+      <div class="flex items-center justify-between gap-3 border-t border-border pt-5">
+        <AppButton v-if="step > 0" type="button" variant="secondary" size="lg" @click="prev">{{ $t('common.previous') }}</AppButton>
         <span v-else />
-        <AppButton type="submit" :loading="submitting">{{ stepKey === 'review' ? $t('auth.register.submit') : $t('common.next') }}</AppButton>
+        <AppButton type="submit" size="lg" class="min-w-[8rem]" :loading="submitting">{{ stepKey === 'review' ? $t('auth.register.submit') : $t('common.next') }}</AppButton>
       </div>
     </form>
-    <p class="mt-5 text-sm text-muted text-center">{{ $t('auth.register.hasAccount') }} <NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
+    <p class="mt-6 text-sm text-muted text-center">{{ $t('auth.register.hasAccount') }} <NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
   </div>
 </template>

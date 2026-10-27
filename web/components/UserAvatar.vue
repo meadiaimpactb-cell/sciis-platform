@@ -12,7 +12,7 @@ watch(() => props.src, () => (failed.value = false))
 </script>
 
 <template>
-  <span class="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-brand font-semibold text-white ring-2 ring-white/70" :class="sizes[size]">
+  <span class="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-brand font-semibold text-white ring-2 ring-surface" :class="sizes[size]">
     <img v-if="src && !failed" :src="src" :alt="name ?? ''" :width="px[size]" :height="px[size]" class="h-full w-full object-cover" loading="lazy" decoding="async" @error="failed = true">
     <span v-else aria-hidden="true">{{ initials }}</span>
   </span>

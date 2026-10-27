@@ -7,7 +7,7 @@
  *  + /admin/users?role=reviewer|evaluator. Each secondary call is optional (403/404 → empty), so every role sees what it may. */
 import type { OpportunityFull, StatusTransition, InternalNote, CompletionRequest, EvaluationPanel, Evaluation, Candidate, CandidatesResponse, Nomination, Interest, Teaser, DocumentResource, Paginated, UserPick, MatchFlagKey, TermRef, TimelineEvent } from '~/types/api'
 import type { OpportunityStatus, EvaluationResult, DocumentStatus, EvaluationAxis } from '~/types/enums'
-import { EVALUATION_RESULTS, DOCUMENT_KINDS } from '~/types/enums'
+import { EVALUATION_RESULTS, DOCUMENT_KINDS, OPPORTUNITY_STRIP_STATUSES } from '~/types/enums'
 import { z } from 'zod'
 import { futureDate, listOf, mustDiffer, optionalText, requiredChoice, requiredNumber, requiredString, RULES, vmsg } from '~/utils/validation'
 import { confirmDialog, toastApiError, toastInfo, toastSuccess } from '~/utils/notify'
@@ -347,7 +347,7 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
     <div v-if="loading && !o" class="text-muted">{{ $t('common.loading') }}</div>
     <section v-else-if="coiGate" class="card card-pad max-w-2xl" aria-labelledby="coi-gate-title">
       <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/admin/dashboard')" class="hover:text-blue">{{ $t('portal.nav.dashboard') }}</NuxtLink> / <span class="num">{{ coiGate.opportunity.reference_no ?? '—' }}</span></nav>
-      <h1 class="text-2xl font-bold">{{ coiGate.opportunity.name }}</h1>
+      <h1 class="font-display text-2xl md:text-3xl font-extrabold text-ink">{{ coiGate.opportunity.name }}</h1>
       <template v-if="coiGate.assignment.coi_has_conflict">
         <p class="mt-4 text-desc text-muted" role="status">{{ $t('admin.opportunity.coiGateWithdrawn') }}</p>
       </template>
@@ -369,8 +369,8 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
         <div class="flex flex-col lg:flex-row lg:items-start gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2"><AppBadge kind="opportunity" :value="o.status" :soft="false" size="md" /><AppBadge v-if="o.is_overdue" kind="generic" value="stalled" :label="$t('common.overdue')" /><span class="text-sm text-muted">{{ sectorName }} · {{ label('stage', o.stage) }}</span></div>
-            <h1 class="mt-2 text-2xl font-semibold">{{ o.name }}</h1>
-            <p class="text-sm text-muted">{{ o.owner?.name }} · {{ o.organization?.name ?? label('userType', o.owner?.type) }}</p>
+            <h1 class="mt-3 font-display text-2xl md:text-3xl font-extrabold text-ink">{{ o.name }}</h1>
+            <p class="mt-1 text-sm text-muted">{{ o.owner?.name }} · {{ o.organization?.name ?? label('userType', o.owner?.type) }}</p>
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
             <AppButton v-if="canTransition && o.allowed_transitions.length" @click="openTransition">{{ $t('admin.opportunity.transition') }}</AppButton>
@@ -383,13 +383,17 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
             </form>
           </div>
         </div>
-        <dl class="mt-4 grid grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
+        <dl class="mt-5 pt-4 border-t border-border grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
           <div><dt class="text-xs text-muted">{{ $t('admin.dashboard.assignee') }}</dt><dd class="font-medium">{{ o.assigned_reviewer?.name ?? '—' }}</dd></div>
           <div><dt class="text-xs text-muted">{{ $t('entrepreneur.dashboard.submittedAt') }}</dt><dd class="font-medium">{{ date(o.submitted_at) }}</dd></div>
           <div><dt class="text-xs text-muted">{{ $t('admin.dashboard.sla') }}</dt><dd class="font-medium">{{ date(o.review_due_at ?? o.completion_due_at ?? o.evaluation_due_at) }}</dd></div>
           <div><dt class="text-xs text-muted">{{ $t('admin.dashboard.recommendation') }}</dt><dd><AppBadge v-if="o.evaluation_result" kind="eval" :value="o.evaluation_result" /><span v-else>—</span></dd></div>
           <div><dt class="text-xs text-muted">{{ $t('admin.opportunity.isListed') }}</dt><dd class="font-medium">{{ o.is_listed ? $t('common.yes') : $t('common.no') }}</dd></div>
         </dl>
+        <!-- design v3 — where the file stands on the happy path (the status above, as a stage track; terminal states show the badge only) -->
+        <div v-if="(OPPORTUNITY_STRIP_STATUSES as readonly string[]).includes(o.status)" class="mt-5 pt-4 border-t border-border">
+          <StageTrack :stages="OPPORTUNITY_STRIP_STATUSES.map((s) => label('opportunityStatus', s))" :current="OPPORTUNITY_STRIP_STATUSES.indexOf(o.status as never)" :label="$t('components.statusStrip.title')" />
+        </div>
       </header>
 
       <Tabs v-model="tab" :tabs="tabs" class="mt-6" />
@@ -405,12 +409,12 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
           </SectionCard>
           <SectionCard :title="$t('investor.detail.tabs.overview')" :sub="label('sensitivity', 'public')" class="lg:col-span-2">
             <div class="grid md:grid-cols-2 gap-5 text-sm">
-              <div><h4 class="font-medium">{{ $t('investor.detail.problem') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.problem_statement || '—' }}</p></div>
-              <div><h4 class="font-medium">{{ $t('investor.detail.solution') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.solution || '—' }}</p></div>
-              <div><h4 class="font-medium">{{ $t('investor.detail.expectedChange') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.expected_change || '—' }}</p></div>
-              <div><h4 class="font-medium">{{ $t('investor.detail.beneficiariesDesc') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.beneficiaries_desc || '—' }} <span class="num text-muted">({{ number(o.beneficiaries_current) }} → {{ number(o.beneficiaries_target) }})</span></p></div>
+              <div><h4 class="font-bold text-ink">{{ $t('investor.detail.problem') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.problem_statement || '—' }}</p></div>
+              <div><h4 class="font-bold text-ink">{{ $t('investor.detail.solution') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.solution || '—' }}</p></div>
+              <div><h4 class="font-bold text-ink">{{ $t('investor.detail.expectedChange') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.expected_change || '—' }}</p></div>
+              <div><h4 class="font-bold text-ink">{{ $t('investor.detail.beneficiariesDesc') }}</h4><p class="text-text/85 leading-6 mt-1">{{ o.beneficiaries_desc || '—' }} <span class="num text-muted">({{ number(o.beneficiaries_current) }} → {{ number(o.beneficiaries_target) }})</span></p></div>
             </div>
-            <div class="mt-5 overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.impact.indicator') }}</th><th>{{ $t('entrepreneur.form.impact.baseline') }}</th><th>{{ $t('entrepreneur.form.impact.target') }}</th><th>{{ $t('entrepreneur.form.impact.source') }}</th><th>{{ $t('entrepreneur.form.impact.irisCode') }}</th><th>{{ $t('entrepreneur.form.impact.disclosed') }}</th></tr></thead><tbody><tr v-for="i in o.indicators" :key="i.name"><td class="font-medium">{{ i.name }} <span v-if="i.is_primary" class="text-[10px] rounded-full bg-blue-soft text-blue px-1.5">{{ $t('entrepreneur.form.impact.primary') }}</span></td><td class="num">{{ number(i.baseline) }} {{ i.unit }}</td><td class="num">{{ number(i.target) }} {{ i.unit }}</td><td class="text-muted">{{ i.data_source }}</td><td class="num" dir="ltr">{{ i.iris_code || '—' }}</td><td>{{ i.is_disclosed ? $t('common.yes') : $t('common.no') }}</td></tr></tbody></table></div>
+            <div class="mt-5 overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.impact.indicator') }}</th><th>{{ $t('entrepreneur.form.impact.baseline') }}</th><th>{{ $t('entrepreneur.form.impact.target') }}</th><th>{{ $t('entrepreneur.form.impact.source') }}</th><th>{{ $t('entrepreneur.form.impact.irisCode') }}</th><th>{{ $t('entrepreneur.form.impact.disclosed') }}</th></tr></thead><tbody><tr v-for="i in o.indicators" :key="i.name"><td class="font-medium">{{ i.name }} <span v-if="i.is_primary" class="text-xs font-normal rounded-full border border-accent/30 bg-accent/10 text-accent-text px-2 py-0.5">{{ $t('entrepreneur.form.impact.primary') }}</span></td><td class="num">{{ number(i.baseline) }} {{ i.unit }}</td><td class="num">{{ number(i.target) }} {{ i.unit }}</td><td class="text-muted">{{ i.data_source }}</td><td class="num" dir="ltr">{{ i.iris_code || '—' }}</td><td>{{ i.is_disclosed ? $t('common.yes') : $t('common.no') }}</td></tr></tbody></table></div>
           </SectionCard>
           <!-- team (س) / market & product / motivation (د) — readiness axis inputs -->
           <OpportunityReadinessProfile :o="o" />
@@ -427,7 +431,7 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
         <!-- NOTES -->
         <div v-show="tab === 'notes'" class="grid lg:grid-cols-[1fr_360px] gap-5">
           <SectionCard :title="$t('admin.opportunity.tabs.notes')" :sub="$t('admin.opportunity.noteHint')">
-            <ul class="space-y-3"><li v-for="n in o.notes" :key="n.id" class="rounded-lg bg-bg p-3 text-sm"><p class="leading-6">{{ n.body }}</p><p class="text-xs text-muted mt-1">{{ n.author?.name ?? '—' }} · {{ dateTime(n.created_at) }}</p></li><li v-if="!o.notes.length" class="text-sm text-muted">{{ $t('common.noData') }}</li></ul>
+            <ul class="space-y-3"><li v-for="n in o.notes" :key="n.id" class="rounded-xl border border-border bg-ink/5 p-3 text-sm"><p class="leading-6">{{ n.body }}</p><p class="text-xs text-muted mt-1">{{ n.author?.name ?? '—' }} · {{ dateTime(n.created_at) }}</p></li><li v-if="!o.notes.length" class="text-sm text-muted">{{ $t('common.noData') }}</li></ul>
           </SectionCard>
           <SectionCard :title="$t('admin.opportunity.addNote')"><form novalidate @submit.prevent="addNote"><FormField v-model="noteForm.values.note_body" name="note_body" type="textarea" :label="$t('admin.opportunity.noteBody')" :error="noteForm.errors.value.note_body" :rows="4" :maxlength="RULES.longTextMax" required /><FormAlert :message="noteForm.formError.value" class="mt-3" /><AppButton type="submit" class="mt-3" :loading="noteForm.submitting.value">{{ $t('admin.opportunity.addNote') }}</AppButton></form></SectionCard>
         </div>
@@ -437,9 +441,9 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
           <DocumentVersions :documents="o.documents" download-base="/admin/documents" show-notes show-size :caption="$t('admin.opportunity.tabs.documents')">
             <template #actions="{ doc }">
               <span class="inline-flex flex-wrap items-center justify-end gap-1.5 me-1.5">
-                <input v-model="docNote[doc.uuid]" class="input text-xs w-40" :maxlength="RULES.docNoteMax" :placeholder="doc.reviewer_note ?? $t('admin.opportunity.docNote')" :aria-label="`${$t('admin.opportunity.docNote')} — ${doc.title} v${doc.version}`" />
+                <input v-model="docNote[doc.uuid]" class="input !py-1.5 text-xs w-40" :maxlength="RULES.docNoteMax" :placeholder="doc.reviewer_note ?? $t('admin.opportunity.docNote')" :aria-label="`${$t('admin.opportunity.docNote')} — ${doc.title} v${doc.version}`" />
                 <AppButton size="sm" variant="outline" :loading="busy === `doc-${doc.uuid}`" @click="acceptDoc(doc)">{{ $t('common.accept') }}</AppButton>
-                <AppButton size="sm" variant="ghost" class="text-danger" @click="openReject(doc)">{{ $t('common.reject') }}</AppButton>
+                <AppButton size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="openReject(doc)">{{ $t('common.reject') }}</AppButton>
               </span>
             </template>
           </DocumentVersions>
@@ -447,7 +451,7 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
         <!-- COMPLETION -->
         <div v-show="tab === 'completion'" class="grid lg:grid-cols-2 gap-5">
           <SectionCard :title="$t('admin.opportunity.tabs.completion')">
-            <ul class="space-y-3"><li v-for="c in o.completion_requests" :key="c.id" class="rounded-lg border border-border p-3 text-sm"><div class="flex justify-between gap-2"><span class="text-xs text-muted">{{ c.requested_by?.name ?? '' }} · {{ date(c.created_at) }}</span><AppBadge kind="generic" :value="c.resolved_at ? 'approved' : 'pending'" :label="c.resolved_at ? $t('common.success') : `${$t('common.dueAt')}: ${date(c.due_at)}`" /></div><ul class="mt-2 space-y-1"><li v-for="(it, i) in c.items" :key="i" class="flex gap-2"><span :class="it.done ? 'text-success' : 'text-warning'">●</span><span><strong>{{ it.document_kind ? label('documentKind', it.document_kind) : it.field }}</strong> — {{ it.note }}</span></li></ul></li><li v-if="!o.completion_requests.length" class="text-sm text-muted">{{ $t('common.noData') }}</li></ul>
+            <ul class="space-y-3"><li v-for="c in o.completion_requests" :key="c.id" class="rounded-xl border border-border bg-ink/[0.03] p-3 text-sm"><div class="flex justify-between gap-2"><span class="text-xs text-muted">{{ c.requested_by?.name ?? '' }} · {{ date(c.created_at) }}</span><AppBadge kind="generic" :value="c.resolved_at ? 'approved' : 'pending'" :label="c.resolved_at ? $t('common.success') : `${$t('common.dueAt')}: ${date(c.due_at)}`" /></div><ul class="mt-2 space-y-1"><li v-for="(it, i) in c.items" :key="i" class="flex gap-2"><span :class="it.done ? 'text-success' : 'text-warning'">●</span><span><strong>{{ it.document_kind ? label('documentKind', it.document_kind) : it.field }}</strong> — {{ it.note }}</span></li></ul></li><li v-if="!o.completion_requests.length" class="text-sm text-muted">{{ $t('common.noData') }}</li></ul>
           </SectionCard>
           <SectionCard v-if="canDecide" :title="$t('admin.opportunity.completionBuilder')">
             <form class="space-y-3" novalidate @submit.prevent="sendCompletion">
@@ -487,7 +491,7 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
             <div v-if="o.teaser" class="space-y-3 text-sm">
               <p class="text-muted">{{ $t('common.version') }} <span class="num">{{ o.teaser.version }}</span></p>
               <div class="flex flex-wrap gap-2"><AppBadge kind="generic" :value="o.teaser.approved_by_owner_at ? 'approved' : 'pending'" :label="`${$t('admin.opportunity.ownerApproval')}: ${o.teaser.approved_by_owner_at ? date(o.teaser.approved_by_owner_at) : '—'}`" /><AppBadge kind="generic" :value="o.teaser.approved_by_council_at ? 'approved' : 'pending'" :label="`${$t('admin.opportunity.councilApproval')}: ${o.teaser.approved_by_council_at ? date(o.teaser.approved_by_council_at) : '—'}`" /></div>
-              <div class="rounded-lg bg-bg p-3 leading-6">{{ o.teaser.summary_ar }}</div>
+              <div class="rounded-xl border border-border bg-ink/5 p-3 leading-6 text-text">{{ o.teaser.summary_ar }}</div>
               <ul class="flex flex-wrap gap-1.5"><li v-for="h in o.teaser.highlights ?? []" :key="h" class="chip text-xs !py-0.5">{{ h }}</li></ul>
             </div>
             <p v-else class="text-sm text-muted">{{ $t('common.noData') }}</p>
@@ -505,13 +509,13 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
           </SectionCard>
           <SectionCard v-if="o.evaluation.assignments.length" :title="$t('admin.dashboard.evaluationPanel')" flush>
             <div class="overflow-x-auto"><table class="table-base">
-              <thead><tr><th>{{ $t('admin.dashboard.axis') }} / {{ $t('admin.criteria.title') }}</th><th v-for="(a, i) in o.evaluation.assignments" :key="a.id">{{ $t('admin.dashboard.evaluator', { n: i + 1 }) }}<span class="block text-[10px] font-normal normal-case text-muted">{{ a.evaluator.name }} · <AppBadge kind="generic" :value="a.status" :label="label('assignmentStatus', a.status)" :dot="false" /></span></th><th>{{ $t('admin.opportunity.diff') }}<span v-if="o.evaluation.diff_threshold" class="block text-[10px] font-normal normal-case text-muted">{{ $t('admin.evaluationDecision.diffThreshold', { n: o.evaluation.diff_threshold }) }}</span></th></tr></thead>
+              <thead><tr><th>{{ $t('admin.dashboard.axis') }} / {{ $t('admin.criteria.title') }}</th><th v-for="(a, i) in o.evaluation.assignments" :key="a.id">{{ $t('admin.dashboard.evaluator', { n: i + 1 }) }}<span class="block text-xs font-normal normal-case text-muted">{{ a.evaluator.name }} · <AppBadge kind="generic" :value="a.status" :label="label('assignmentStatus', a.status)" :dot="false" /></span></th><th>{{ $t('admin.opportunity.diff') }}<span v-if="o.evaluation.diff_threshold" class="block text-xs font-normal normal-case text-muted">{{ $t('admin.evaluationDecision.diffThreshold', { n: o.evaluation.diff_threshold }) }}</span></th></tr></thead>
               <tbody>
                 <template v-for="ax in axes" :key="ax">
-                  <tr class="bg-bg/60"><td class="font-semibold">{{ label('evaluationAxis', ax) }}</td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num font-semibold">{{ axisValue(a.evaluation, ax) == null ? '—' : `${number(axisValue(a.evaluation, ax))} / 5` }}</td><td /></tr>
-                  <tr v-for="c in o.evaluation.criteria.filter((x) => x.axis === ax)" :key="c.key"><td class="ps-6 text-muted">{{ criterionLabel(c) }} <span class="text-[10px] num">(×{{ Number(c.weight) }})</span></td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num">{{ a.evaluation?.scores?.[c.key]?.score ?? '—' }}<span v-if="a.evaluation?.scores?.[c.key]?.note" class="block text-[11px] text-muted font-normal">{{ a.evaluation?.scores?.[c.key]?.note }}</span></td><td class="num" :class="o.evaluation.diffs.some((d) => d.criterion_key === c.key) ? 'text-warning font-medium' : 'text-muted'">{{ pairDiff(c.key) ?? '—' }}</td></tr>
+                  <tr class="bg-navy-50"><td class="font-semibold text-ink">{{ label('evaluationAxis', ax) }}</td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num font-semibold">{{ axisValue(a.evaluation, ax) == null ? '—' : `${number(axisValue(a.evaluation, ax))} / 5` }}</td><td /></tr>
+                  <tr v-for="c in o.evaluation.criteria.filter((x) => x.axis === ax)" :key="c.key"><td class="ps-6 text-muted">{{ criterionLabel(c) }} <span class="text-xs num">(×{{ Number(c.weight) }})</span></td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num">{{ a.evaluation?.scores?.[c.key]?.score ?? '—' }}<span v-if="a.evaluation?.scores?.[c.key]?.note" class="block text-xs text-muted font-normal">{{ a.evaluation?.scores?.[c.key]?.note }}</span></td><td class="num" :class="o.evaluation.diffs.some((d) => d.criterion_key === c.key) ? 'text-warning font-medium' : 'text-muted'">{{ pairDiff(c.key) ?? '—' }}</td></tr>
                 </template>
-                <tr class="bg-bg"><td class="font-semibold">{{ $t('admin.dashboard.overall') }}</td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num font-semibold">{{ a.evaluation ? number(a.evaluation.overall) : '—' }}</td><td /></tr>
+                <tr class="bg-accent/10"><td class="font-semibold text-ink">{{ $t('admin.dashboard.overall') }}</td><td v-for="a in o.evaluation.assignments" :key="a.id" class="num font-semibold">{{ a.evaluation ? number(a.evaluation.overall) : '—' }}</td><td /></tr>
                 <tr><td class="font-medium">{{ $t('admin.dashboard.recommendation') }}</td><td v-for="a in o.evaluation.assignments" :key="a.id"><AppBadge v-if="a.evaluation" kind="eval" :value="a.evaluation.recommendation" /><p v-if="a.evaluation?.comment" class="text-xs text-muted mt-1">{{ a.evaluation.comment }}</p><div v-else-if="canEvaluate && !a.evaluation && isMine(a.evaluator.id)" class="flex flex-wrap gap-1"><AppButton v-if="!a.coi_declared_at" size="sm" variant="secondary" @click="coi(a.id, false)">{{ $t('admin.opportunity.coiTitle') }}: {{ $t('common.no') }}</AppButton><AppButton v-if="!a.coi_declared_at" size="sm" variant="ghost" @click="coi(a.id, true)">{{ $t('common.yes') }}</AppButton><AppButton v-if="a.coi_declared_at && !a.coi_has_conflict" size="sm" @click="openScore(a.id)">{{ $t('admin.opportunity.scoreTitle') }}</AppButton></div></td><td /></tr>
               </tbody></table></div>
             <div class="p-4 border-t border-border">
@@ -561,9 +565,9 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
             <p v-if="searching" class="py-2.5 text-sm text-muted" role="status">{{ $t('common.loading') }}</p>
             <ul class="divide-y divide-border" :aria-busy="searching">
               <li v-for="c in shownCandidates" :key="c.investor.uuid" class="py-2.5 flex items-center gap-3 text-sm">
-                <input v-if="canMatch && !c.already_nominated" v-model="nominateForm.values.nominee_ids" type="checkbox" :value="candidateId(c)" class="h-4 w-4 rounded border-border text-blue" :aria-label="c.investor.name" @change="nominateForm.clearErrors(['nominee_ids'])" /><span v-else class="w-4" />
-                <div class="flex-1 min-w-0"><p class="font-medium">{{ c.investor.name }}</p><ul class="flex flex-wrap gap-1 mt-0.5"><li v-for="k in criteria5" :key="k" class="text-[10px] rounded-full px-1.5 border" :class="flags(c)[k] ? 'bg-success/10 text-success border-success/30' : 'bg-bg text-muted border-border'">{{ $t(`investor.nominations.criteria.${k}`) }}</li></ul><p v-if="c.explanation" class="text-xs text-muted mt-1 leading-5">{{ c.explanation }}</p></div>
-                <span class="text-end shrink-0"><span v-if="c.weighted_score != null" class="block num font-semibold text-blue" :title="$t('admin.candidateSearch.weightedHint')">{{ c.weighted_score }}%</span><span class="block num text-xs" :class="c.weighted_score != null ? 'text-muted' : 'font-semibold text-blue'">{{ c.match_score }}/5</span></span><AppBadge v-if="c.already_nominated" kind="generic" value="approved" :label="$t('admin.dashboard.summarySent')" />
+                <input v-if="canMatch && !c.already_nominated" v-model="nominateForm.values.nominee_ids" type="checkbox" :value="candidateId(c)" class="h-4 w-4 rounded border-border accent-accent" :aria-label="c.investor.name" @change="nominateForm.clearErrors(['nominee_ids'])" /><span v-else class="w-4" />
+                <div class="flex-1 min-w-0"><p class="font-medium">{{ c.investor.name }}</p><ul class="flex flex-wrap gap-1 mt-0.5"><li v-for="k in criteria5" :key="k" class="text-xs rounded-full px-2 py-px border" :class="flags(c)[k] ? 'bg-success/10 text-success border-success/30' : 'text-muted border-ink/15'">{{ $t(`investor.nominations.criteria.${k}`) }}</li></ul><p v-if="c.explanation" class="text-xs text-muted mt-1 leading-5">{{ c.explanation }}</p></div>
+                <span class="text-end shrink-0"><span v-if="c.weighted_score != null" class="block num font-display font-extrabold text-accent-text" :title="$t('admin.candidateSearch.weightedHint')">{{ c.weighted_score }}%</span><span class="block num text-xs" :class="c.weighted_score != null ? 'text-muted' : 'font-bold text-accent-text'">{{ c.match_score }}/5</span></span><AppBadge v-if="c.already_nominated" kind="generic" value="approved" :label="$t('admin.dashboard.summarySent')" />
               </li>
               <li v-if="!shownCandidates.length && !searching" class="py-2.5 text-sm text-muted">{{ candFiltered ? $t('admin.candidateSearch.none') : $t('common.noData') }}</li>
             </ul>
@@ -571,10 +575,10 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
           </SectionCard>
           <div class="space-y-5">
             <SectionCard :title="$t('admin.opportunity.tabs.nominations')">
-              <ul class="space-y-2 text-sm"><li v-for="n in o.nominations" :key="n.id" class="rounded-lg bg-bg p-3"><div class="flex justify-between gap-2"><span class="font-medium">{{ n.investor?.name }}</span><AppBadge kind="generic" :value="n.response ?? 'pending'" :label="n.response ? label('nominationResponse', n.response) : $t('common.new')" /></div><p class="text-xs text-muted mt-1">{{ date(n.sent_at) }} · {{ $t('investor.detail.matchScore', { n: n.match_score }) }}</p><p class="text-xs mt-1">{{ n.rationale }}</p><button v-if="auth.canAny('nominations.manage')" type="button" class="mt-1 text-xs link" @click="nominationThread = n.id">{{ $t('collab.messages.button') }}</button></li><li v-if="!o.nominations.length" class="text-muted">{{ $t('common.noData') }}</li></ul>
+              <ul class="space-y-2 text-sm"><li v-for="n in o.nominations" :key="n.id" class="rounded-xl border border-border bg-ink/[0.03] p-3"><div class="flex justify-between gap-2"><span class="font-medium">{{ n.investor?.name }}</span><AppBadge kind="generic" :value="n.response ?? 'pending'" :label="n.response ? label('nominationResponse', n.response) : $t('common.new')" /></div><p class="text-xs text-muted mt-1">{{ date(n.sent_at) }} · {{ $t('investor.detail.matchScore', { n: n.match_score }) }}</p><p class="text-xs mt-1">{{ n.rationale }}</p><button v-if="auth.canAny('nominations.manage')" type="button" class="mt-1 text-xs link" @click="nominationThread = n.id">{{ $t('collab.messages.button') }}</button></li><li v-if="!o.nominations.length" class="text-muted">{{ $t('common.noData') }}</li></ul>
             </SectionCard>
             <SectionCard :title="$t('admin.interests.title')">
-              <ul class="space-y-2 text-sm"><li v-for="i in o.interests" :key="i.id" class="rounded-lg bg-bg p-3 flex justify-between gap-2"><span>{{ i.investor?.name }}<span class="block text-xs text-muted">{{ date(i.created_at) }} · {{ i.next_step ?? i.closed_reason ?? '' }}</span></span><AppBadge kind="interest" :value="i.status" /></li><li v-if="!o.interests.length" class="text-muted">{{ $t('common.noData') }}</li></ul>
+              <ul class="space-y-2 text-sm"><li v-for="i in o.interests" :key="i.id" class="rounded-xl border border-border bg-ink/[0.03] p-3 flex justify-between gap-2"><span>{{ i.investor?.name }}<span class="block text-xs text-muted">{{ date(i.created_at) }} · {{ i.next_step ?? i.closed_reason ?? '' }}</span></span><AppBadge kind="interest" :value="i.status" /></li><li v-if="!o.interests.length" class="text-muted">{{ $t('common.noData') }}</li></ul>
             </SectionCard>
           </div>
         </div>
@@ -605,8 +609,8 @@ const isMine = (evaluatorId: number) => !!auth.me && (auth.me as { id?: number }
         <form class="space-y-4" novalidate @submit.prevent="submitScore">
           <OpportunityReadinessProfile :o="o" compact />
           <div v-for="ax in axes" :key="ax">
-            <h3 class="font-semibold text-sm mb-2">{{ label('evaluationAxis', ax) }}</h3>
-            <div v-for="c in o.evaluation.criteria.filter((x) => x.axis === ax)" :key="c.key" class="rounded-lg border p-3 mb-2" :class="scoreForm.errors.value[`scores.${c.key}.score`] ? 'border-danger' : 'border-border'">
+            <h3 class="font-display font-bold text-base text-ink mb-2">{{ label('evaluationAxis', ax) }}</h3>
+            <div v-for="c in o.evaluation.criteria.filter((x) => x.axis === ax)" :key="c.key" class="rounded-xl border bg-ink/[0.03] p-3 mb-2" :class="scoreForm.errors.value[`scores.${c.key}.score`] ? 'border-danger' : 'border-border'">
               <p class="text-sm font-medium">{{ criterionLabel(c) }} <span class="text-danger" aria-hidden="true">*</span> <span class="text-xs text-muted num">(×{{ Number(c.weight) }})</span></p>
               <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup" :aria-label="criterionLabel(c)"><button v-for="s in RULES.scoreMax" :key="s" type="button" role="radio" :aria-checked="scoreForm.values.scores[c.key]?.score === s" class="chip num" :class="scoreForm.values.scores[c.key]?.score === s && 'chip-active'" :title="c.scale_descriptions?.[String(s) as '1']" @click="setScore(c.key, s)">{{ s }}</button></div>
               <p class="text-xs text-muted mt-1">{{ scoreForm.values.scores[c.key]?.score ? c.scale_descriptions?.[String(scoreForm.values.scores[c.key].score) as '1'] : '' }}</p>

@@ -1,0 +1,51 @@
+[
+ {
+  "route": "/auth/login",
+  "path": "/auth/login",
+  "title": "تسجيل الدخول | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "تسجيل الدخول",
+  "overflow": 0,
+  "textLen": 121,
+  "loading": false,
+  "dashes": 0,
+  "suspicious": false,
+  "snippet": "تسجيل الدخول مرحبًا بعودتك إلى المنصة البريد الإلكتروني * كلمة المرور * نسيت كلمة المرور؟ دخول ليس لديك حساب؟ أنشئ حسابًا",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/B-auth/auth_login.png"
+ },
+ {
+  "route": "/auth/register",
+  "path": "/auth/register",
+  "title": "إنشاء حساب | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "إنشاء حساب جديد",
+  "overflow": 0,
+  "textLen": 453,
+  "loading": false,
+  "dashes": 5,
+  "suspicious": false,
+  "snippet": "إنشاء حساب جديد التسجيل مجاني في المرحلة التأسيسية 1 نوع الحساب — الحالية 2 البيانات الأساسية — قادمة 3 الاهتمامات الاستثمارية — قادمة 4 الخبرة والإقرارات — قاد",
+  "consoleErrors": [],
+  "badRequests": [
+   "401 http://localhost:8001/api/v1/me"
+  ],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/B-auth/auth_register.png"
+ },
+ {
+  "route": "/auth/forgot",
+  "path": "/auth/forgot",
+  "title": "استعادة كلمة المرور | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "استعادة كلمة المرور",
+  "overflow": 0,
+  "textLen": 106,
+  "loading": false,
+  "dashes": 0,
+  "suspicious": false,
+  "snippet": "استعادة كلمة المرور أدخل بريدك وسنرسل لك رابط إعادة التعيين. البريد الإلكتروني * إرسال الرابط تسجيل الدخول",
+  "consoleErrors": [],
+  "badRequests": [
+   "401 http://localhost:8001/api/v1/me"
+  ],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/B-auth/auth_forgot.png"
+ }
+]

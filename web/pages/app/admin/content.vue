@@ -280,7 +280,7 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
     <div v-else-if="kind === 'messages'" class="card overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('common.reference') }}</th><th>{{ $t('contact.category') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('contact.message') }}</th><th>{{ $t('admin.content.assignedTo') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('common.date') }}</th></tr></thead><tbody>
       <tr v-for="m in messages" :key="m.id"><td class="num">{{ m.reference_no }}</td><td>{{ m.category_label ?? label('contactCategory', m.category) }}</td><td class="font-medium">{{ m.name }}<span class="block text-xs text-muted ltr text-start">{{ m.email }}</span></td><td class="text-sm max-w-xs">{{ m.message }}</td><td class="text-sm text-muted">{{ m.assigned_to ?? '—' }}</td>
         <td><div class="flex items-center gap-2"><AppBadge kind="generic" :value="statusTone(m.status)" :label="$t(`admin.content.status.${m.status}`)" /><label class="sr-only" :for="`st-${m.id}`">{{ $t('common.status') }}</label><select :id="`st-${m.id}`" class="input h-8 py-0 text-xs w-auto" :value="statuses.includes(m.status as ContactMessageStatus) ? m.status : 'new'" @change="setStatus(m, ($event.target as HTMLSelectElement).value as ContactMessageStatus, $event)"><option v-for="s in statuses" :key="s" :value="s">{{ $t(`admin.content.status.${s}`) }}</option></select></div></td>
-        <td class="text-muted">{{ date(m.created_at) }}</td></tr>
+        <td class="text-muted num whitespace-nowrap">{{ date(m.created_at) }}</td></tr>
       <tr v-if="!messages.length"><td colspan="7" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr>
     </tbody></table></div>
 
@@ -293,8 +293,8 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
         <form novalidate @submit.prevent="saveHero">
           <InlineAlert v-if="!homePage" tone="info" class="mb-4">{{ $t('admin.content.hero.noPage') }}</InlineAlert>
           <ul v-if="heroImages.length" class="space-y-4">
-            <li v-for="(img, i) in heroImages" :key="img.url" class="grid sm:grid-cols-[12rem_1fr_auto] gap-4 items-start rounded-xl border border-border p-3">
-              <img :src="img.url" :alt="heroAlt(img)" :width="img.width ?? 400" :height="img.height ?? 300" loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-lg object-cover bg-surface">
+            <li v-for="(img, i) in heroImages" :key="img.url" class="grid sm:grid-cols-[12rem_1fr_auto] gap-4 items-start rounded-xl border border-border bg-ink/[0.03] p-3">
+              <img :src="img.url" :alt="heroAlt(img)" :width="img.width ?? 400" :height="img.height ?? 300" loading="lazy" decoding="async" class="aspect-[4/3] w-full rounded-xl object-cover bg-surface">
               <div class="space-y-3 min-w-0">
                 <FormField v-model="img.alt_ar" :name="`hero_images.${i}.alt_ar`" :label="$t('admin.content.hero.altAr')" :help="$t('admin.content.hero.altHelp')" :error="heroForm.errors.value[`hero_images.${i}.alt_ar`]" :maxlength="RULES.titleMax" />
                 <FormField v-model="img.alt_en" :name="`hero_images.${i}.alt_en`" :label="$t('admin.content.hero.altEn')" :error="heroForm.errors.value[`hero_images.${i}.alt_en`]" :maxlength="RULES.titleMax" ltr />
@@ -303,7 +303,7 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
               <div class="flex sm:flex-col gap-1">
                 <AppButton size="sm" variant="ghost" icon :disabled="i === 0" :aria-label="$t('admin.content.hero.moveUp')" @click="moveHero(i, -1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6" /></svg></AppButton>
                 <AppButton size="sm" variant="ghost" icon :disabled="i === heroImages.length - 1" :aria-label="$t('admin.content.hero.moveDown')" @click="moveHero(i, 1)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></AppButton>
-                <AppButton size="sm" variant="ghost" icon class="text-danger" :aria-label="`${$t('common.delete')} — ${heroName(img, i)}`" @click="removeHero(i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
+                <AppButton size="sm" variant="ghost" icon class="!text-danger hover:!bg-danger/10" :aria-label="`${$t('common.delete')} — ${heroName(img, i)}`" @click="removeHero(i)"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></AppButton>
               </div>
             </li>
           </ul>
@@ -317,7 +317,7 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
     </div>
 
     <!-- Content list -->
-    <div v-else class="card overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('admin.content.slug') }}</th><th>{{ $t('admin.content.titleAr') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('common.date') }}</th><th></th></tr></thead><tbody><tr v-for="c in items" :key="c.id"><td class="ltr text-start text-xs num">{{ c.slug }}</td><td class="font-medium">{{ c.title_ar ?? c.title }}<span v-if="c.title_en" class="block text-xs text-muted ltr text-start">{{ c.title_en }}</span><span v-if="kind === 'news' && (c.author_name ?? c.author?.name)" class="block text-xs text-teal-text">{{ $t('news.by', { name: c.author_name ?? c.author?.name }) }}</span><span v-if="kind === 'stories' && (c.sector_ar ?? c.sector)" class="block text-xs text-teal-text">{{ c.sector_ar ?? c.sector }}<template v-if="c.beneficiaries != null"> · {{ $t('stories.beneficiaries') }}: <span class="num">{{ c.beneficiaries }}</span></template></span><span v-if="kind === 'partners'" class="mt-1 flex items-center gap-2"><img v-if="c.meta?.logo?.url" :src="c.meta.logo.url" :alt="c.meta.logo.alt_ar ?? c.title_ar" :width="c.meta.logo.width ?? 80" :height="c.meta.logo.height ?? 32" loading="lazy" decoding="async" class="h-6 w-auto max-w-[5rem] object-contain"><AppBadge kind="generic" :value="c.approved_for_display ? 'approved' : 'pending'" :label="c.approved_for_display ? $t('admin.content.growth.approvedBadge') : $t('admin.content.growth.notApprovedBadge')" /></span><span v-if="kind === 'resources'" class="block text-xs text-teal-text">{{ $t(`resources.audience.${c.audience ?? 'all'}`) }}<template v-if="c.meta?.file?.name"> · <span class="ltr">{{ c.meta.file.name }}</span></template></span></td><td><AppBadge kind="generic" :value="c.is_published ? 'approved' : 'pending'" :label="c.is_published ? $t('admin.content.published') : $t('admin.content.draft')" /></td><td class="text-muted">{{ date(c.published_at ?? c.starts_at) }}</td><td class="text-end whitespace-nowrap"><AppButton size="sm" variant="outline" @click="openEdit(c)">{{ $t('common.edit') }}</AppButton> <AppButton size="sm" variant="ghost" @click="togglePublish(c)">{{ c.is_published ? $t('admin.content.unpublish') : $t('admin.content.publish') }}</AppButton><AppButton v-if="isGrowth" size="sm" variant="ghost" class="text-danger" :aria-label="`${$t('common.delete')} — ${itemName(c)}`" @click="remove(c)">{{ $t('common.delete') }}</AppButton></td></tr><tr v-if="!items.length"><td colspan="5" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr></tbody></table></div>
+    <div v-else class="card overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('admin.content.slug') }}</th><th>{{ $t('admin.content.titleAr') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('common.date') }}</th><th></th></tr></thead><tbody><tr v-for="c in items" :key="c.id"><td class="ltr text-start text-xs num">{{ c.slug }}</td><td class="font-medium">{{ c.title_ar ?? c.title }}<span v-if="c.title_en" class="block text-xs text-muted ltr text-start">{{ c.title_en }}</span><span v-if="kind === 'news' && (c.author_name ?? c.author?.name)" class="block text-xs text-teal-text">{{ $t('news.by', { name: c.author_name ?? c.author?.name }) }}</span><span v-if="kind === 'stories' && (c.sector_ar ?? c.sector)" class="block text-xs text-teal-text">{{ c.sector_ar ?? c.sector }}<template v-if="c.beneficiaries != null"> · {{ $t('stories.beneficiaries') }}: <span class="num">{{ c.beneficiaries }}</span></template></span><span v-if="kind === 'partners'" class="mt-1 flex items-center gap-2"><img v-if="c.meta?.logo?.url" :src="c.meta.logo.url" :alt="c.meta.logo.alt_ar ?? c.title_ar" :width="c.meta.logo.width ?? 80" :height="c.meta.logo.height ?? 32" loading="lazy" decoding="async" data-theme="light" class="h-7 w-auto max-w-[5.5rem] object-contain rounded-md bg-surface px-1 py-0.5"><AppBadge kind="generic" :value="c.approved_for_display ? 'approved' : 'pending'" :label="c.approved_for_display ? $t('admin.content.growth.approvedBadge') : $t('admin.content.growth.notApprovedBadge')" /></span><span v-if="kind === 'resources'" class="block text-xs text-teal-text">{{ $t(`resources.audience.${c.audience ?? 'all'}`) }}<template v-if="c.meta?.file?.name"> · <span class="ltr">{{ c.meta.file.name }}</span></template></span></td><td><AppBadge kind="generic" :value="c.is_published ? 'approved' : 'pending'" :label="c.is_published ? $t('admin.content.published') : $t('admin.content.draft')" /></td><td class="text-muted num whitespace-nowrap">{{ date(c.published_at ?? c.starts_at) }}</td><td class="text-end whitespace-nowrap"><AppButton size="sm" variant="outline" @click="openEdit(c)">{{ $t('common.edit') }}</AppButton> <AppButton size="sm" variant="ghost" @click="togglePublish(c)">{{ c.is_published ? $t('admin.content.unpublish') : $t('admin.content.publish') }}</AppButton><AppButton v-if="isGrowth" size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" :aria-label="`${$t('common.delete')} — ${itemName(c)}`" @click="remove(c)">{{ $t('common.delete') }}</AppButton></td></tr><tr v-if="!items.length"><td colspan="5" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr></tbody></table></div>
 
     <Modal :open="open" :title="editing ? $t('common.edit') : $t('admin.content.addItem')" size="lg" @close="open = false">
       <form class="space-y-3" novalidate @submit.prevent="save">
@@ -354,23 +354,23 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
           <FormField v-if="contentKind === 'resources'" v-model="form.audience" name="audience" type="select" :label="$t('admin.content.growth.audience')" :options="audiences" :error="err.audience" class="sm:max-w-xs" />
 
           <fieldset v-if="contentKind === 'stories' || contentKind === 'partners'" class="rounded-xl border border-border p-4 space-y-3">
-            <legend class="px-1 text-sm font-medium">{{ $t('admin.content.growth.logoLegend') }}</legend>
+            <legend class="px-1 text-sm font-semibold text-ink">{{ $t('admin.content.growth.logoLegend') }}</legend>
             <div v-if="form.logo" class="grid sm:grid-cols-[8rem_1fr] gap-4 items-start">
-              <img :src="form.logo.url" :alt="form.logo.alt_ar ?? ''" :width="form.logo.width ?? 240" :height="form.logo.height ?? 96" loading="lazy" decoding="async" class="h-20 w-full rounded-lg object-contain bg-bg p-2">
+              <img :src="form.logo.url" :alt="form.logo.alt_ar ?? ''" :width="form.logo.width ?? 240" :height="form.logo.height ?? 96" loading="lazy" decoding="async" data-theme="light" class="h-20 w-full rounded-xl object-contain bg-surface border border-border p-2">
               <div class="space-y-3">
                 <FormField v-model="form.logo.alt_ar" name="logo.alt_ar" :label="$t('admin.content.hero.altAr')" :error="err['logo.alt_ar']" :maxlength="RULES.titleMax" />
                 <FormField v-model="form.logo.alt_en" name="logo.alt_en" :label="$t('admin.content.hero.altEn')" :error="err['logo.alt_en']" :maxlength="RULES.titleMax" ltr />
-                <AppButton size="sm" variant="ghost" class="text-danger" @click="removeAttachment('logo')">{{ $t('admin.content.cover.remove') }}</AppButton>
+                <AppButton size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="removeAttachment('logo')">{{ $t('admin.content.cover.remove') }}</AppButton>
               </div>
             </div>
             <FileUpload v-else :label="$t('admin.content.growth.logoUpload')" accept=".jpg,.jpeg,.png,.webp" :max-mb="RULES.cmsImageMaxMb" :disabled="uploading" @file="onLogoFile" @error="toastError($event)" />
           </fieldset>
 
           <fieldset v-if="contentKind === 'resources'" class="rounded-xl border border-border p-4 space-y-3">
-            <legend class="px-1 text-sm font-medium">{{ $t('admin.content.growth.fileLegend') }}</legend>
+            <legend class="px-1 text-sm font-semibold text-ink">{{ $t('admin.content.growth.fileLegend') }}</legend>
             <div v-if="form.file" class="flex flex-wrap items-center justify-between gap-3 text-sm">
               <a :href="form.file.url" target="_blank" rel="noopener" class="link ltr">{{ form.file.name ?? form.file.path }}</a>
-              <AppButton size="sm" variant="ghost" class="text-danger" @click="removeAttachment('file')">{{ $t('admin.content.growth.removeFile') }}</AppButton>
+              <AppButton size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="removeAttachment('file')">{{ $t('admin.content.growth.removeFile') }}</AppButton>
             </div>
             <FileUpload v-else :label="$t('admin.content.growth.fileUpload')" accept=".pdf,.docx,.xlsx,.pptx" :max-mb="RULES.cmsFileMaxMb" :disabled="uploading" @file="onResourceFile" @error="toastError($event)" />
           </fieldset>
@@ -386,7 +386,7 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
         </template>
 
         <fieldset v-if="contentKind === 'news'" class="rounded-xl border border-border p-4 space-y-3">
-          <legend class="px-1 text-sm font-medium">{{ $t('admin.content.author.legend') }}</legend>
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('admin.content.author.legend') }}</legend>
           <p class="text-xs text-muted -mt-1">{{ $t('admin.content.author.help') }}</p>
           <div class="grid sm:grid-cols-2 gap-3">
             <FormField v-model="form.author_name" name="author_name" :label="$t('admin.content.author.name')" :error="err.author_name" :maxlength="RULES.cmsAuthorNameMax" />
@@ -400,13 +400,13 @@ const statusTone = (s: ContactMessage['status']) => (s === 'closed' ? 'approved'
         </fieldset>
 
         <fieldset v-if="contentKind === 'news' || contentKind === 'events' || contentKind === 'stories'" class="rounded-xl border border-border p-4 space-y-3">
-          <legend class="px-1 text-sm font-medium">{{ $t('admin.content.cover.legend') }}</legend>
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('admin.content.cover.legend') }}</legend>
           <div v-if="form.cover" class="grid sm:grid-cols-[10rem_1fr] gap-4 items-start">
-            <img :src="form.cover.url" :alt="form.cover.alt_ar ?? ''" :width="form.cover.width ?? 400" :height="form.cover.height ?? 225" loading="lazy" decoding="async" class="aspect-video w-full rounded-lg object-cover bg-surface">
+            <img :src="form.cover.url" :alt="form.cover.alt_ar ?? ''" :width="form.cover.width ?? 400" :height="form.cover.height ?? 225" loading="lazy" decoding="async" class="aspect-video w-full rounded-xl object-cover bg-surface">
             <div class="space-y-3">
               <FormField v-model="form.cover.alt_ar" name="cover.alt_ar" :label="$t('admin.content.hero.altAr')" :error="err['cover.alt_ar']" :maxlength="RULES.titleMax" />
               <FormField v-model="form.cover.alt_en" name="cover.alt_en" :label="$t('admin.content.hero.altEn')" :error="err['cover.alt_en']" :maxlength="RULES.titleMax" ltr />
-              <AppButton size="sm" variant="ghost" class="text-danger" @click="removeAttachment('cover')">{{ $t('admin.content.cover.remove') }}</AppButton>
+              <AppButton size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="removeAttachment('cover')">{{ $t('admin.content.cover.remove') }}</AppButton>
             </div>
           </div>
           <FileUpload v-else :label="$t('admin.content.cover.upload')" accept=".jpg,.jpeg,.png,.webp,.gif" :max-mb="RULES.cmsImageMaxMb" :disabled="uploading" @file="onCoverFile" @error="toastError($event)" />

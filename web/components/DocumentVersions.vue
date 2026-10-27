@@ -85,9 +85,9 @@ const meta = (d: DocumentResource) => [
           <tr class="align-top">
             <td class="whitespace-nowrap">{{ label('documentKind', c.latest.kind) }}</td>
             <td class="min-w-[14rem]">
-              <p class="font-medium break-words">{{ c.latest.title }}</p>
+              <p class="font-medium text-ink break-words">{{ c.latest.title }}</p>
               <p class="text-xs text-muted num">{{ meta(c.latest) }}<span v-if="c.latest.scan_result === 'pending'"> · {{ $t('entrepreneur.form.documents.scanPending') }}</span></p>
-              <button v-if="c.older.length" type="button" class="mt-1 text-xs text-blue hover:underline kbd-focus rounded" :aria-expanded="!!open[c.key]" :aria-controls="`dv-${c.latest.uuid}`" @click="open[c.key] = !open[c.key]">
+              <button v-if="c.older.length" type="button" class="mt-1 text-xs link kbd-focus rounded" :aria-expanded="!!open[c.key]" :aria-controls="`dv-${c.latest.uuid}`" @click="open[c.key] = !open[c.key]">
                 {{ open[c.key] ? $t('components.docVersions.hideHistory') : $t('components.docVersions.showHistory', { n: c.older.length }) }}
               </button>
             </td>
@@ -98,10 +98,10 @@ const meta = (d: DocumentResource) => [
               <AppButton v-if="downloadBase" size="sm" variant="outline" :disabled="c.latest.downloadable === false" :loading="opening === c.latest.uuid" :title="c.latest.downloadable === false ? $t('components.docVersions.notReady') : undefined" @click="download(c.latest)">{{ $t('components.docVersions.open') }}</AppButton>
             </td>
           </tr>
-          <tr v-if="c.older.length && open[c.key]" :id="`dv-${c.latest.uuid}`" class="bg-bg/50">
+          <tr v-if="c.older.length && open[c.key]" :id="`dv-${c.latest.uuid}`" class="bg-glass">
             <td :colspan="columns" class="!pt-1">
               <p class="text-xs font-medium text-muted mb-1">{{ $t('components.docVersions.history') }}</p>
-              <ol class="divide-y divide-border rounded-lg border border-border bg-surface">
+              <ol class="divide-y divide-border rounded-xl border border-border bg-surface">
                 <li v-for="v in c.older" :key="v.uuid" class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
                   <span class="min-w-0 flex-1"><span class="break-words">{{ v.title }}</span> <span class="block text-xs text-muted num">{{ meta(v) }}</span></span>
                   <AppBadge kind="document" :value="v.status" />

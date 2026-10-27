@@ -15,7 +15,7 @@ const done = computed(() => items.value.filter((i) => i.ok).length)
 
 <template>
   <div class="mt-2" aria-live="polite">
-    <div class="h-1 rounded-full bg-border overflow-hidden" aria-hidden="true">
+    <div class="h-1 rounded-full bg-ink/10 overflow-hidden" aria-hidden="true">
       <div class="h-full rounded-full transition-all duration-300" :class="done === items.length ? 'bg-success' : done >= 3 ? 'bg-warning' : 'bg-danger'" :style="{ width: `${(done / items.length) * 100}%` }" />
     </div>
     <ul class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-xs">

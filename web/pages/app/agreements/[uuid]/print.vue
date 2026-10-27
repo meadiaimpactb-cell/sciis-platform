@@ -41,10 +41,11 @@ const print = () => window.print()
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg print-root">
+  <!-- Always the light palette (paper), whatever the site theme: tokens inside this subtree resolve to their light values. -->
+  <div data-theme="light" class="min-h-screen bg-bg text-text print-root">
     <div class="no-print sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-border">
       <div class="mx-auto max-w-[210mm] px-4 py-3 flex flex-wrap items-center gap-3">
-        <NuxtLink v-if="doc" :to="localePath(doc.backTo)" class="text-sm text-muted hover:text-blue">← {{ $t('agreements.print.back') }}</NuxtLink>
+        <NuxtLink v-if="doc" :to="localePath(doc.backTo)" class="text-sm text-muted hover:text-accent-text transition">← {{ $t('agreements.print.back') }}</NuxtLink>
         <span class="flex-1" />
         <label class="text-sm text-muted" for="print-lang">{{ $t('agreements.print.language') }}</label>
         <select id="print-lang" class="input w-44 text-sm" :value="lang" @change="setLang(($event.target as HTMLSelectElement).value)">
@@ -58,9 +59,9 @@ const print = () => window.print()
 
     <div v-if="loading && !doc" class="p-10 text-center text-muted">{{ $t('common.loading') }}</div>
     <div v-else-if="loadError || !doc || !version" class="mx-auto max-w-[210mm] p-6"><EmptyState :title="$t('agreements.detail.loadFailed')" /></div>
-    <article v-else class="paper mx-auto my-6 max-w-[210mm] bg-white shadow-card border border-border rounded-xl px-10 py-12 text-ink">
+    <article v-else class="paper mx-auto my-6 max-w-[210mm] bg-surface shadow-card border border-border rounded-2xl px-6 py-8 sm:px-10 sm:py-12 text-ink">
       <header class="flex items-start justify-between gap-6 border-b border-border pb-5">
-        <BrandLogo size="sm" />
+        <BrandLogo size="sm" tone="navy" />
         <dl class="text-xs text-muted text-end space-y-0.5">
           <div><dt class="inline">{{ $t('agreements.columns.number') }}:</dt> <dd class="inline num font-medium text-ink">{{ doc.number }}</dd></div>
           <div><dt class="inline">{{ $t('common.version') }}:</dt> <dd class="inline num font-medium text-ink">v{{ version.version }}</dd></div>
@@ -68,14 +69,14 @@ const print = () => window.print()
         </dl>
       </header>
 
-      <p v-if="!version.is_approved" class="mt-5 rounded-lg border border-warning/40 bg-warning/5 px-4 py-2 text-sm text-center font-medium">{{ $t('agreements.print.draft') }}</p>
+      <p v-if="!version.is_approved" class="mt-5 rounded-xl border border-warning/40 bg-warning/10 text-warning px-4 py-2 text-sm text-center font-medium">{{ $t('agreements.print.draft') }}</p>
 
       <section v-if="lang !== 'en'" class="mt-8"><AgreementText :text="version.body" lang="ar" /></section>
       <section v-if="lang !== 'ar' && version.body_en" class="mt-8" :class="lang === 'both' && 'page-break'"><AgreementText :text="version.body_en" lang="en" /></section>
 
       <!-- signature certificate -->
       <section class="mt-10 border-t-2 border-navy pt-5 avoid-break" aria-labelledby="cert-title">
-        <h2 id="cert-title" class="text-base font-bold">{{ $t('agreements.print.certificate') }}</h2>
+        <h2 id="cert-title" class="text-base font-bold text-ink">{{ $t('agreements.print.certificate') }}</h2>
         <table class="mt-3 w-full text-sm border-collapse">
           <tbody>
             <tr v-for="p in (['owner', 'investor'] as const)" :key="p" class="border-b border-border">
@@ -106,7 +107,7 @@ const print = () => window.print()
 }
 @media print {
   .no-print { display: none !important; }
-  .print-root { background: #fff !important; min-height: 0; }
+  .print-root { background: var(--surface) !important; min-height: 0; }
   .paper { box-shadow: none !important; border: 0 !important; border-radius: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
   .page-break { break-before: page; page-break-before: always; }
   .avoid-break { break-inside: avoid; page-break-inside: avoid; }

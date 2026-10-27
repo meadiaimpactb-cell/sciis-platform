@@ -13,7 +13,7 @@ const benefits = computed(() => home.list('benefits', 'home.benefits'))
 </script>
 
 <template>
-  <div class="bg-surface">
+  <div>
     <PageHero :title="text('title', 'forInvestors.title')" :lead="text('lead', 'forInvestors.lead')">
       <AppButton to="/auth/register?type=investor_individual" variant="accent" size="lg">{{ $t('forInvestors.cta') }}</AppButton>
       <template #bottom><Disclaimer variant="dark" /></template>
@@ -21,31 +21,34 @@ const benefits = computed(() => home.list('benefits', 'home.benefits'))
     <section class="section-y">
       <div class="container-x">
         <h2 class="section-title">{{ $t('forInvestors.whyTitle') }}</h2>
-        <div class="mt-12 grid border-b border-border sm:grid-cols-2 lg:grid-cols-4">
-          <article v-for="(w, i) in why" :key="i" class="border-t border-border py-8 sm:px-6 lg:border-t-0 lg:py-2" :class="i % 4 === 0 ? 'lg:ps-0' : 'lg:border-s'"><h3 class="card-title">{{ w.title }}</h3><p class="text-desc mt-3 text-muted">{{ w.text }}</p></article>
+        <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <GlassCard v-for="(w, i) in why" :key="i" as="article">
+            <span class="num font-display text-sm font-extrabold text-accent-text" aria-hidden="true">{{ String(i + 1).padStart(2, '0') }}</span>
+            <h3 class="card-title mt-3">{{ w.title }}</h3><p class="text-desc mt-3 text-t2">{{ w.text }}</p>
+          </GlassCard>
         </div>
       </div>
     </section>
     <ToolsBand focus="investor" class="pb-20 md:pb-[6.25rem]" />
-    <section class="surface-dark relative overflow-hidden">
-      <NightSky :orbits="false" />
+    <section class="surface-hero">
+      <OrbitBackdrop :orbits="false" />
       <div class="container-x relative section-y grid gap-14 lg:grid-cols-2 lg:gap-20">
         <div>
-          <h2 class="section-title text-white">{{ $t('forInvestors.journeyTitle') }}</h2>
+          <h2 class="section-title">{{ $t('forInvestors.journeyTitle') }}</h2>
           <ol class="mt-10 space-y-7">
-            <li v-for="(j, i) in journey" :key="i" class="flex gap-5"><span class="num h-11 w-11 rounded-full border border-teal-400 text-teal-400 text-lg flex items-center justify-center shrink-0">{{ i + 1 }}</span><div><h3 class="text-lg font-bold text-white">{{ j.title }}</h3><p class="mt-1 text-sm text-white/65">{{ j.text }}</p></div></li>
+            <li v-for="(j, i) in journey" :key="i" class="flex gap-5"><span class="num flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent-hi bg-accent/10 font-display text-lg font-bold text-accent-text">{{ i + 1 }}</span><div><h3 class="text-lg font-bold text-ink">{{ j.title }}</h3><p class="mt-1 text-sm leading-6 text-t2">{{ j.text }}</p></div></li>
           </ol>
         </div>
         <div>
-          <h2 class="section-title text-white">{{ $t('forInvestors.requirementsTitle') }}</h2>
-          <ul class="mt-10 divide-y divide-white/10 border-y border-white/10"><li v-for="(r, i) in requirements" :key="i" class="flex gap-3 py-4 text-base text-white/85"><svg class="mt-1 h-5 w-5 text-teal-400 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>{{ r }}</li></ul>
+          <h2 class="section-title">{{ $t('forInvestors.requirementsTitle') }}</h2>
+          <ul class="mt-10 divide-y divide-ink/10 border-y border-ink/10"><li v-for="(r, i) in requirements" :key="i" class="flex gap-3 py-4 text-base text-ink"><svg class="mt-1 h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="var(--accent-hi)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ r }}</li></ul>
         </div>
       </div>
     </section>
     <section class="section-y">
       <div class="container-x">
         <h2 class="section-title">{{ home.text('benefits_title', 'home.benefitsTitle') }}</h2>
-        <ul class="mt-12 grid gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-4"><li v-for="(b, i) in benefits" :key="i" class="text-desc border-t-2 border-teal pt-4">{{ b }}</li></ul>
+        <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><li v-for="(b, i) in benefits" :key="i" class="flex items-start gap-3.5 rounded-[14px] border border-ink/10 bg-ink/5 px-5 py-5 text-sm font-medium leading-7 text-ink"><svg class="mt-1 shrink-0" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="var(--accent-hi)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>{{ b }}</li></ul>
         <div class="mt-14 text-center"><NuxtLink :to="$localePath('/auth/register?type=investor_individual')" class="link-cta">{{ $t('forInvestors.cta') }}</NuxtLink></div>
       </div>
     </section>

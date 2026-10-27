@@ -26,7 +26,7 @@ const onKey = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <div role="tablist" class="flex gap-1 overflow-x-auto scrollbar-thin" :class="variant === 'underline' ? 'border-b border-border' : 'bg-bg p-1 rounded-xl'" @keydown="onKey">
+  <div role="tablist" class="flex max-w-full gap-1 overflow-x-auto scrollbar-thin" :class="variant === 'underline' ? 'border-b border-border' : 'border border-ink/15 p-1 rounded-full'" @keydown="onKey">
     <button
       v-for="(t, i) in tabs"
       :key="t.key"
@@ -39,16 +39,16 @@ const onKey = (e: KeyboardEvent) => {
       :tabindex="modelValue === t.key ? 0 : -1"
       class="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium transition kbd-focus"
       :class="[
-        variant === 'underline' ? 'px-3 py-2.5 -mb-px border-b-2' : 'px-3 py-2 rounded-lg',
+        variant === 'underline' ? 'px-3 py-2.5 -mb-px border-b-2' : 'px-4 py-2 rounded-full',
         modelValue === t.key
-          ? variant === 'underline' ? 'border-blue text-blue' : 'bg-surface text-ink shadow-card'
+          ? variant === 'underline' ? 'border-accent-hi text-ink' : 'bg-accent text-on-accent'
           : variant === 'underline' ? 'border-transparent text-muted hover:text-ink hover:border-border' : 'text-muted hover:text-ink',
       ]"
       @click="emit('update:modelValue', t.key)"
     >
       <svg v-if="t.locked" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg>
       {{ t.label }}
-      <span v-if="t.count != null" class="num rounded-full bg-bg px-1.5 py-0.5 text-xs text-muted" :class="modelValue === t.key && variant === 'underline' && 'bg-blue-soft text-blue'">{{ t.count }}</span>
+      <span v-if="t.count != null" class="num rounded-full bg-bg px-1.5 py-0.5 text-xs text-muted" :class="modelValue === t.key && variant === 'underline' && 'bg-accent/15 text-accent-text'">{{ t.count }}</span>
     </button>
   </div>
 </template>

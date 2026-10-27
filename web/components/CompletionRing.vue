@@ -11,9 +11,9 @@ const { number } = useFormat()
 <template>
   <div class="relative inline-flex items-center justify-center" :style="{ width: `${size}px`, height: `${size}px` }" role="img" :aria-label="`${label ?? $t('components.ring.label')}: ${number(percent)}%`">
     <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" class="-rotate-90" aria-hidden="true">
-      <circle :cx="size / 2" :cy="size / 2" :r="r" fill="none" stroke="var(--border)" :stroke-width="stroke" />
+      <circle :cx="size / 2" :cy="size / 2" :r="r" fill="none" stroke="rgba(var(--fg-rgb), .12)" :stroke-width="stroke" />
       <circle :cx="size / 2" :cy="size / 2" :r="r" fill="none" :stroke="color" :stroke-width="stroke" stroke-linecap="round" :stroke-dasharray="c" :stroke-dashoffset="offset" class="transition-all duration-700" />
     </svg>
-    <span class="absolute text-lg font-semibold num text-ink">{{ number(percent, { maximumFractionDigits: 0 }) }}%</span>
+    <span class="absolute font-display text-lg font-bold num text-ink">{{ number(percent, { maximumFractionDigits: 0 }) }}%</span>
   </div>
 </template>

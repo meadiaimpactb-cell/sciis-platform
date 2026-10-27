@@ -34,7 +34,7 @@ const progress = computed(() => Math.round((answeredCount.value / total) * 100))
 const result = computed(() => scoreAssessment(props.config, answers))
 const axisLabel = (id: string) => L(props.config.axes.find((a) => a.id === id)?.label ?? { ar: id, en: id })
 const bandTone = computed(() => ({ ready: 'bg-success/10 text-success', close: 'bg-teal-soft text-teal-text', prepare: 'bg-warning/10 text-warning' })[result.value.band])
-const barColor = (score: number) => (score >= 75 ? 'var(--success)' : score >= 50 ? '#58B4A8' : 'var(--warning)')
+const barColor = (score: number) => (score >= 75 ? 'var(--success)' : score >= 50 ? 'var(--scii-teal)' : 'var(--warning)')
 
 // ---------------------------------------------------------------- focus management
 const legendRef = ref<HTMLElement | null>(null)
@@ -95,15 +95,15 @@ const share = async () => {
         <span class="font-medium text-ink num" aria-live="polite">{{ $t('tools.quiz.progress', { n: step + 1, total }) }}</span>
         <span class="text-xs text-muted num">{{ number(progress, { maximumFractionDigits: 0 }) }}%</span>
       </div>
-      <div class="mt-2 h-2 rounded-full bg-bg overflow-hidden" role="progressbar" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100" :aria-label="$t('tools.quiz.progressLabel')">
-        <div class="h-full rounded-full bg-gradient-brand transition-all duration-500" :style="{ width: `${progress}%` }" />
+      <div class="mt-2 h-2 rounded-full bg-ink/10 overflow-hidden" role="progressbar" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100" :aria-label="$t('tools.quiz.progressLabel')">
+        <div class="h-full rounded-full bg-accent transition-all duration-500" :style="{ width: `${progress}%` }" />
       </div>
     </div>
 
     <!-- question -->
     <form v-if="!done" class="px-5 sm:px-7 pb-6 pt-5 min-h-[30rem] flex flex-col" novalidate @submit.prevent="next">
       <fieldset :key="question.id" class="flex-1" :aria-describedby="[question.help ? `${question.id}-help` : '', showError ? `${question.id}-err` : ''].filter(Boolean).join(' ') || undefined">
-        <legend ref="legendRef" tabindex="-1" class="text-lg sm:text-xl font-semibold text-ink leading-8 focus:outline-none">
+        <legend ref="legendRef" tabindex="-1" class="font-display text-lg sm:text-xl font-bold text-ink leading-8 focus:outline-none">
           <span class="block text-xs font-medium text-teal-text mb-1.5">{{ axisLabel(question.axis) }}</span>
           {{ L(question.prompt) }}
         </legend>
@@ -111,11 +111,11 @@ const share = async () => {
         <div class="mt-5 grid gap-2.5">
           <label
             v-for="opt in question.options" :key="opt.id"
-            class="group flex items-start gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition focus-within:ring-2 focus-within:ring-teal"
-            :class="answers[question.id] === opt.id ? 'border-navy bg-navy-50' : 'border-border hover:border-navy/40 hover:bg-bg/60'"
+            class="group flex items-start gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition focus-within:ring-2 focus-within:ring-accent-text"
+            :class="answers[question.id] === opt.id ? 'border-accent bg-accent/10' : 'border-border hover:border-accent/50 hover:bg-ink/5'"
           >
-            <input v-model="answers[question.id]" type="radio" :name="question.id" :value="opt.id" class="mt-1 h-4 w-4 shrink-0 accent-navy">
-            <span class="text-sm sm:text-[0.95rem] leading-6 text-ink">{{ L(opt.label) }}</span>
+            <input v-model="answers[question.id]" type="radio" :name="question.id" :value="opt.id" class="mt-1 h-4 w-4 shrink-0 accent-teal">
+            <span class="text-sm sm:text-base leading-6 text-ink">{{ L(opt.label) }}</span>
           </label>
         </div>
         <p v-if="showError" :id="`${question.id}-err`" class="error-text mt-3" role="alert">{{ $t('tools.quiz.chooseOne') }}</p>
@@ -128,7 +128,7 @@ const share = async () => {
       </div>
       <div class="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <label class="inline-flex items-start gap-2 text-sm text-ink/85 cursor-pointer">
-          <input v-model="remember" type="checkbox" class="mt-0.5 h-4 w-4 rounded accent-navy">
+          <input v-model="remember" type="checkbox" class="mt-0.5 h-4 w-4 rounded accent-teal">
           <span>{{ $t('tools.quiz.remember') }}<span class="block text-xs text-muted">{{ $t('tools.quiz.rememberHelp') }}</span></span>
         </label>
         <button v-if="answeredCount" type="button" class="text-sm text-muted hover:text-danger underline-offset-4 hover:underline kbd-focus rounded w-fit" @click="restart">{{ $t('tools.quiz.restart') }}</button>
@@ -137,7 +137,7 @@ const share = async () => {
 
     <!-- result -->
     <div v-else class="px-5 sm:px-7 pb-7 pt-5">
-      <h2 ref="resultRef" tabindex="-1" class="text-xl font-semibold text-ink mb-4 focus:outline-none">{{ $t('tools.result.title') }}</h2>
+      <h2 ref="resultRef" tabindex="-1" class="card-title mb-4 focus:outline-none">{{ $t('tools.result.title') }}</h2>
       <div class="flex flex-col sm:flex-row sm:items-center gap-5">
         <CompletionRing :percent="result.score" :size="120" :stroke="10" :label="$t('tools.result.scoreLabel')" />
         <div class="min-w-0">
@@ -151,14 +151,14 @@ const share = async () => {
       <ul class="mt-3 space-y-3" role="list">
         <li v-for="a in result.axes" :key="a.id">
           <div class="flex items-center justify-between gap-3 text-sm"><span class="text-ink/90">{{ axisLabel(a.id) }}</span><span class="num font-medium text-ink">{{ a.score }}%</span></div>
-          <div class="mt-1.5 h-2.5 rounded-full bg-bg overflow-hidden" aria-hidden="true"><div class="h-full rounded-full transition-all duration-700" :style="{ width: `${Math.max(3, a.score)}%`, backgroundColor: barColor(a.score) }" /></div>
+          <div class="mt-1.5 h-2.5 rounded-full bg-ink/10 overflow-hidden" aria-hidden="true"><div class="h-full rounded-full transition-all duration-700" :style="{ width: `${Math.max(3, a.score)}%`, backgroundColor: barColor(a.score) }" /></div>
         </li>
       </ul>
 
       <h3 class="mt-7 font-semibold text-ink">{{ $t('tools.result.recommendationsTitle') }}</h3>
       <ol v-if="result.weak.length" class="mt-3 space-y-3" role="list">
-        <li v-for="(q, i) in result.weak" :key="q.id" class="flex gap-3 rounded-xl border border-border bg-bg/40 p-4">
-          <span class="num h-7 w-7 shrink-0 rounded-lg bg-navy text-white text-sm font-semibold flex items-center justify-center" aria-hidden="true">{{ i + 1 }}</span>
+        <li v-for="(q, i) in result.weak" :key="q.id" class="flex gap-3 rounded-xl border border-border bg-ink/5 p-4">
+          <span class="num h-7 w-7 shrink-0 rounded-full bg-accent text-on-accent text-sm font-bold flex items-center justify-center" aria-hidden="true">{{ i + 1 }}</span>
           <div class="min-w-0 text-sm leading-6">
             <p class="font-semibold text-ink">{{ L(q.short) }} <span class="font-normal text-xs text-muted">· {{ axisLabel(q.axis) }}</span></p>
             <p class="mt-1 text-ink/80">{{ L(q.tip) }}</p>
@@ -168,10 +168,10 @@ const share = async () => {
       </ol>
       <p v-else class="mt-3 rounded-xl bg-success/10 text-success p-4 text-sm font-medium">{{ $t('tools.result.noWeak') }}</p>
 
-      <div class="mt-7 rounded-2xl bg-gradient-brand text-white p-5 sm:p-6 relative overflow-hidden">
-        <div class="absolute inset-0 brand-grid opacity-50" aria-hidden="true" />
+      <div class="surface-hero mt-7 rounded-2xl border border-ink/10 p-5 sm:p-6">
+        <OrbitBackdrop :orbits="false" />
         <div class="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <p class="font-semibold text-lg">{{ $t('tools.result.nextTitle') }}</p>
+          <p class="font-display text-lg font-bold text-ink">{{ $t('tools.result.nextTitle') }}</p>
           <div class="flex flex-wrap gap-2">
             <AppButton :to="cta.to" variant="accent">{{ cta.label }}</AppButton>
             <AppButton :to="learn.to" variant="light">{{ learn.label }}</AppButton>

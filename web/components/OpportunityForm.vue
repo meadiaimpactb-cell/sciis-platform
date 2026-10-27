@@ -656,7 +656,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
             <FormField v-model="form.name" name="name" :label="$t('entrepreneur.form.basics.name')" :error="fieldError('name')" :maxlength="RULES.titleMax" required :disabled="fieldLocked('name')" />
             <FormField v-model="form.short_description" name="short_description" type="textarea" :label="$t('entrepreneur.form.basics.short')" :help="$t('entrepreneur.form.basics.shortHelp')" :error="fieldError('short_description')" :maxlength="RULES.shortDescMax" :rows="3" required :disabled="fieldLocked('short_description')" />
             <!-- OPP-11 — optional English version of the public card (shown to investors browsing in English) -->
-            <fieldset class="rounded-xl border border-border p-4 space-y-4 min-w-0">
+            <fieldset class="rounded-2xl border border-border bg-glass p-4 space-y-4 min-w-0">
               <legend class="px-1 text-sm font-medium text-ink">{{ $t('entrepreneur.form.basics.englishTitle') }}</legend>
               <p class="help !mt-0">{{ $t('entrepreneur.form.basics.englishHelp') }}</p>
               <FormField v-model="form.name_en" name="name_en" :label="$t('entrepreneur.form.basics.nameEn')" :error="fieldError('name_en')" :maxlength="RULES.titleMax" ltr :disabled="fieldLocked('name_en')" />
@@ -685,7 +685,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
           </template>
           <!-- TEAM & FOUNDERS (confidential) -->
           <template v-else-if="stepKey === 'team'">
-            <div><h3 class="font-semibold">{{ $t('entrepreneur.form.team.title') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'confidential') }})</span></h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.team.help') }}</p></div>
+            <div><h3 class="card-title">{{ $t('entrepreneur.form.team.title') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'confidential') }})</span></h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.team.help') }}</p></div>
             <div class="grid sm:grid-cols-2 gap-4">
               <FormField v-model="form.founders_count" name="founders_count" type="number" :label="$t('entrepreneur.form.team.foundersCount')" :help="$t('entrepreneur.form.team.foundersCountHelp')" :error="fieldError('founders_count')" :min="1" :max="RULES.foundersCountMax" required :disabled="fieldLocked('founders_count')" />
               <FormField v-model="form.team_size" name="team_size" type="number" :label="$t('entrepreneur.form.team.teamSize')" :help="$t('entrepreneur.form.team.teamSizeHelp')" :error="fieldError('team_size')" :min="1" :max="RULES.teamSizeMax" required :disabled="fieldLocked('team_size')" />
@@ -708,7 +708,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
             <fieldset :disabled="fieldLocked('founders')" class="min-w-0 space-y-3">
               <legend class="label">{{ $t('entrepreneur.form.team.foundersList') }} <span class="text-xs font-normal text-muted num">({{ number(form.founders.length) }}/{{ number(MAX_FOUNDERS) }})</span></legend>
               <p class="help !mt-0">{{ $t('entrepreneur.form.team.foundersListHelp', { n: MAX_FOUNDERS }) }}</p>
-              <div v-for="(f, i) in (form.founders as FormFounder[])" :key="f._key" class="rounded-xl border border-border p-3 grid sm:grid-cols-2 gap-3">
+              <div v-for="(f, i) in (form.founders as FormFounder[])" :key="f._key" class="rounded-2xl border border-border bg-glass p-4 grid sm:grid-cols-2 gap-3">
                 <FormField v-model="f.name" :name="`founders.${i}.name`" :label="$t('entrepreneur.form.team.founderName')" :error="fieldError(`founders.${i}.name`)" :maxlength="RULES.founderNameMax" required />
                 <FormField v-model="f.role" :name="`founders.${i}.role`" :label="$t('entrepreneur.form.team.founderRole')" :placeholder="$t('entrepreneur.form.team.founderRolePlaceholder')" :error="fieldError(`founders.${i}.role`)" :maxlength="RULES.founderRoleMax" />
                 <FormField v-model="f.linkedin_url" :name="`founders.${i}.linkedin_url`" type="url" :label="$t('entrepreneur.form.team.founderLinkedin')" :placeholder="LINKEDIN_PLACEHOLDER" :error="fieldError(`founders.${i}.linkedin_url`)" ltr :maxlength="RULES.urlMax" />
@@ -740,14 +740,14 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
           </template>
           <!-- IMPACT -->
           <template v-else-if="stepKey === 'impact'">
-            <div><h3 class="font-semibold">{{ $t('entrepreneur.form.impact.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.impact.help') }}</p></div>
+            <div><h3 class="card-title">{{ $t('entrepreneur.form.impact.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.impact.help') }}</p></div>
             <fieldset :disabled="fieldLocked('indicators')" class="space-y-3 min-w-0">
               <div class="card overflow-x-auto scrollbar-thin">
                 <table class="table-base min-w-[1080px]">
                   <thead><tr><th>{{ $t('entrepreneur.form.impact.primary') }}</th><th>{{ $t('entrepreneur.form.impact.indicator') }}</th><th>{{ $t('entrepreneur.form.impact.unit') }}</th><th>{{ $t('entrepreneur.form.impact.baseline') }}</th><th>{{ $t('entrepreneur.form.impact.target') }}</th><th>{{ $t('entrepreneur.form.impact.source') }}</th><th>{{ $t('entrepreneur.form.impact.frequency') }}</th><th><abbr :title="$t('entrepreneur.form.impact.irisHelp')">{{ $t('entrepreneur.form.impact.irisCode') }}</abbr></th><th>{{ $t('entrepreneur.form.impact.disclosed') }}</th><th></th></tr></thead>
                   <tbody>
                     <tr v-for="(ind, i) in (form.indicators as FormIndicator[])" :key="ind.id ?? i" class="align-top">
-                      <td><input type="radio" name="primary" :checked="ind.is_primary" :aria-label="$t('entrepreneur.form.impact.primary')" class="h-4 w-4 text-blue" @change="setPrimary(i)" /></td>
+                      <td><input type="radio" name="primary" :checked="ind.is_primary" :aria-label="$t('entrepreneur.form.impact.primary')" class="h-4 w-4 accent-accent" @change="setPrimary(i)" /></td>
                       <td class="min-w-[200px]"><input v-model="ind.name" class="input" :class="fieldError(`indicators.${i}.name`) && 'input-error'" :maxlength="RULES.titleMax" :aria-label="$t('entrepreneur.form.impact.indicator')" :aria-invalid="!!fieldError(`indicators.${i}.name`)" @blur="vf.validateField(`indicators.${i}.name`)" /><p v-if="fieldError(`indicators.${i}.name`)" class="error-text" role="alert">{{ fieldError(`indicators.${i}.name`) }}</p></td>
                       <td><input v-model="ind.unit" class="input w-24" :maxlength="RULES.indicatorUnitMax" :aria-label="$t('entrepreneur.form.impact.unit')" /></td>
                       <td><input v-model.number="ind.baseline" type="number" class="input w-24 num" :aria-label="$t('entrepreneur.form.impact.baseline')" /></td>
@@ -756,7 +756,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
                       <td><select v-model="ind.frequency" class="input" :aria-label="$t('entrepreneur.form.impact.frequency')"><option v-for="f in freqOpts" :key="f.value" :value="f.value">{{ f.label }}</option></select></td>
                       <!-- IMP-03 — optional IRIS+ catalogue code -->
                       <td><input v-model="ind.iris_code" class="input w-28 num ltr uppercase" :class="fieldError(`indicators.${i}.iris_code`) && 'input-error'" :maxlength="RULES.irisCodeLength + 2" placeholder="PI1234" dir="ltr" autocomplete="off" :aria-label="$t('entrepreneur.form.impact.irisCode')" :aria-invalid="!!fieldError(`indicators.${i}.iris_code`)" @blur="vf.validateField(`indicators.${i}.iris_code`)" /><p v-if="fieldError(`indicators.${i}.iris_code`)" class="error-text" role="alert">{{ fieldError(`indicators.${i}.iris_code`) }}</p></td>
-                      <td><input v-model="ind.is_disclosed" type="checkbox" class="h-4 w-4 rounded text-blue" :aria-label="$t('entrepreneur.form.impact.disclosed')" /></td>
+                      <td><input v-model="ind.is_disclosed" type="checkbox" class="h-4 w-4 rounded accent-accent" :aria-label="$t('entrepreneur.form.impact.disclosed')" /></td>
                       <td><AppButton variant="ghost" size="sm" icon :aria-label="`${$t('entrepreneur.form.impact.removeRow')} ${ind.name ?? ''}`" @click="removeIndicator(i)">×</AppButton></td>
                     </tr>
                     <tr v-if="!form.indicators?.length"><td colspan="10" class="text-center text-muted py-6">{{ $t('entrepreneur.form.impact.empty') }}</td></tr>
@@ -768,7 +768,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
           </template>
           <!-- MARKET & PRODUCT -->
           <template v-else-if="stepKey === 'market'">
-            <div><h3 class="font-semibold">{{ $t('entrepreneur.form.market.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.market.help') }}</p></div>
+            <div><h3 class="card-title">{{ $t('entrepreneur.form.market.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.market.help') }}</p></div>
             <div class="grid sm:grid-cols-2 gap-4">
               <FormField v-model="form.product_stage" name="product_stage" type="select" :label="$t('entrepreneur.form.market.productStage')" :help="publicHelp('entrepreneur.form.market.productStageHelp')" :options="productStageOpts" :error="fieldError('product_stage')" required :disabled="fieldLocked('product_stage')" />
             </div>
@@ -810,7 +810,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
           </template>
           <!-- DOCUMENTS -->
           <template v-else-if="stepKey === 'documents'">
-            <div><h3 class="font-semibold">{{ $t('entrepreneur.form.documents.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.documents.help', { size: maxMb }) }}</p></div>
+            <div><h3 class="card-title">{{ $t('entrepreneur.form.documents.title') }}</h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.documents.help', { size: maxMb }) }}</p></div>
             <div class="grid sm:grid-cols-[220px_1fr] gap-4 items-start">
               <FormField v-model="uploadKind" name="kind" type="select" :label="$t('entrepreneur.form.documents.kind')" :options="kindOpts" />
               <FileUpload :label="$t('entrepreneur.form.documents.file')" :max-mb="maxMb" :disabled="uploading || docKindLocked(uploadKind)" @file="upload" @error="toastError($event)" />
@@ -821,7 +821,7 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
           </template>
           <!-- MOTIVATION & COMMITMENT (internal) -->
           <template v-else-if="stepKey === 'motivation'">
-            <div><h3 class="font-semibold">{{ $t('entrepreneur.form.motivation.title') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'internal') }})</span></h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.motivation.help') }}</p></div>
+            <div><h3 class="card-title">{{ $t('entrepreneur.form.motivation.title') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'internal') }})</span></h3><p class="text-sm text-muted">{{ $t('entrepreneur.form.motivation.help') }}</p></div>
             <FormField v-model="form.why_now" name="why_now" type="textarea" :label="$t('entrepreneur.form.motivation.whyNow')" :help="$t('entrepreneur.form.motivation.whyNowHelp')" :rows="3" :error="fieldError('why_now')" :maxlength="RULES.descMax" required :disabled="fieldLocked('why_now')" />
             <FormField v-model="form.support_needed" name="support_needed" type="chips" :label="$t('entrepreneur.form.motivation.supportNeeded')" :help="$t('entrepreneur.form.motivation.supportNeededHelp')" :options="supportOpts" :disabled="fieldLocked('support_needed')" />
             <FormField v-model="form.program_expectations" name="program_expectations" type="textarea" :label="$t('entrepreneur.form.motivation.expectations')" :help="$t('entrepreneur.form.motivation.expectationsHelp')" :rows="3" :error="fieldError('program_expectations')" :maxlength="RULES.descMax" :disabled="fieldLocked('program_expectations')" />
@@ -840,8 +840,8 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
             <FormField v-model="form.operational_risks" name="operational_risks" type="textarea" :label="$t('entrepreneur.form.disclosures.operationalRisks')" :rows="3" :error="fieldError('operational_risks')" :maxlength="RULES.longTextMax" :disabled="fieldLocked('operational_risks')" />
             <FormField v-model="form.council_relationship" name="council_relationship" type="checkbox" :label="$t('entrepreneur.form.disclosures.councilRelationship')" :disabled="fieldLocked('council_relationship')" />
             <FormField v-if="form.council_relationship" v-model="form.council_relationship_desc" name="council_relationship_desc" :label="$t('entrepreneur.form.disclosures.councilRelationshipDesc')" :error="fieldError('council_relationship_desc')" :maxlength="RULES.noteMax" :disabled="fieldLocked('council_relationship_desc')" />
-            <fieldset class="rounded-xl border border-border p-4 space-y-3">
-              <legend class="px-1 text-sm font-medium">{{ $t('auth.register.declarations') }}</legend>
+            <fieldset class="rounded-2xl border border-border bg-glass p-4 space-y-3">
+              <legend class="px-1 text-sm font-medium text-ink">{{ $t('auth.register.declarations') }}</legend>
               <FormField v-model="form.data_accuracy_declared" name="data_accuracy_declared" type="checkbox" :label="$t('entrepreneur.form.disclosures.dataAccuracy')" :disabled="fieldLocked('data_accuracy_declared')" />
               <FormField v-model="form.teaser_publication_consent" name="teaser_publication_consent" type="checkbox" :label="$t('entrepreneur.form.disclosures.teaserConsent')" :disabled="fieldLocked('teaser_publication_consent')" />
               <p class="text-xs text-muted">{{ $t('entrepreneur.form.disclosures.fullFileNote') }}</p>
@@ -860,15 +860,15 @@ const documents = computed(() => (opp.value?.documents ?? []) as DocumentResourc
       </div>
     </div>
     <!-- checklist side -->
-    <aside class="lg:sticky lg:top-6 space-y-4">
+    <aside class="lg:sticky lg:top-20 space-y-4">
       <div class="card card-pad">
-        <div class="flex items-center justify-between gap-3"><h3 class="font-semibold">{{ $t('entrepreneur.form.checklistTitle') }}</h3><CompletionRing :percent="checklistPercent" :size="56" :stroke="6" /></div>
+        <div class="flex items-center justify-between gap-3"><h3 class="card-title">{{ $t('entrepreneur.form.checklistTitle') }}</h3><CompletionRing :percent="checklistPercent" :size="56" :stroke="6" /></div>
         <p class="mt-2 text-sm" :class="checklistReady ? 'text-success' : 'text-warning'">{{ checklistReady ? $t('entrepreneur.form.checklistReady') : $t('entrepreneur.form.checklistMissing', { n: missingBySection.length }) }}</p>
         <ul class="mt-3 space-y-1.5 text-sm max-h-80 overflow-y-auto">
           <li v-for="it in checklistItems" :key="it.key" class="flex items-start gap-2">
             <svg v-if="it.done" class="h-4 w-4 text-success shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
             <span v-else class="h-4 w-4 rounded-full border-2 border-warning shrink-0 mt-0.5" aria-hidden="true" />
-            <button type="button" class="text-start hover:text-blue kbd-focus rounded" :class="it.done ? 'text-muted' : ''" @click="step = Math.max(0, allSteps.findIndex((s) => s.key === it.section))">{{ it.label }}</button>
+            <button type="button" class="text-start hover:text-accent-text transition kbd-focus rounded" :class="it.done ? 'text-muted' : 'text-ink'" @click="step = Math.max(0, allSteps.findIndex((s) => s.key === it.section))">{{ it.label }}</button>
           </li>
         </ul>
         <AppButton v-if="editableStatus" block class="mt-4" :loading="submitting" :disabled="!checklistReady" @click="submit">{{ $t('entrepreneur.form.submit') }}</AppButton>

@@ -56,7 +56,7 @@ const closedText = computed(() => (status.value?.reason ? t(`collab.events.reaso
 </script>
 
 <template>
-  <div v-if="loading" class="mt-6 h-10 rounded-md bg-bg animate-pulse" aria-hidden="true" />
+  <div v-if="loading" class="mt-6 h-10 rounded-full bg-ink/10 animate-pulse" aria-hidden="true" />
   <div v-else-if="status?.enabled" class="mt-6 pt-6 border-t border-border">
     <!-- registered (now or before) -->
     <div v-if="receipt || status.me?.registered" class="text-center">

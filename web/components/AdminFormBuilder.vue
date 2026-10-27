@@ -180,14 +180,14 @@ const label = (q: DraftQuestion) => q.label_ar.trim() || t('platform.builder.unt
         <ol class="space-y-3">
           <li v-for="(q, i) in draft" :key="q._key" class="card" :class="[!q.active && 'opacity-75', questionHasError(i) && 'border-danger/50']">
             <div class="flex flex-wrap items-center gap-2 px-4 py-3">
-              <span class="num h-7 w-7 shrink-0 rounded-full bg-navy-50 text-ink text-xs font-semibold flex items-center justify-center" aria-hidden="true">{{ i + 1 }}</span>
+              <span class="num h-7 w-7 shrink-0 rounded-full border border-accent/40 bg-accent/10 text-accent-text text-xs font-bold flex items-center justify-center" aria-hidden="true">{{ i + 1 }}</span>
               <button type="button" class="min-w-0 flex-1 text-start kbd-focus rounded" :aria-expanded="q._open" :aria-controls="`fb-${q._key}`" @click="q._open = !q._open">
                 <span class="block font-medium text-ink truncate">{{ label(q) }}</span>
-                <span class="mt-0.5 flex flex-wrap gap-1.5 text-[11px]">
-                  <span class="rounded-full bg-navy-50 text-muted px-2 py-0.5">{{ $t(`platform.builder.types.${q.type}`) }}</span>
-                  <span v-if="q.required" class="rounded-full bg-warning/10 text-warning px-2 py-0.5">{{ $t('common.required') }}</span>
-                  <span v-if="!q.active" class="rounded-full bg-border text-ink px-2 py-0.5">{{ $t('platform.builder.inactive') }}</span>
-                  <span v-if="q.show_when" class="rounded-full bg-teal-soft text-teal-text px-2 py-0.5">{{ $t('platform.builder.conditional') }}</span>
+                <span class="mt-1 flex flex-wrap gap-1.5 text-xs">
+                  <span class="rounded-full border border-ink/15 bg-ink/5 text-muted px-2.5 py-0.5">{{ $t(`platform.builder.types.${q.type}`) }}</span>
+                  <span v-if="q.required" class="rounded-full border border-warning/30 bg-warning/10 text-warning px-2.5 py-0.5">{{ $t('common.required') }}</span>
+                  <span v-if="!q.active" class="rounded-full border border-ink/20 text-muted px-2.5 py-0.5">{{ $t('platform.builder.inactive') }}</span>
+                  <span v-if="q.show_when" class="rounded-full border border-accent/30 bg-accent/10 text-accent-text px-2.5 py-0.5">{{ $t('platform.builder.conditional') }}</span>
                 </span>
               </button>
               <div class="flex items-center gap-1">
@@ -216,7 +216,7 @@ const label = (q: DraftQuestion) => q.label_ar.trim() || t('platform.builder.unt
               </div>
 
               <!-- options (choice types) -->
-              <fieldset v-if="isChoice(q.type)" class="rounded-lg border border-border p-3 space-y-2">
+              <fieldset v-if="isChoice(q.type)" class="rounded-xl border border-border bg-ink/[0.03] p-3 space-y-2">
                 <legend class="px-1 text-sm font-medium text-ink">{{ $t('platform.builder.options') }}</legend>
                 <p v-if="errorFor(i, 'options')" class="error-text" role="alert">{{ errorFor(i, 'options') }}</p>
                 <div v-for="(o, j) in q.options" :key="o.value" class="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">

@@ -68,7 +68,7 @@ onMounted(() => {
   box-shadow: 0 30px 60px -20px rgba(var(--shadow-rgb), 0.6);
   font-family: var(--fb);
 }
-.cookie__icon { background: rgba(88, 176, 168, 0.16); color: var(--accent-text); }
+.cookie__icon { background: rgba(var(--scii-teal-rgb), 0.16); color: var(--accent-text); }
 .cookie__title { font: 600 15px var(--fb); color: var(--fg); }
 .cookie__text { font: 400 14px/1.7 var(--fb); color: var(--t2); }
 .cookie__link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }

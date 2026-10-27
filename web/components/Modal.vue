@@ -44,16 +44,16 @@ const width = computed(() => ({ sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-3xl' 
   <Teleport to="body">
     <Transition name="page">
       <div v-if="open" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" role="presentation">
-        <div class="absolute inset-0 bg-ink/50" @click="emit('close')" />
-        <div ref="panel" role="dialog" aria-modal="true" :aria-labelledby="title ? titleId : undefined" class="relative w-full bg-surface rounded-t-2xl sm:rounded-2xl shadow-pop border border-border max-h-[92vh] flex flex-col" :class="width">
+        <div class="absolute inset-0 bg-overlay/60 backdrop-blur-sm" @click="emit('close')" />
+        <div ref="panel" role="dialog" aria-modal="true" :aria-labelledby="title ? titleId : undefined" class="relative w-full bg-surface rounded-t-[1.375rem] sm:rounded-[1.375rem] shadow-pop border border-border max-h-[92vh] flex flex-col" :class="width">
           <div class="flex items-center justify-between gap-4 px-5 py-4 border-b border-border">
-            <h2 v-if="title" :id="titleId" class="text-lg font-semibold">{{ title }}</h2>
-            <button type="button" class="h-9 w-9 rounded-lg hover:bg-bg flex items-center justify-center text-muted kbd-focus" :aria-label="$t('components.modal.close')" @click="emit('close')">
+            <h2 v-if="title" :id="titleId" class="text-lg font-bold">{{ title }}</h2>
+            <button type="button" class="h-9 w-9 rounded-full border border-ink/15 hover:bg-ink/10 flex items-center justify-center text-ink kbd-focus" :aria-label="$t('components.modal.close')" @click="emit('close')">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
           </div>
           <div class="px-5 py-4 overflow-y-auto"><slot /></div>
-          <div v-if="$slots.footer" class="px-5 py-4 border-t border-border flex flex-wrap items-center justify-end gap-2 bg-bg/40 rounded-b-2xl"><slot name="footer" /></div>
+          <div v-if="$slots.footer" class="px-5 py-4 border-t border-border flex flex-wrap items-center justify-end gap-2 bg-bg/40 rounded-b-[1.375rem]"><slot name="footer" /></div>
         </div>
       </div>
     </Transition>

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-/** Portal layout — sidebar per role (investor / entrepreneur / admin), collapsible on mobile. */
-// BRD-04 — portal-only dark theme (CSS variables; never loaded by the public site).
-import '~/assets/css/theme-dark.css'
+/** Portal layout (design v3, templates C/D) — sidebar per role (investor / entrepreneur / admin), collapsible on mobile. */
 const auth = useAuthStore()
 const localePath = useLocalePath()
 const route = useRoute()
@@ -12,9 +10,13 @@ watch(() => route.path, () => (open.value = false))
 // ACC-07 — sign out after the configured idle time (settings come with the taxonomy cache).
 if (import.meta.client) void useTaxonomyStore().load().catch(() => {})
 useIdleLogout()
-// BRD-04 — `theme-dark` on <html> while the portal follows a dark preference (FEATURE_DARK_MODE; CSS in theme-dark.css).
-const theme = usePortalTheme()
-useHead({ htmlAttrs: { class: () => (theme.dark.value ? 'theme-dark' : '') } })
+// One theme for the site and the portals (useSiteTheme); a light / dark choice saved on the account wins over this
+// browser's ('system' is also the account default, so it leaves the browser's choice alone).
+const siteTheme = useSiteTheme()
+onMounted(() => {
+  siteTheme.sync()
+  watch(() => auth.me?.preferences?.theme, (p) => { if ((p === 'light' || p === 'dark') && p !== siteTheme.pref.value) siteTheme.apply(p) }, { immediate: true })
+})
 
 // Staff items are shown by permission (ACC-03), so custom roles see exactly what their permissions allow.
 interface Item { to: string; label: string; icon: string; perms?: string[] }
@@ -113,37 +115,37 @@ const roleLabel = computed(() => (auth.isStaff ? auth.roles.map((r) => enumLabel
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 bg-surface text-ink px-3 py-2 rounded-lg shadow">{{ $t('app.skipToContent') }}</a>
 
     <!-- sidebar -->
-    <aside id="portal-sidebar" class="bg-navy-900 text-white lg:sticky lg:top-0 lg:h-screen flex flex-col relative overflow-hidden" :class="open ? 'block fixed inset-0 top-16 z-40 overflow-y-auto' : 'hidden lg:flex'" :aria-label="$t('nav.portalNavigation')">
-      <div class="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-navy-700/60 to-transparent pointer-events-none" aria-hidden="true" />
-      <img src="/brand/mark-white.svg" width="100" height="136" alt="" aria-hidden="true" class="w-auto absolute -end-10 -bottom-10 h-56 opacity-[0.05] pointer-events-none select-none">
+    <aside id="portal-sidebar" class="bg-deep text-ink border-e border-border lg:sticky lg:top-0 lg:h-screen flex flex-col relative overflow-hidden" :class="open ? 'block fixed inset-0 top-16 z-40 overflow-y-auto' : 'hidden lg:flex'" :aria-label="$t('nav.portalNavigation')">
+      <div class="absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[var(--tint2)] to-transparent pointer-events-none" aria-hidden="true" />
+      <div class="absolute -end-10 -bottom-10 opacity-[0.06] pointer-events-none select-none" aria-hidden="true"><BrandMark :width="164" :framed="false" /></div>
       <div class="hidden lg:block relative">
         <DemoBanner />
-        <NuxtLink :to="localePath('/')" class="flex items-center gap-3 px-5 h-[4.5rem] border-b border-white/10 kbd-focus">
-          <BrandLogo variant="mark" dark size="sm" />
-          <span class="flex flex-col leading-tight"><span class="font-bold tracking-wide">{{ config.public.platformShortName }}</span><span class="text-[11px] text-teal-400">{{ portalTitle }}</span></span>
+        <NuxtLink :to="localePath('/')" class="flex items-center gap-3 px-5 h-[4.5rem] border-b border-border kbd-focus">
+          <BrandLogo variant="mark" size="sm" />
+          <span class="flex flex-col leading-tight"><span class="font-display font-extrabold tracking-wide">{{ config.public.platformShortName }}</span><span class="text-xs text-accent-text">{{ portalTitle }}</span></span>
         </NuxtLink>
       </div>
-      <div class="relative px-5 py-4 border-b border-white/10 flex items-center gap-3">
+      <div class="relative px-5 py-4 border-b border-border flex items-center gap-3">
         <NuxtLink :to="localePath('/app/account')" class="shrink-0 rounded-full kbd-focus" :aria-label="$t('topbar.profile')"><UserAvatar :name="auth.me?.name" :src="auth.me?.avatar_url" size="md" /></NuxtLink>
         <div class="min-w-0">
           <p class="font-medium truncate">{{ auth.me?.name }}</p>
-          <p class="text-xs text-white/60 truncate">{{ roleLabel }}</p>
+          <p class="text-xs text-t3 truncate">{{ roleLabel }}</p>
           <AppBadge v-if="auth.isInvestor && auth.me?.membership" kind="membership" :value="auth.me.membership.status" :soft="false" class="mt-1.5" />
         </div>
       </div>
       <nav class="relative flex-1 px-3 py-3 space-y-0.5">
-        <NuxtLink v-for="it in items" :key="it.to" :to="localePath(it.to)" class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition kbd-focus" :class="isActive(it.to) ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white'" :aria-current="isActive(it.to) ? 'page' : undefined">
-          <span v-if="isActive(it.to)" class="absolute start-0 inset-y-2 w-1 rounded-e-full bg-teal" aria-hidden="true" />
-          <svg class="h-5 w-5 shrink-0" :class="isActive(it.to) ? 'text-teal-400' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="icons[it.icon]" /></svg>
+        <NuxtLink v-for="it in items" :key="it.to" :to="localePath(it.to)" class="relative flex items-center gap-3 rounded-full px-3 py-2.5 text-sm transition kbd-focus" :class="isActive(it.to) ? 'bg-accent/15 text-ink font-medium' : 'text-t2 hover:bg-ink/5 hover:text-ink'" :aria-current="isActive(it.to) ? 'page' : undefined">
+          <span v-if="isActive(it.to)" class="absolute start-0 inset-y-2 w-1 rounded-e-full bg-accent-hi" aria-hidden="true" />
+          <svg class="h-5 w-5 shrink-0" :class="isActive(it.to) ? 'text-accent-text' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="icons[it.icon]" /></svg>
           {{ it.label }}
-          <span v-if="it.icon === 'messages' && unreadMessages.count.value" class="ms-auto min-w-5 h-5 px-1.5 rounded-full bg-teal text-navy-900 text-[11px] font-semibold flex items-center justify-center num" :aria-label="$t('collab.messages.unreadCount', { n: unreadMessages.count.value })">{{ unreadMessages.count.value > 99 ? '99+' : unreadMessages.count.value }}</span>
+          <span v-if="it.icon === 'messages' && unreadMessages.count.value" class="ms-auto min-w-5 h-5 px-1.5 rounded-full bg-accent text-on-accent text-xs font-semibold flex items-center justify-center num" :aria-label="$t('collab.messages.unreadCount', { n: unreadMessages.count.value })">{{ unreadMessages.count.value > 99 ? '99+' : unreadMessages.count.value }}</span>
         </NuxtLink>
       </nav>
-      <div class="relative px-3 py-3 border-t border-white/10 space-y-0.5">
-        <NuxtLink :to="localePath('/app/account')" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm kbd-focus" :class="isActive('/app/account') ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white'" :aria-current="isActive('/app/account') ? 'page' : undefined">
+      <div class="relative px-3 py-3 border-t border-border space-y-0.5">
+        <NuxtLink :to="localePath('/app/account')" class="flex items-center gap-3 rounded-full px-3 py-2 text-sm kbd-focus" :class="isActive('/app/account') ? 'bg-accent/15 text-ink font-medium' : 'text-t2 hover:bg-ink/5 hover:text-ink'" :aria-current="isActive('/app/account') ? 'page' : undefined">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="icons.profile" /></svg>{{ $t('topbar.profile') }}
         </NuxtLink>
-        <NuxtLink :to="localePath('/app/security')" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm kbd-focus" :class="isActive('/app/security') ? 'bg-white/10 text-white font-medium' : 'text-white/70 hover:bg-white/5 hover:text-white'" :aria-current="isActive('/app/security') ? 'page' : undefined">
+        <NuxtLink :to="localePath('/app/security')" class="flex items-center gap-3 rounded-full px-3 py-2 text-sm kbd-focus" :class="isActive('/app/security') ? 'bg-accent/15 text-ink font-medium' : 'text-t2 hover:bg-ink/5 hover:text-ink'" :aria-current="isActive('/app/security') ? 'page' : undefined">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3zM9 12l2 2 4-4" /></svg>{{ $t('portal.nav.security') }}
           <span v-if="auth.me && !auth.me.two_factor_enabled" class="ms-auto h-2 w-2 rounded-full bg-warning" :title="$t('security.off')" aria-hidden="true" />
         </NuxtLink>

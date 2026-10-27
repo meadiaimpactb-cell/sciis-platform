@@ -50,7 +50,7 @@ const downloadIcs = () => {
   <div class="flex flex-wrap gap-2" :class="block && 'flex-col'" role="group" :aria-label="$t('collab.calendar.addTo')">
     <AppButton :href="googleUrl" :size="size" variant="secondary" :block="block">{{ $t('collab.calendar.google') }}</AppButton>
     <AppButton :href="outlookUrl" :size="size" variant="secondary" :block="block">{{ $t('collab.calendar.outlook') }}</AppButton>
-    <a v-if="icsHref" :href="icsHref" download class="inline-flex items-center justify-center gap-2 font-medium rounded-md transition text-sm bg-surface text-ink border border-border hover:border-navy/40 hover:bg-navy-50 kbd-focus" :class="[size === 'sm' ? 'h-9 px-3.5' : 'h-10 px-4', block && 'w-full']">{{ $t('collab.calendar.ics') }}</a>
+    <a v-if="icsHref" :href="icsHref" download class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/20 bg-transparent text-sm font-semibold text-ink transition-colors duration-150 hover:bg-ink/10 kbd-focus" :class="[size === 'sm' ? 'h-9 px-4' : 'h-10 px-[1.125rem]', block && 'w-full']">{{ $t('collab.calendar.ics') }}</a>
     <AppButton v-else :size="size" variant="secondary" :block="block" @click="downloadIcs">{{ $t('collab.calendar.ics') }}</AppButton>
   </div>
 </template>

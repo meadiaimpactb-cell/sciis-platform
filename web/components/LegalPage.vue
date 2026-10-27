@@ -30,14 +30,15 @@ const sections = computed(() => (fromCms.value ? [] : (tm(`legal.sections.${prop
 
 <template>
   <div>
-    <section class="surface-dark relative overflow-hidden">
-      <NightSky />
-      <div class="container-x relative max-w-4xl py-20 text-center md:py-[6.25rem]">
-        <h1 class="display text-white text-balance">{{ page?.title || $t(`legal.${kind}.title`) }}</h1>
-        <p class="mt-5 text-base text-white/60 num">
+    <!-- hero: the PageHero surface; the version line sits in the pill label -->
+    <section class="surface-hero">
+      <OrbitBackdrop />
+      <div class="container-x relative flex flex-col items-center text-center py-20 md:py-24">
+        <SectionLabel pill class="num">
           <template v-if="updatedAt">{{ $t('legal.versionLabel', { v: version, date: date(updatedAt) }) }}</template>
           <template v-else>{{ $t('legal.versionOnly', { v: version }) }}</template>
-        </p>
+        </SectionLabel>
+        <h1 class="display mt-6 max-w-4xl text-ink text-balance">{{ page?.title || $t(`legal.${kind}.title`) }}</h1>
       </div>
     </section>
     <section class="container-x section-y max-w-3xl">

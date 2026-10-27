@@ -27,48 +27,57 @@ const cmsGovernanceText = computed(() => cmsExcerpt(governance.value?.body ?? go
 </script>
 
 <template>
-  <div class="bg-surface">
+  <div>
     <PageHero :title="text('title', 'about.title')" :lead="text('lead', 'about.lead')" />
     <section class="section-y">
-      <div class="container-x grid border-b border-border lg:grid-cols-3">
-        <article class="py-10 lg:pe-8 lg:pt-0"><h2 class="card-title">{{ $t('about.vision') }}</h2><p class="text-desc mt-4 text-muted">{{ text('vision_text', 'about.visionText') }}</p></article>
-        <article class="border-t border-border py-10 lg:border-s lg:border-t-0 lg:px-8 lg:pt-0"><h2 class="card-title">{{ $t('about.mission') }}</h2><p class="text-desc mt-4 text-muted">{{ text('mission_text', 'about.missionText') }}</p></article>
-        <article class="border-t border-border py-10 lg:border-s lg:border-t-0 lg:ps-8 lg:pt-0">
-          <h2 class="card-title">{{ $t('about.goals') }}</h2>
+      <div class="container-x grid gap-5 lg:grid-cols-3">
+        <GlassCard as="article">
+          <span class="flex h-11 w-11 items-center justify-center rounded-full border border-accent/35 bg-accent/10 text-accent-text" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg></span>
+          <h2 class="card-title mt-5">{{ $t('about.vision') }}</h2>
+          <p class="text-desc mt-3 text-t2">{{ text('vision_text', 'about.visionText') }}</p>
+        </GlassCard>
+        <GlassCard as="article">
+          <span class="flex h-11 w-11 items-center justify-center rounded-full border border-accent/35 bg-accent/10 text-accent-text" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg></span>
+          <h2 class="card-title mt-5">{{ $t('about.mission') }}</h2>
+          <p class="text-desc mt-3 text-t2">{{ text('mission_text', 'about.missionText') }}</p>
+        </GlassCard>
+        <GlassCard as="article">
+          <span class="flex h-11 w-11 items-center justify-center rounded-full border border-accent/35 bg-accent/10 text-accent-text" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg></span>
+          <h2 class="card-title mt-5">{{ $t('about.goals') }}</h2>
           <ol class="mt-4 space-y-3">
-            <li v-for="(g, i) in goals" :key="i" class="flex gap-3"><span class="num mt-1 h-6 w-6 rounded-md border border-teal/50 text-teal-text text-xs flex items-center justify-center shrink-0">{{ i + 1 }}</span><span class="text-desc">{{ g }}</span></li>
+            <li v-for="(g, i) in goals" :key="i" class="flex gap-3"><span class="num mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-accent/35 bg-accent/10 text-xs font-bold text-accent-text">{{ i + 1 }}</span><span class="text-desc text-ink">{{ g }}</span></li>
           </ol>
-        </article>
+        </GlassCard>
       </div>
     </section>
-    <section class="pb-20 md:pb-[6.25rem]">
+    <section class="section-y border-y border-border bg-surface">
       <div class="container-x">
-        <h2 class="section-label">{{ $t('about.governance') }}</h2>
+        <h2 class="section-title">{{ $t('about.governance') }}</h2>
         <p class="section-sub max-w-3xl">{{ cmsBodies && cmsGovernanceText ? cmsGovernanceText : text('governance_text', 'about.governanceText') }}</p>
         <!-- CMS-driven diagram (published `governance` page → meta.bodies) -->
-        <div v-if="cmsBodies" class="mt-6 rounded-xl border border-border bg-bg p-6" role="img" :aria-label="$t('about.governance')">
+        <div v-if="cmsBodies" class="mt-10 rounded-2xl border border-border bg-bg p-6 md:p-10" role="img" :aria-label="$t('about.governance')">
           <div class="flex flex-col items-center gap-3">
             <template v-for="(tier, ti) in cmsBodies" :key="ti">
-              <div v-if="ti > 0" class="h-5 w-px bg-border" aria-hidden="true" />
-              <div v-if="tier.length === 1" class="rounded-lg px-4 py-2 text-sm" :class="ti === 0 ? 'bg-ink text-white' : ti === cmsBodies.length - 1 ? 'bg-blue-soft text-blue' : 'bg-navy text-white'">{{ tier[0] }}</div>
-              <div v-else class="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full max-w-3xl">
-                <div v-for="b in tier" :key="b" class="rounded-lg bg-surface border border-border px-3 py-2 text-xs text-center">{{ b }}</div>
+              <div v-if="ti > 0" class="h-6 w-px bg-ink/20" aria-hidden="true" />
+              <div v-if="tier.length === 1" class="rounded-full px-5 py-2.5 text-sm font-semibold" :class="ti === 0 ? 'bg-accent text-on-accent' : ti === cmsBodies.length - 1 ? 'border border-border bg-navy-100 text-navy' : 'border border-accent/40 bg-accent/10 text-accent-text'">{{ tier[0] }}</div>
+              <div v-else class="grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:grid-cols-5">
+                <div v-for="b in tier" :key="b" class="rounded-xl border border-border bg-surface px-3 py-2.5 text-center text-sm text-ink">{{ b }}</div>
               </div>
             </template>
           </div>
         </div>
-        <div v-else class="mt-6 rounded-xl border border-dashed border-border bg-bg p-6" role="img" :aria-label="$t('about.governancePlaceholder')">
-          <p class="text-xs text-muted text-center mb-5">{{ $t('about.governancePlaceholder') }} — {{ $t('app.pendingLegal') }}</p>
+        <div v-else class="mt-10 rounded-2xl border border-dashed border-ink/20 bg-bg p-6 md:p-10" role="img" :aria-label="$t('about.governancePlaceholder')">
+          <p class="mb-8 text-center text-xs text-t3">{{ $t('about.governancePlaceholder') }} — {{ $t('app.pendingLegal') }}</p>
           <div class="flex flex-col items-center gap-3">
-            <div class="rounded-lg bg-ink text-white px-4 py-2 text-sm">{{ $t(`about.governanceBodies.assembly`) }}</div>
-            <div class="h-5 w-px bg-border" aria-hidden="true" />
-            <div class="rounded-lg bg-navy text-white px-4 py-2 text-sm">{{ $t(`about.governanceBodies.board`) }}</div>
-            <div class="h-5 w-px bg-border" aria-hidden="true" />
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full max-w-3xl">
-              <div v-for="b in bodies.slice(2, 7)" :key="b" class="rounded-lg bg-surface border border-border px-3 py-2 text-xs text-center">{{ $t(`about.governanceBodies.${b}`) }}</div>
+            <div class="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-on-accent">{{ $t(`about.governanceBodies.assembly`) }}</div>
+            <div class="h-6 w-px bg-ink/20" aria-hidden="true" />
+            <div class="rounded-full border border-accent/40 bg-accent/10 px-5 py-2.5 text-sm font-semibold text-accent-text">{{ $t(`about.governanceBodies.board`) }}</div>
+            <div class="h-6 w-px bg-ink/20" aria-hidden="true" />
+            <div class="grid w-full max-w-4xl grid-cols-2 gap-2.5 sm:grid-cols-5">
+              <div v-for="b in bodies.slice(2, 7)" :key="b" class="rounded-xl border border-border bg-surface px-3 py-2.5 text-center text-sm text-ink">{{ $t(`about.governanceBodies.${b}`) }}</div>
             </div>
-            <div class="h-5 w-px bg-border" aria-hidden="true" />
-            <div class="rounded-lg bg-blue-soft text-blue px-4 py-2 text-sm">{{ $t(`about.governanceBodies.secretariat`) }}</div>
+            <div class="h-6 w-px bg-ink/20" aria-hidden="true" />
+            <div class="rounded-full border border-border bg-navy-100 px-5 py-2.5 text-sm font-semibold text-navy">{{ $t(`about.governanceBodies.secretariat`) }}</div>
           </div>
         </div>
       </div>

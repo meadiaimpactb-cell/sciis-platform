@@ -37,7 +37,7 @@ const toggleSort = (c: Column) => {
             <th v-for="c in columns" :key="c.key" :class="c.class" :style="c.width ? { width: c.width } : undefined" scope="col" :aria-sort="sortKey === c.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined">
               <button v-if="c.sortable" type="button" class="inline-flex items-center gap-1 kbd-focus rounded" @click="toggleSort(c)">
                 {{ c.label }}
-                <svg class="h-3 w-3" :class="sortKey === c.key ? 'text-blue' : 'text-muted/60'" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3l4 5H6l4-5zm0 14l-4-5h8l-4 5z" /></svg>
+                <svg class="h-3 w-3" :class="sortKey === c.key ? 'text-accent-text' : 'text-muted/60'" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3l4 5H6l4-5zm0 14l-4-5h8l-4 5z" /></svg>
               </button>
               <template v-else>{{ c.label }}</template>
             </th>

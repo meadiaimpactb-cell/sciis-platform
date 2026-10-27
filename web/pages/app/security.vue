@@ -119,14 +119,14 @@ onMounted(() => { if (!auth.me?.two_factor_enabled && (route.query.enrol === '1'
             <li>{{ $t('security.step3') }}</li>
           </ol>
           <div class="mt-4 grid sm:grid-cols-[200px_1fr] gap-5 items-start">
-            <img v-if="enrol.qr" :src="enrol.qr" width="200" height="200" :alt="$t('security.qrAlt')" class="rounded-xl border border-border bg-white p-2 w-[200px] h-[200px] mx-auto sm:mx-0">
+            <img v-if="enrol.qr" :src="enrol.qr" width="200" height="200" :alt="$t('security.qrAlt')" data-theme="light" class="rounded-xl border border-border bg-surface p-2 w-[200px] h-[200px] mx-auto sm:mx-0">
             <!-- eslint-disable-next-line vue/no-v-html -- SVG generated locally from the otpauth URL -->
-            <div v-else class="rounded-xl border border-border bg-white p-2 w-[200px] h-[200px] mx-auto sm:mx-0 [&>svg]:w-full [&>svg]:h-full" role="img" :aria-label="$t('security.qrAlt')" v-html="localQr" />
+            <div v-else data-theme="light" class="rounded-xl border border-border bg-surface p-2 w-[200px] h-[200px] mx-auto sm:mx-0 [&>svg]:w-full [&>svg]:h-full" role="img" :aria-label="$t('security.qrAlt')" v-html="localQr" />
             <div class="min-w-0 space-y-3">
               <div>
                 <p class="text-xs text-muted">{{ $t('security.secret') }}</p>
                 <div class="mt-1 flex items-center gap-2">
-                  <code class="ltr text-start text-sm font-mono tracking-widest break-all rounded-lg bg-bg px-2 py-1.5 flex-1" dir="ltr">{{ enrol.secret }}</code>
+                  <code class="ltr text-start text-sm font-mono tracking-widest break-all rounded-xl border border-border bg-bg px-3 py-2 text-ink flex-1" dir="ltr">{{ enrol.secret }}</code>
                   <AppButton size="sm" variant="ghost" @click="copy(enrol.secret)">{{ copied ? $t('common.copied') : $t('common.copy') }}</AppButton>
                 </div>
               </div>
@@ -165,7 +165,7 @@ onMounted(() => { if (!auth.me?.two_factor_enabled && (route.query.enrol === '1'
         <SectionCard v-if="recoveryCodes" :title="$t('security.recoveryTitle')">
           <InlineAlert tone="warning">{{ $t('security.recoveryText') }}</InlineAlert>
           <ul class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2" dir="ltr">
-            <li v-for="c in recoveryCodes" :key="c" class="ltr text-center font-mono text-sm rounded-lg bg-bg border border-border px-2 py-1.5 select-all">{{ c }}</li>
+            <li v-for="c in recoveryCodes" :key="c" class="ltr text-center font-mono text-sm text-ink rounded-xl bg-bg border border-border px-2 py-1.5 select-all">{{ c }}</li>
           </ul>
           <div class="mt-3 flex flex-wrap gap-2">
             <AppButton size="sm" variant="secondary" @click="copy(recoveryCodes.join('\n'))">{{ $t('security.copyCodes') }}</AppButton>
@@ -192,7 +192,7 @@ onMounted(() => { if (!auth.me?.two_factor_enabled && (route.query.enrol === '1'
       </div>
 
       <aside class="card card-pad text-sm leading-7 text-muted">
-        <h3 class="font-semibold text-ink">{{ $t('security.whyTitle') }}</h3>
+        <h3 class="card-title">{{ $t('security.whyTitle') }}</h3>
         <p class="mt-1">{{ $t('security.whyText') }}</p>
         <p class="mt-3 text-xs">{{ $t('security.apps') }}</p>
       </aside>

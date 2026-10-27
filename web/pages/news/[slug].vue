@@ -75,15 +75,16 @@ useSeo({
 
 <template>
   <div v-if="post">
-    <section class="surface-dark relative overflow-hidden">
-      <NightSky />
-      <div class="container-x relative max-w-4xl py-20 text-center md:pb-[8.5rem] md:pt-[6.25rem]">
-        <nav class="text-sm text-white/60 flex flex-wrap items-center justify-center gap-1.5" :aria-label="$t('news.breadcrumb')">
-          <NuxtLink :to="localePath('/')" class="hover:text-white transition">{{ $t('nav.home') }}</NuxtLink><span aria-hidden="true">/</span>
-          <NuxtLink :to="localePath('/news')" class="hover:text-white transition">{{ $t('news.title') }}</NuxtLink>
-        </nav>
-        <h1 class="section-title mt-5 text-white text-balance">{{ title }}</h1>
-        <p class="mt-5 text-base text-white/65 num">
+    <!-- hero: the PageHero surface; the breadcrumb sits in the pill label -->
+    <section class="surface-hero">
+      <OrbitBackdrop />
+      <div class="container-x relative flex flex-col items-center text-center py-20 md:pb-[8.5rem] md:pt-24">
+        <SectionLabel as="nav" pill :aria-label="$t('news.breadcrumb')">
+          <NuxtLink :to="localePath('/')" class="hover:text-ink transition">{{ $t('nav.home') }}</NuxtLink><span class="text-t3" aria-hidden="true">/</span>
+          <NuxtLink :to="localePath('/news')" class="hover:text-ink transition">{{ $t('news.title') }}</NuxtLink>
+        </SectionLabel>
+        <h1 class="display mt-6 max-w-4xl text-ink text-balance">{{ title }}</h1>
+        <p class="mt-6 max-w-3xl text-base text-t2 num">
           <time :datetime="post.published_at ?? undefined">{{ $t('news.publishedOn', { date: date(post.published_at) }) }}</time>
           <template v-if="post.updated_at && post.updated_at !== post.published_at"> · {{ $t('news.updatedOn', { date: date(post.updated_at) }) }}</template>
           <template v-if="author?.name"> · {{ $t('news.by', { name: author.name }) }}</template>
@@ -93,7 +94,7 @@ useSeo({
 
     <section class="container-x max-w-3xl pb-20 pt-12 md:pb-[6.25rem]">
       <figure v-if="cover?.url" class="mb-10 -mt-24 relative">
-        <img :src="cover.url" :alt="coverAlt" :width="cover.width ?? 1200" :height="cover.height ?? 675" loading="eager" fetchpriority="high" decoding="async" class="w-full rounded-md shadow-pop object-cover aspect-video bg-surface">
+        <img :src="cover.url" :alt="coverAlt" :width="cover.width ?? 1200" :height="cover.height ?? 675" loading="eager" fetchpriority="high" decoding="async" class="w-full rounded-2xl border border-border shadow-pop object-cover aspect-video bg-surface">
       </figure>
       <!-- eslint-disable-next-line vue/no-v-html -- body is sanitized/escaped by renderCmsBody -->
       <article class="prose-basic text-base" v-html="html" />

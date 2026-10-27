@@ -9,14 +9,15 @@ useHead({ title: () => t(`errors.${code.value}.title`), meta: [{ name: 'robots',
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg flex items-center justify-center p-6 relative overflow-hidden">
-    <img src="/brand/mark.svg" width="100" height="136" alt="" aria-hidden="true" class="w-auto absolute -end-20 -bottom-24 h-[32rem] opacity-[0.05] pointer-events-none select-none">
-    <div class="card card-pad max-w-md w-full text-center relative">
-      <BrandLogo variant="mark" size="md" class="mx-auto" />
-      <p class="mt-5 text-6xl font-semibold num text-gradient inline-block">{{ code }}</p>
-      <h1 class="text-xl font-semibold mt-3">{{ $t(`errors.${code}.title`) }}</h1>
-      <p class="text-muted mt-2">{{ $t(`errors.${code}.text`) }}</p>
-      <AppButton class="mt-6" @click="handleBack">{{ $t('errors.backHome') }}</AppButton>
-    </div>
+  <div class="surface-hero min-h-screen flex items-center justify-center p-6">
+    <OrbitBackdrop />
+    <BrandMark :width="376" :framed="false" class="absolute -end-20 -bottom-24 opacity-[0.06] pointer-events-none select-none" />
+    <GlassCard pad="lg" class="max-w-md w-full text-center flex flex-col items-center">
+      <BrandMark :width="40" />
+      <p class="display mt-6 num text-gradient inline-block">{{ code }}</p>
+      <h1 class="card-title mt-3">{{ $t(`errors.${code}.title`) }}</h1>
+      <p class="text-base text-t2 mt-2">{{ $t(`errors.${code}.text`) }}</p>
+      <AppButton class="mt-8" size="lg" @click="handleBack">{{ $t('errors.backHome') }}</AppButton>
+    </GlassCard>
   </div>
 </template>

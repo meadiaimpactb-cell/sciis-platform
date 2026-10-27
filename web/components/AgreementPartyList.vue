@@ -22,7 +22,7 @@ const counterparty = (a: AgreementListItem) => (props.portal === 'investor' ? a.
               <AppBadge v-if="a.awaiting_my_signature" kind="generic" value="pending" :label="$t('agreements.party.awaitingYou')" />
               <span class="text-xs text-muted num">{{ a.number }}</span>
             </div>
-            <h2 class="mt-2 text-lg font-semibold"><NuxtLink :to="$localePath(`/app/${portal}/agreements/${a.uuid}`)" class="hover:text-blue">{{ a.title }}</NuxtLink></h2>
+            <h2 class="mt-2 card-title"><NuxtLink :to="$localePath(`/app/${portal}/agreements/${a.uuid}`)" class="hover:text-accent-text transition">{{ a.title }}</NuxtLink></h2>
             <p class="text-sm text-muted">{{ a.opportunity?.name }} · {{ $t(`enums.agreementParty.${portal === 'investor' ? 'owner' : 'investor'}`) }}: {{ counterparty(a) }}</p>
             <p class="mt-2 text-xs text-muted num">
               <template v-if="a.signed_at">{{ $t('agreements.party.signedOn', { date: date(a.signed_at) }) }}</template>

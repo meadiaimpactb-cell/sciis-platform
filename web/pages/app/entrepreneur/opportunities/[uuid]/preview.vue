@@ -74,10 +74,10 @@ const approveTeaser = async () => {
     <div v-if="loading && !data" class="text-muted">{{ $t('common.loading') }}</div>
     <div v-else-if="data" class="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
       <div class="space-y-4">
-        <h2 class="font-semibold">{{ $t('entrepreneur.preview.card') }}</h2>
+        <h2 class="card-title">{{ $t('entrepreneur.preview.card') }}</h2>
         <OpportunityCard :opportunity="data.card" :to="null" :show-status="false" />
         <div v-if="full?.teaser" class="card card-pad">
-          <h3 class="font-semibold">{{ $t('admin.opportunity.tabs.teaser') }} <span class="text-xs text-muted num">v{{ full.teaser.version }}</span></h3>
+          <h3 class="card-title">{{ $t('admin.opportunity.tabs.teaser') }} <span class="text-xs font-normal text-muted num">v{{ full.teaser.version }}</span></h3>
           <p class="text-sm mt-2 leading-6">{{ full.teaser.summary_ar }}</p>
           <ul class="mt-2 flex flex-wrap gap-1.5"><li v-for="h in full.teaser.highlights" :key="h" class="chip text-xs !py-0.5">{{ h }}</li></ul>
           <div class="mt-3 flex flex-wrap gap-2 text-xs"><AppBadge kind="generic" :value="full.teaser.approved_by_owner_at ? 'approved' : 'pending'" :label="$t('admin.opportunity.ownerApproval')" /><AppBadge kind="generic" :value="full.teaser.approved_by_council_at ? 'approved' : 'pending'" :label="$t('admin.opportunity.councilApproval')" /></div>
@@ -86,24 +86,24 @@ const approveTeaser = async () => {
       </div>
       <div v-if="detail">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 class="font-semibold">{{ $t('entrepreneur.preview.detail') }}</h2>
+          <h2 class="card-title">{{ $t('entrepreneur.preview.detail') }}</h2>
           <Tabs v-model="level" :tabs="levelTabs" variant="pills" />
         </div>
         <InlineAlert :tone="level === 'after' ? 'success' : 'info'" class="mb-4">{{ level === 'after' ? $t('entrepreneur.preview.afterGrantHint') : $t('entrepreneur.preview.beforeGrantHint') }}</InlineAlert>
         <div class="card card-pad space-y-5">
           <div>
             <div class="flex flex-wrap gap-2"><span v-if="detail.sector" class="chip chip-active text-xs !py-0.5">{{ term(detail.sector) }}</span><span class="chip text-xs !py-0.5">{{ label('stage', detail.stage) }}</span><span v-for="r in detail.regions ?? []" :key="r.id" class="chip text-xs !py-0.5">{{ term(r) }}</span></div>
-            <h3 class="mt-3 text-2xl font-semibold">{{ detail.name }}</h3>
+            <h3 class="mt-3 font-display text-2xl md:text-3xl font-extrabold text-ink">{{ detail.name }}</h3>
             <p class="mt-2 leading-7">{{ detail.teaser_summary || detail.short_description }}</p>
-            <ul v-if="detail.teaser_highlights?.length" class="mt-3 flex flex-wrap gap-2"><li v-for="h in detail.teaser_highlights" :key="h" class="text-xs rounded-lg bg-bg border border-border px-2.5 py-1">{{ h }}</li></ul>
+            <ul v-if="detail.teaser_highlights?.length" class="mt-3 flex flex-wrap gap-2"><li v-for="h in detail.teaser_highlights" :key="h" class="text-xs rounded-full bg-glass border border-ink/15 px-3 py-1">{{ h }}</li></ul>
           </div>
           <KeyValue :cols="3" :items="[{ label: $t('investor.detail.need'), value: funding, num: true }, { label: $t('investor.detail.type'), value: types.map((k) => label('investmentType', k)).join('، ') || '—' }, { label: $t('investor.detail.beneficiaries'), value: number(detail.beneficiaries_target), num: true }]" />
-          <section><h4 class="font-semibold">{{ $t('investor.detail.problem') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.problem_statement || '—' }}</p></section>
-          <section><h4 class="font-semibold">{{ $t('investor.detail.solution') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.solution || '—' }}</p></section>
-          <section><h4 class="font-semibold">{{ $t('investor.detail.expectedChange') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.expected_change || '—' }}</p></section>
+          <section><h4 class="text-base">{{ $t('investor.detail.problem') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.problem_statement || '—' }}</p></section>
+          <section><h4 class="text-base">{{ $t('investor.detail.solution') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.solution || '—' }}</p></section>
+          <section><h4 class="text-base">{{ $t('investor.detail.expectedChange') }}</h4><p class="text-sm leading-7 text-text/85">{{ detail.expected_change || '—' }}</p></section>
           <!-- public market & product subset -->
           <section v-if="hasMarket">
-            <h4 class="font-semibold">{{ $t('entrepreneur.form.steps.market') }} <span v-if="market.product_stage" class="ms-1 chip text-xs !py-0.5 align-middle">{{ label('productStage', market.product_stage) }}</span></h4>
+            <h4 class="text-base">{{ $t('entrepreneur.form.steps.market') }} <span v-if="market.product_stage" class="ms-1 chip text-xs !py-0.5 align-middle">{{ label('productStage', market.product_stage) }}</span></h4>
             <div class="mt-2 grid md:grid-cols-3 gap-4 text-sm">
               <div><p class="text-xs text-muted">{{ $t('entrepreneur.form.market.targetCustomers') }}</p><p class="leading-7 text-text/85 whitespace-pre-line">{{ market.target_customers || '—' }}</p></div>
               <div><p class="text-xs text-muted">{{ $t('entrepreneur.form.market.competitiveAdvantage') }}</p><p class="leading-7 text-text/85 whitespace-pre-line">{{ market.competitive_advantage || '—' }}</p></div>
@@ -112,7 +112,7 @@ const approveTeaser = async () => {
           </section>
           <!-- team & founders: confidential, only in the after-grant view -->
           <section>
-            <h4 class="font-semibold">{{ $t('entrepreneur.form.steps.team') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'confidential') }})</span></h4>
+            <h4 class="text-base">{{ $t('entrepreneur.form.steps.team') }} <span class="text-xs font-normal text-muted">({{ label('sensitivity', 'confidential') }})</span></h4>
             <template v-if="team">
               <KeyValue class="mt-2" :cols="3" :items="[
                 { label: $t('entrepreneur.form.team.foundersCount'), value: team.founders_count != null ? number(team.founders_count) : null, num: true },
@@ -126,12 +126,12 @@ const approveTeaser = async () => {
             <InlineAlert v-else tone="info" class="mt-2">{{ $t('entrepreneur.preview.teamAfterGrantHint') }}</InlineAlert>
           </section>
           <section v-if="indicators.length">
-            <h4 class="font-semibold">{{ $t('investor.detail.tabs.indicators') }}</h4>
-            <ul class="text-sm space-y-1 mt-1"><li v-for="i in indicators" :key="i.id ?? i.name">{{ i.name }} <span v-if="i.is_primary" class="text-[10px] rounded-full bg-blue-soft text-blue px-1.5">{{ $t('entrepreneur.form.impact.primary') }}</span> — <span class="num">{{ number(i.baseline) }} → {{ number(i.target) }} {{ i.unit }}</span></li></ul>
+            <h4 class="text-base">{{ $t('investor.detail.tabs.indicators') }}</h4>
+            <ul class="text-sm space-y-1 mt-1"><li v-for="i in indicators" :key="i.id ?? i.name">{{ i.name }} <span v-if="i.is_primary" class="text-xs rounded-full bg-accent/10 text-accent-text px-2 py-0.5">{{ $t('entrepreneur.form.impact.primary') }}</span> — <span class="num">{{ number(i.baseline) }} → {{ number(i.target) }} {{ i.unit }}</span></li></ul>
           </section>
-          <section><h4 class="font-semibold">{{ $t('investor.detail.useOfFunds') }}</h4><ul class="text-sm space-y-1"><li v-for="u in detail.use_of_funds ?? []" :key="u.item" class="flex justify-between"><span>{{ u.item }}</span><span class="num text-muted">{{ number(u.percent) }}%</span></li></ul></section>
+          <section><h4 class="text-base">{{ $t('investor.detail.useOfFunds') }}</h4><ul class="text-sm space-y-1"><li v-for="u in detail.use_of_funds ?? []" :key="u.item" class="flex justify-between"><span>{{ u.item }}</span><span class="num text-muted">{{ number(u.percent) }}%</span></li></ul></section>
           <section>
-            <h4 class="font-semibold">{{ $t('investor.detail.risksSummary') }}</h4>
+            <h4 class="text-base">{{ $t('investor.detail.risksSummary') }}</h4>
             <p class="text-sm leading-7 text-text/85">{{ detail.risks_summary ?? '—' }}</p>
             <KeyValue v-if="detail.risks_full" class="mt-3" :cols="1" :items="[
               { label: $t('entrepreneur.form.financials.priorFunding'), value: detail.risks_full.prior_funding?.has ? `${$t('common.yes')} — ${detail.risks_full.prior_funding.desc ?? ''}` : $t('common.no') },
@@ -142,13 +142,13 @@ const approveTeaser = async () => {
             <InlineAlert v-else tone="info" class="mt-3">{{ $t('investor.detail.risksLocked') }}</InlineAlert>
           </section>
           <section>
-            <h4 class="font-semibold">{{ $t('investor.detail.tabs.documents') }}</h4>
+            <h4 class="text-base">{{ $t('investor.detail.tabs.documents') }}</h4>
             <InlineAlert v-if="detail.documents?.locked ?? true" tone="info" class="mt-2">{{ $t('investor.detail.docsLockedText') }}</InlineAlert>
-            <table v-else class="table-base mt-2"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.date') }}</th></tr></thead>
+            <div v-else class="mt-2 overflow-x-auto rounded-xl border border-border"><table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.date') }}</th></tr></thead>
               <tbody>
                 <tr v-for="d in detail.documents.items" :key="d.uuid"><td>{{ label('documentKind', d.kind) }}</td><td class="font-medium">{{ d.title }} <span class="text-xs text-muted num">({{ fileSize(d.size_bytes) }})</span></td><td class="text-muted">{{ date(d.created_at ?? d.uploaded_at) }}</td></tr>
                 <tr v-if="!detail.documents.items.length"><td colspan="3" class="text-center text-muted py-4">{{ $t('common.noData') }}</td></tr>
-              </tbody></table>
+              </tbody></table></div>
           </section>
         </div>
       </div>

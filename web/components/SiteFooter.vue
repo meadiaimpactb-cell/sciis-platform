@@ -25,7 +25,7 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
             <a v-if="contact.email.value" :href="`mailto:${contact.email.value}`" class="site-footer__email kbd-focus" dir="ltr"><span class="site-footer__dot" aria-hidden="true" />{{ contact.email.value }}</a>
             <NuxtLink :to="localePath('/contact')" class="site-btn site-btn--outline site-footer__pill kbd-focus">{{ $t('landing.footer.contact') }}</NuxtLink>
           </div>
-          <SocialLinks v-if="contact.social.value.length" site />
+          <SocialLinks v-if="contact.social.value.length" />
         </div>
 
         <nav class="site-footer__groups" :aria-label="$t('footer.quickLinks')">
@@ -84,8 +84,8 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
   max-width: 520px;
 }
 .site-footer__logo { height: 56px; width: auto; }
-.site-footer__statement { font: 800 44px/1.3 var(--fd); }
-.site-footer__tagline { margin: 0; font: 400 16px/1.8 var(--fb); color: var(--t2); }
+.site-footer__statement { font: 800 var(--fs-subtitle)/1.45 var(--fd); }
+.site-footer__tagline { margin: 0; font: 400 var(--fs-desc)/1.85 var(--fb); color: var(--t2); }
 .site-footer__contact { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
 .site-footer__email {
   display: inline-flex;
@@ -95,13 +95,13 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
   padding-inline: 20px;
   border-radius: 999px;
   border: 1px solid rgba(var(--accent-rgb), 0.4);
-  background: rgba(88, 176, 168, 0.08);
+  background: rgba(var(--scii-teal-rgb), 0.08);
   color: var(--accent-text);
-  font: 500 15px var(--fb);
+  font: 500 var(--fs-body) var(--fb);
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .site-footer__email:hover { background: var(--scii-teal); border-color: var(--scii-teal); color: var(--scii-teal-ink); }
-.site-footer__pill { height: 48px; padding-inline: 20px; font-size: 15px; }
+.site-footer__pill { height: 48px; padding-inline: 20px; font-size: var(--fs-body); }
 .site-footer__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .site-footer__dot--accent { background: var(--accent-hi); }
 
@@ -121,11 +121,11 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
   display: flex;
   align-items: baseline;
   gap: 10px;
-  font: 700 14px var(--fd);
+  font: 700 var(--fs-body) var(--fd);
 }
-.site-footer__group-num { font: 800 12px var(--fd); color: var(--accent-text); }
+.site-footer__group-num { font: 800 var(--fs-small) var(--fd); color: var(--accent-text); }
 .site-footer__link {
-  font: 400 14px/1.5 var(--fb);
+  font: 400 var(--fs-body)/1.6 var(--fb);
   color: var(--t3);
   transition: color 0.15s ease;
 }
@@ -145,7 +145,7 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 24px;
-  font: 400 13px/1.6 var(--fb);
+  font: 400 var(--fs-body)/1.6 var(--fb);
   color: var(--t3);
 }
 .site-footer__disclaimer { display: inline-flex; align-items: center; gap: 8px; }
@@ -154,6 +154,5 @@ const toTop = () => window.scrollTo({ top: 0, behavior: window.matchMedia('(pref
 
 @media (max-width: 640px) {
   .site-footer__inner { padding-block: 64px 28px; gap: 56px; }
-  .site-footer__statement { font-size: 32px; }
 }
 </style>

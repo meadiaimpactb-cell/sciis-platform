@@ -28,7 +28,7 @@ const open = async (d: DocumentResource) => {
     <li v-for="d in documents" :key="d.uuid">
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs hover:border-teal kbd-focus disabled:opacity-60"
+        class="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-surface px-3 py-1.5 text-xs transition hover:border-accent/60 hover:bg-accent/10 kbd-focus disabled:opacity-60"
         :disabled="d.downloadable === false || opening === d.uuid"
         :title="d.downloadable === false ? $t('components.docVersions.notReady') : undefined"
         @click="open(d)"

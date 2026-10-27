@@ -31,7 +31,7 @@ const blocks = computed<Block[]>(() => {
 </script>
 
 <template>
-  <div class="agreement-text text-[15px] leading-8 text-ink" :dir="lang === 'en' ? 'ltr' : 'rtl'" :lang="lang">
+  <div class="agreement-text text-base leading-8 text-ink" :dir="lang === 'en' ? 'ltr' : 'rtl'" :lang="lang">
     <template v-for="(b, i) in blocks" :key="i">
       <h2 v-if="b.kind === 'h1'" class="text-xl font-bold text-ink mb-3"><template v-for="(s, j) in b.lines[0]" :key="j"><mark v-if="s.ph" class="agr-ph">{{ s.text }}</mark><template v-else>{{ s.text }}</template></template></h2>
       <h3 v-else-if="b.kind === 'h2'" class="mt-5 mb-1 text-base font-semibold text-ink"><template v-for="(s, j) in b.lines[0]" :key="j"><mark v-if="s.ph" class="agr-ph">{{ s.text }}</mark><template v-else>{{ s.text }}</template></template></h3>
@@ -44,8 +44,8 @@ const blocks = computed<Block[]>(() => {
 
 <style scoped>
 .agr-ph {
-  background: color-mix(in srgb, #d97706 14%, white);
-  color: #92400e;
+  background: rgb(var(--c-warn) / 0.14);
+  color: var(--warning);
   border-radius: 0.25rem;
   padding: 0 0.25rem;
   direction: ltr;

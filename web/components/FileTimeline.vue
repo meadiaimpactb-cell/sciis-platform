@@ -24,15 +24,15 @@ const groups = computed(() => [
 const shown = computed(() => props.items.filter((e) => group.value === 'all' || GROUPS[group.value]?.includes(e.type)).slice().reverse())
 
 const DOT: Record<TimelineEventType, string> = {
-  status: '#24306C',
-  document_uploaded: '#58B4A8',
-  document_reviewed: '#1F7A5C',
-  note: '#5F6888',
-  completion_requested: '#B45309',
-  completion_resolved: '#1F7A5C',
-  meeting_scheduled: '#6D28D9',
-  nomination_sent: '#0F766E',
-  nomination_responded: '#0F766E',
+  status: 'var(--hue-navy)',
+  document_uploaded: 'var(--accent-hi)',
+  document_reviewed: 'var(--hue-green)',
+  note: 'var(--hue-neutral)',
+  completion_requested: 'var(--hue-amber)',
+  completion_resolved: 'var(--hue-green)',
+  meeting_scheduled: 'var(--hue-violet)',
+  nomination_sent: 'var(--hue-teal)',
+  nomination_responded: 'var(--hue-teal)',
 }
 const dot = (e: TimelineEvent) => (e.type === 'status' && e.data.to ? opportunityStatusColor(e.data.to as OpportunityStatus) : e.type === 'document_reviewed' && e.data.status ? statusColor('document', e.data.status) : DOT[e.type])
 const itemLabel = (i: { field?: string | null; document_kind?: string | null }) => (i.document_kind ? label('documentKind', i.document_kind) : i.field ?? '')
@@ -41,8 +41,8 @@ const itemLabel = (i: { field?: string | null; document_kind?: string | null }) 
 <template>
   <div>
     <div v-if="items.length" class="mb-4 flex flex-wrap gap-1.5" role="group" :aria-label="$t('admin.timeline.filter')">
-      <button v-for="g in groups" :key="g.key" type="button" class="chip text-xs" :class="group === g.key && 'chip-active'" :aria-pressed="group === g.key" @click="group = g.key">
-        {{ $t(`admin.timeline.groups.${g.key}`) }} <span class="num text-muted">{{ g.n }}</span>
+      <button v-for="g in groups" :key="g.key" type="button" class="chip text-xs !py-1" :class="group === g.key && 'chip-active'" :aria-pressed="group === g.key" @click="group = g.key">
+        {{ $t(`admin.timeline.groups.${g.key}`) }} <span class="num opacity-70">{{ g.n }}</span>
       </button>
     </div>
     <ol class="relative border-s border-border ms-2 space-y-5">
@@ -73,7 +73,7 @@ const itemLabel = (i: { field?: string | null; document_kind?: string | null }) 
         <p class="text-xs text-muted mt-1"><span class="num">{{ dateTime(e.at) }}</span> · {{ e.actor?.name ?? (e.type === 'completion_resolved' ? $t('admin.audit.system') : '—') }}</p>
         <p v-if="e.type === 'status' && e.data.reason" class="text-sm text-text/85 mt-1">{{ e.data.reason }}</p>
         <p v-else-if="e.type === 'document_reviewed' && e.data.note" class="text-sm text-text/85 mt-1">{{ e.data.note }}</p>
-        <p v-else-if="e.type === 'note'" class="text-sm text-text/85 mt-1 rounded-lg bg-bg p-2 leading-6">{{ e.data.body }}</p>
+        <p v-else-if="e.type === 'note'" class="text-sm text-text mt-1.5 rounded-xl bg-ink/5 border border-border px-3 py-2 leading-6">{{ e.data.body }}</p>
         <div v-else-if="e.type === 'completion_requested'" class="text-sm mt-1">
           <ul class="space-y-0.5"><li v-for="(i, n) in e.data.items ?? []" :key="n"><strong>{{ itemLabel(i) }}</strong><template v-if="i.note"> — {{ i.note }}</template></li></ul>
           <p v-if="e.data.due_at" class="text-xs text-muted mt-0.5">{{ $t('common.dueAt') }}: <span class="num">{{ date(e.data.due_at) }}</span></p>

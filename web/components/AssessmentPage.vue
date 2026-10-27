@@ -63,24 +63,25 @@ useSeo({
 
 <template>
   <div>
-    <section class="surface-dark relative overflow-hidden">
-      <NightSky />
-      <div class="container-x relative max-w-4xl py-20 text-center md:py-[6.25rem]">
-        <nav :aria-label="$t('tools.breadcrumb')" class="text-sm text-white/60">
+    <!-- hero: the PageHero surface with the breadcrumb above the pill label -->
+    <section class="surface-hero">
+      <OrbitBackdrop />
+      <div class="container-x relative flex flex-col items-center text-center py-20 md:py-24">
+        <nav :aria-label="$t('tools.breadcrumb')" class="text-sm text-t3">
           <ol class="flex flex-wrap items-center justify-center gap-1.5">
-            <li><NuxtLink :to="localePath('/')" class="hover:text-white">{{ $t('nav.home') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/')" class="hover:text-ink transition">{{ $t('nav.home') }}</NuxtLink></li>
             <li aria-hidden="true">/</li>
-            <li><NuxtLink :to="localePath('/tools')" class="hover:text-white">{{ $t('tools.title') }}</NuxtLink></li>
+            <li><NuxtLink :to="localePath('/tools')" class="hover:text-ink transition">{{ $t('tools.title') }}</NuxtLink></li>
           </ol>
         </nav>
-        <p class="mt-5 text-xl text-white/60 md:text-3xl">{{ $t('tools.eyebrow') }}</p>
-        <h1 class="display mt-3 text-white text-balance">{{ title }}</h1>
-        <p class="lead mx-auto mt-6 max-w-3xl text-white/70">{{ lead }}</p>
-        <ul class="mt-8 flex flex-wrap justify-center gap-2 text-sm" role="list">
-          <li class="rounded-md border border-white/30 px-3 py-1.5 num">{{ $t(config.questions.length <= 10 ? 'tools.questionsFew' : 'tools.questionsCount', { n: config.questions.length }) }}</li>
-          <li class="rounded-md border border-white/30 px-3 py-1.5 num">{{ $t('tools.minutes', { n: minutes }) }}</li>
-          <li class="rounded-md border border-white/30 px-3 py-1.5">{{ $t('tools.noSignup') }}</li>
-          <li class="rounded-md border border-white/30 px-3 py-1.5">{{ $t('tools.private') }}</li>
+        <SectionLabel pill class="mt-6">{{ $t('tools.eyebrow') }}</SectionLabel>
+        <h1 class="display mt-6 max-w-4xl text-ink text-balance">{{ title }}</h1>
+        <p class="lead mx-auto mt-6 max-w-3xl text-t2">{{ lead }}</p>
+        <ul class="mt-8 flex flex-wrap justify-center gap-2 text-sm text-t2" role="list">
+          <li class="rounded-full border border-ink/20 bg-ink/5 px-3.5 py-1.5 num">{{ $t(config.questions.length <= 10 ? 'tools.questionsFew' : 'tools.questionsCount', { n: config.questions.length }) }}</li>
+          <li class="rounded-full border border-ink/20 bg-ink/5 px-3.5 py-1.5 num">{{ $t('tools.minutes', { n: minutes }) }}</li>
+          <li class="rounded-full border border-ink/20 bg-ink/5 px-3.5 py-1.5">{{ $t('tools.noSignup') }}</li>
+          <li class="rounded-full border border-ink/20 bg-ink/5 px-3.5 py-1.5">{{ $t('tools.private') }}</li>
         </ul>
       </div>
     </section>
@@ -90,7 +91,7 @@ useSeo({
 
       <aside class="space-y-5 lg:sticky lg:top-24">
         <section class="card card-pad" aria-labelledby="measures-title">
-          <h2 id="measures-title" class="font-semibold text-ink">{{ $t('tools.measuresTitle') }}</h2>
+          <h2 id="measures-title" class="card-title">{{ $t('tools.measuresTitle') }}</h2>
           <div v-for="a in config.axes" :key="a.id" class="mt-4">
             <h3 class="text-sm font-semibold text-navy">{{ L(a.label) }}</h3>
             <p class="text-xs text-muted leading-5 mt-0.5">{{ L(a.description) }}</p>
@@ -107,20 +108,20 @@ useSeo({
     </div>
 
     <section class="bg-surface border-y border-border">
-      <div class="container-x py-12 grid lg:grid-cols-[minmax(0,1fr)_20rem] gap-8">
+      <div class="container-x section-y grid lg:grid-cols-[minmax(0,1fr)_20rem] gap-8">
         <div>
           <h2 class="section-title">{{ $t('tools.faqTitle') }}</h2>
-          <div class="mt-6 card divide-y divide-border">
+          <div class="mt-8 rounded-2xl border border-border bg-bg divide-y divide-border">
             <details v-for="(f, i) in config.faqs" :key="i" class="group">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-4 font-medium kbd-focus rounded-xl [&::-webkit-details-marker]:hidden">{{ L(f.q) }}<svg class="h-4 w-4 text-muted transition shrink-0 group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></summary>
-              <p class="px-4 pb-4 text-sm text-muted leading-7">{{ L(f.a) }}</p>
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-base font-bold text-ink kbd-focus rounded-2xl [&::-webkit-details-marker]:hidden">{{ L(f.q) }}<svg class="h-4 w-4 text-muted transition shrink-0 group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></summary>
+              <p class="px-5 pb-5 text-desc text-muted">{{ L(f.a) }}</p>
             </details>
           </div>
         </div>
         <div class="self-end">
-          <p class="eyebrow">{{ $t('tools.otherTool') }}</p>
-          <NuxtLink :to="localePath(otherPath)" class="mt-3 card card-hover card-pad block kbd-focus">
-            <span class="block font-semibold text-ink">{{ $t(`tools.${other}.title`) }}</span>
+          <SectionLabel>{{ $t('tools.otherTool') }}</SectionLabel>
+          <NuxtLink :to="localePath(otherPath)" class="site-glass mt-3 block p-6 transition hover:border-accent/60 kbd-focus">
+            <span class="card-title block">{{ $t(`tools.${other}.title`) }}</span>
             <span class="block mt-1.5 text-sm text-muted leading-6">{{ $t(`tools.${other}.lead`) }}</span>
           </NuxtLink>
           <AppButton to="/tools" variant="link" class="mt-3">{{ $t('tools.allTools') }}</AppButton>

@@ -8,7 +8,7 @@
       "both": "Gregorian and Hijri"
     },
     "theme": {
-      "label": "Dashboard appearance",
+      "label": "Appearance",
       "help": "“Device” follows your device's dark mode setting.",
       "system": "Device",
       "light": "Light",
@@ -19,7 +19,7 @@
     },
     "display": {
       "title": "Display and calendar",
-      "sub": "How dates are shown on the platform and the site, and the dashboard appearance."
+      "sub": "How dates are shown, and the appearance (dark or light) of the platform and the site."
     },
     "extra": {
       "title": "Additional questions",
@@ -1384,6 +1384,7 @@
     "backHome": "Back home"
   },
   "components": {
+    "consent": { "done": "Agreed", "waiting": "Awaiting consent" },
     "table": { "empty": "No rows", "rowsPerPage": "Rows per page", "sortAsc": "Sort ascending", "sortDesc": "Sort descending" },
     "modal": { "close": "Close dialog" },
     "filters": { "title": "Filters", "toggle": "Show/hide filters", "active": "Active filters: {n}" },

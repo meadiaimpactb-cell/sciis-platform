@@ -136,11 +136,11 @@ const cell = (row: ApprovalMatrixRow, role: string): 'yes' | 'excluded' | 'no' =
       </div>
       <DataTable :columns="columns" :rows="rows" :loading="loading">
         <template #cell-name="{ row }"><NuxtLink :to="$localePath(`/app/admin/users/${row.id}`)" class="font-medium hover:text-blue">{{ row.name }}</NuxtLink><span class="block text-xs text-muted ltr text-start">{{ row.email }}</span></template>
-        <template #cell-type="{ value }">{{ label('userType', value) }}</template>
-        <template #cell-roles="{ value }"><div class="flex flex-wrap gap-1"><span v-for="r in value ?? []" :key="r" class="text-xs rounded-full bg-bg px-2 py-0.5">{{ roleLabel(r) }}</span></div></template>
+        <template #cell-type="{ value }"><span class="whitespace-nowrap">{{ label('userType', value) }}</span></template>
+        <template #cell-roles="{ value }"><div class="flex flex-wrap gap-1"><span v-for="r in value ?? []" :key="r" class="text-xs whitespace-nowrap rounded-full border border-ink/15 bg-ink/5 text-text px-2.5 py-0.5">{{ roleLabel(r) }}</span></div></template>
         <template #cell-two_factor_enabled="{ value }"><AppBadge kind="generic" :value="value ? 'active' : 'suspended'" :label="value ? $t('common.yes') : $t('common.no')" /></template>
         <template #cell-status="{ value }"><AppBadge kind="generic" :value="value" :label="value === 'active' ? $t('admin.listFilters.active') : $t('admin.listFilters.suspended')" /></template>
-        <template #cell-last_login_at="{ value }"><span class="num">{{ date(value) }}</span></template>
+        <template #cell-last_login_at="{ value }"><span class="num whitespace-nowrap">{{ date(value) }}</span></template>
         <template #cell-actions="{ row }"><div class="flex gap-1 justify-end"><AppButton size="sm" variant="ghost" :to="$localePath(`/app/admin/users/${row.id}`)">{{ $t('admin.userFile.open') }}</AppButton><AppButton v-if="row.type === 'staff'" size="sm" variant="outline" @click="openEdit(row)">{{ $t('common.edit') }}</AppButton><AppButton size="sm" variant="ghost" @click="toggleStatus(row)">{{ row.status === 'active' ? $t('admin.users.suspend') : $t('admin.users.activate') }}</AppButton></div></template>
         <template #footer><Pagination v-model:page="page" :last-page="meta.last_page" :total="meta.total" /></template>
       </DataTable>
@@ -150,8 +150,8 @@ const cell = (row: ApprovalMatrixRow, role: string): 'yes' | 'excluded' | 'no' =
       <p v-if="!rolesData" class="text-sm text-muted">{{ $t('common.loading') }}</p>
       <article v-for="r in rolesData?.roles ?? []" :key="r.id" class="card card-pad flex flex-col sm:flex-row gap-3">
         <div class="flex-1 min-w-0">
-          <div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold">{{ roleLabel(r.name) }}</h3><code class="text-xs ltr rounded bg-bg px-1.5 py-0.5">{{ r.name }}</code><AppBadge v-if="r.is_system" kind="generic" value="pending" :label="$t('admin.users.systemRole')" :dot="false" /><span class="text-xs text-muted">{{ $t('admin.users.usersCount', { n: r.users_count }) }}</span></div>
-          <ul class="mt-2 flex flex-wrap gap-1"><li v-for="p in r.permissions" :key="p" class="text-[11px] ltr rounded-full bg-bg px-2 py-0.5">{{ p }}</li><li v-if="!r.permissions.length" class="text-xs text-muted">—</li></ul>
+          <div class="flex flex-wrap items-center gap-2"><h3 class="card-title">{{ roleLabel(r.name) }}</h3><code class="text-xs ltr rounded-full border border-border bg-ink/5 text-muted px-2 py-0.5">{{ r.name }}</code><AppBadge v-if="r.is_system" kind="generic" value="pending" :label="$t('admin.users.systemRole')" :dot="false" /><span class="text-xs text-muted">{{ $t('admin.users.usersCount', { n: r.users_count }) }}</span></div>
+          <ul class="mt-3 flex flex-wrap gap-1.5"><li v-for="p in r.permissions" :key="p" class="text-xs ltr rounded-full border border-ink/15 bg-ink/5 text-text px-2.5 py-0.5">{{ p }}</li><li v-if="!r.permissions.length" class="text-xs text-muted">—</li></ul>
           <p v-if="r.name === 'super_admin'" class="text-xs text-muted mt-1">{{ $t('admin.users.superAdminLocked') }}</p>
         </div>
         <AppButton v-if="r.name !== 'super_admin'" size="sm" variant="outline" @click="openRole(r)">{{ $t('common.edit') }}</AppButton>
@@ -174,10 +174,10 @@ const cell = (row: ApprovalMatrixRow, role: string): 'yes' | 'excluded' | 'no' =
             </thead>
             <tbody>
               <template v-for="g in matrixAreas" :key="g.area">
-                <tr class="bg-bg/60"><td :colspan="2 + matrix.roles.length" class="font-semibold">{{ $t(`admin.matrix.areas.${g.area}`) }}</td></tr>
+                <tr class="bg-navy-50"><td :colspan="2 + matrix.roles.length" class="font-semibold text-ink">{{ $t(`admin.matrix.areas.${g.area}`) }}</td></tr>
                 <tr v-for="d in g.rows" :key="d.key">
-                  <td class="font-medium">{{ $t(`admin.matrix.decisions.${d.key}`) }}<span v-if="d.roles_setting" class="block text-[11px] text-muted font-normal">{{ $t('admin.matrix.settingRestricted') }} <code class="ltr">{{ d.roles_setting }}</code></span></td>
-                  <td><span v-if="d.mode === 'any' && d.permissions.length > 1" class="block text-[11px] text-muted">{{ $t('admin.matrix.anyOf') }}</span><ul class="flex flex-wrap gap-1"><li v-for="p in d.permissions" :key="p" class="text-[11px] ltr rounded-full bg-bg px-2 py-0.5">{{ p }}</li></ul></td>
+                  <td class="font-medium">{{ $t(`admin.matrix.decisions.${d.key}`) }}<span v-if="d.roles_setting" class="block text-xs text-muted font-normal">{{ $t('admin.matrix.settingRestricted') }} <code class="ltr">{{ d.roles_setting }}</code></span></td>
+                  <td><span v-if="d.mode === 'any' && d.permissions.length > 1" class="block text-xs text-muted">{{ $t('admin.matrix.anyOf') }}</span><ul class="flex flex-wrap gap-1"><li v-for="p in d.permissions" :key="p" class="text-xs ltr rounded-full border border-ink/15 bg-ink/5 text-text px-2.5 py-0.5">{{ p }}</li></ul></td>
                   <td v-for="r in matrix.roles" :key="r.name" class="text-center">
                     <span v-if="cell(d, r.name) === 'yes'" class="text-success font-semibold" :title="$t('admin.matrix.yes')">✓<span class="sr-only">{{ $t('admin.matrix.yes') }}</span></span>
                     <span v-else-if="cell(d, r.name) === 'excluded'" class="text-warning" :title="$t('admin.matrix.excluded')">!<span class="sr-only">{{ $t('admin.matrix.excluded') }}</span></span>
@@ -208,7 +208,7 @@ const cell = (row: ApprovalMatrixRow, role: string): 'yes' | 'excluded' | 'no' =
         <FormField v-if="!roleEditing" v-model="roleForm.values.role_name" name="role_name" :label="$t('admin.users.roleName')" :error="roleForm.errors.value.role_name" ltr required autocomplete="off" />
         <fieldset>
           <legend class="label">{{ $t('admin.users.permissions') }}<span v-if="!roleEditing" class="text-danger ms-0.5" aria-hidden="true">*</span></legend>
-          <div class="grid sm:grid-cols-2 gap-1.5"><label v-for="p in rolesData?.permissions ?? []" :key="p" class="inline-flex items-center gap-2 text-sm ltr"><input type="checkbox" :checked="roleForm.values.permissions.includes(p)" class="h-4 w-4 rounded border-border text-blue" @change="togglePerm(p)" />{{ p }}</label></div>
+          <div class="grid sm:grid-cols-2 gap-1.5"><label v-for="p in rolesData?.permissions ?? []" :key="p" class="inline-flex items-center gap-2 text-sm ltr"><input type="checkbox" :checked="roleForm.values.permissions.includes(p)" class="h-4 w-4 rounded border-border accent-accent" @change="togglePerm(p)" />{{ p }}</label></div>
           <p v-if="roleForm.errors.value.permissions" class="error-text" role="alert">{{ roleForm.errors.value.permissions }}</p>
         </fieldset>
       </form>

@@ -239,7 +239,7 @@ const dataRequest = async (type: 'access' | 'erase') => {
         <p class="mt-2 text-xs text-muted">{{ $t('investor.profile.documents.privacy') }}</p>
         <ul v-if="missingDocs.length" class="mt-3 flex flex-wrap items-center gap-1.5 text-xs" :aria-label="$t('investor.profile.documents.missing')">
           <li class="text-muted">{{ $t('investor.profile.documents.missing') }}:</li>
-          <li v-for="k in missingDocs" :key="k" class="rounded-full bg-warning/10 text-warning px-2 py-0.5">{{ label('documentKind', k) }}</li>
+          <li v-for="k in missingDocs" :key="k" class="rounded-full border border-warning/30 bg-warning/10 text-warning px-2.5 py-0.5">{{ label('documentKind', k) }}</li>
         </ul>
         <div class="mt-4 card overflow-hidden">
           <DocumentVersions :documents="docs" download-base="/me/documents" show-notes :caption="$t('investor.profile.documents.title')" />
@@ -248,7 +248,7 @@ const dataRequest = async (type: 'access' | 'erase') => {
       <!-- security → dedicated page (ACC-05) -->
       <SectionCard :title="$t('investor.profile.sections.security')">
         <div class="flex items-center justify-between gap-3">
-          <div><p class="font-medium">{{ $t('investor.profile.twoFactor') }}</p><AppBadge kind="generic" :value="auth.me?.two_factor_enabled ? 'active' : 'suspended'" :label="auth.me?.two_factor_enabled ? $t('security.on') : $t('security.off')" class="mt-1" /></div>
+          <div><p class="font-medium text-ink">{{ $t('investor.profile.twoFactor') }}</p><AppBadge kind="generic" :value="auth.me?.two_factor_enabled ? 'active' : 'suspended'" :label="auth.me?.two_factor_enabled ? $t('security.on') : $t('security.off')" class="mt-1" /></div>
           <AppButton size="sm" variant="secondary" to="/app/security">{{ $t('investor.profile.securityLink') }}</AppButton>
         </div>
       </SectionCard>

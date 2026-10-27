@@ -125,7 +125,7 @@ const goVerify = () => router.push(localePath('/auth/verify'))
       <SectionCard class="lg:col-span-1">
         <div class="flex flex-col items-center text-center">
           <UserAvatar :name="auth.me?.name" :src="auth.me?.avatar_url" size="xl" />
-          <p class="mt-4 text-lg font-semibold text-ink">{{ auth.me?.name }}</p>
+          <p class="mt-4 card-title">{{ auth.me?.name }}</p>
           <p class="text-sm text-muted">{{ roleLabel }}</p>
           <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" :aria-label="$t('account.avatar.change')" @change="onAvatar">
           <div class="mt-4 flex flex-wrap justify-center gap-2">
@@ -139,16 +139,16 @@ const goVerify = () => router.push(localePath('/auth/verify'))
             <dt class="text-muted">{{ $t('common.email') }}</dt>
             <dd class="min-w-0 text-end">
               <span class="block ltr text-ink font-medium truncate" dir="ltr">{{ auth.me?.email }}</span>
-              <span v-if="auth.emailVerified" class="mt-1 inline-flex items-center gap-1 rounded-full bg-success/10 text-success text-[11px] font-medium px-2 py-0.5"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>{{ $t('auth.verify.verified') }}</span>
-              <span v-else class="mt-1 inline-flex items-center gap-2 text-[11px]"><span class="rounded-full bg-warning/10 text-warning font-medium px-2 py-0.5">{{ $t('phoneField.unverified') }}</span><button type="button" class="link text-[11px]" @click="goVerify">{{ $t('phoneField.verifyNow') }}</button></span>
+              <span v-if="auth.emailVerified" class="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-medium px-2.5 py-0.5"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>{{ $t('auth.verify.verified') }}</span>
+              <span v-else class="mt-1 inline-flex items-center gap-2 text-xs"><span class="rounded-full border border-warning/30 bg-warning/10 text-warning font-medium px-2.5 py-0.5">{{ $t('phoneField.unverified') }}</span><button type="button" class="link text-xs" @click="goVerify">{{ $t('phoneField.verifyNow') }}</button></span>
             </dd>
           </div>
           <div class="flex items-start justify-between gap-3">
             <dt class="text-muted">{{ $t('common.phone') }}</dt>
             <dd class="min-w-0 text-end">
               <span class="block ltr num text-ink font-medium" dir="ltr">{{ auth.me?.phone || '—' }}</span>
-              <span v-if="auth.phoneVerified" class="mt-1 inline-flex items-center gap-1 rounded-full bg-success/10 text-success text-[11px] font-medium px-2 py-0.5"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>{{ $t('phoneField.verified') }}</span>
-              <span v-else-if="auth.me?.phone" class="mt-1 inline-flex items-center gap-2 text-[11px]"><span class="rounded-full bg-warning/10 text-warning font-medium px-2 py-0.5">{{ $t('phoneField.unverified') }}</span><button type="button" class="link text-[11px]" @click="goVerify">{{ $t('phoneField.verifyNow') }}</button></span>
+              <span v-if="auth.phoneVerified" class="mt-1 inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-medium px-2.5 py-0.5"><svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>{{ $t('phoneField.verified') }}</span>
+              <span v-else-if="auth.me?.phone" class="mt-1 inline-flex items-center gap-2 text-xs"><span class="rounded-full border border-warning/30 bg-warning/10 text-warning font-medium px-2.5 py-0.5">{{ $t('phoneField.unverified') }}</span><button type="button" class="link text-xs" @click="goVerify">{{ $t('phoneField.verifyNow') }}</button></span>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-3">
@@ -205,13 +205,13 @@ const goVerify = () => router.push(localePath('/auth/verify'))
               <tbody>
                 <tr v-for="p in prefs" :key="p.category">
                   <td class="font-medium text-ink">{{ prefLabel(p.category) }}</td>
-                  <td class="text-center"><input type="checkbox" checked disabled class="h-4 w-4 accent-navy" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.inApp')}`"></td>
-                  <td class="text-center"><input v-model="p.mail" type="checkbox" class="h-4 w-4 accent-navy" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.email')}`"></td>
+                  <td class="text-center"><input type="checkbox" checked disabled class="h-4 w-4 accent-accent" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.inApp')}`"></td>
+                  <td class="text-center"><input v-model="p.mail" type="checkbox" class="h-4 w-4 accent-accent" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.email')}`"></td>
                   <!-- OPP-07 alerts / MSG-03 digest: in-app + e-mail only -->
                   <template v-if="EMAIL_ONLY.includes(p.category)"><td class="text-center text-muted">—</td><td class="text-center text-muted">—</td></template>
                   <template v-else>
-                    <td class="text-center"><input v-model="p.sms" type="checkbox" class="h-4 w-4 accent-navy" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.sms')}`"></td>
-                    <td class="text-center"><input v-model="p.whatsapp" type="checkbox" class="h-4 w-4 accent-navy disabled:opacity-40" :disabled="!whatsappOn" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.whatsapp')}`"></td>
+                    <td class="text-center"><input v-model="p.sms" type="checkbox" class="h-4 w-4 accent-accent" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.sms')}`"></td>
+                    <td class="text-center"><input v-model="p.whatsapp" type="checkbox" class="h-4 w-4 accent-accent disabled:opacity-40" :disabled="!whatsappOn" :aria-label="`${prefLabel(p.category)} — ${$t('account.notifications.whatsapp')}`"></td>
                   </template>
                 </tr>
               </tbody>

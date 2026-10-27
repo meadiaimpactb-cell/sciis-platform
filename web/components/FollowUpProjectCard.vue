@@ -30,7 +30,7 @@ const ownerActions = computed(() => {
           <AppBadge kind="opportunity" :value="project.status" />
           <FollowUpBadge v-if="audience === 'owner' && project.plan_status" group="plan" :value="project.plan_status" />
         </div>
-        <h2 class="mt-2 text-lg font-semibold"><NuxtLink :to="$localePath(to)" class="hover:text-blue">{{ project.name }}</NuxtLink></h2>
+        <h2 class="mt-2 card-title"><NuxtLink :to="$localePath(to)" class="hover:text-accent-text transition">{{ project.name }}</NuxtLink></h2>
         <p class="text-sm text-muted">{{ [sector, project.reference_no].filter(Boolean).join(' · ') }}</p>
         <p v-if="!project.in_follow_up" class="mt-3 text-sm text-muted">{{ $t('followUp.investor.notStarted') }}</p>
         <ul v-if="audience === 'owner' && ownerActions.length" class="mt-3 space-y-1 text-sm">
@@ -40,15 +40,15 @@ const ownerActions = computed(() => {
         <p v-if="project.latest_update" class="mt-1.5 text-sm"><span class="text-muted">{{ $t('followUp.investor.latestUpdate') }}:</span> {{ project.latest_update.title || project.latest_update.excerpt }}</p>
       </div>
       <dl class="lg:w-72 shrink-0 grid grid-cols-2 lg:grid-cols-1 gap-3 text-sm">
-        <div v-if="ms" class="rounded-lg bg-bg p-3">
+        <div v-if="ms" class="rounded-xl border border-border bg-glass p-3">
           <dt class="text-xs text-muted">{{ $t('followUp.status.milestonesDone') }}</dt>
-          <dd class="mt-0.5 font-semibold num">{{ $t('followUp.admin.milestonesCount', { done: number(ms.done), total: number(ms.total) }) }}<span v-if="ms.overdue" class="ms-2 text-xs text-danger font-medium">{{ $t('followUp.admin.overdueCount', { n: number(ms.overdue) }) }}</span></dd>
-          <div class="mt-2 h-1.5 rounded-full bg-surface overflow-hidden"><div class="h-full rounded-full bg-navy" :style="{ width: `${msPct}%` }" /></div>
+          <dd class="mt-0.5 font-display text-lg font-extrabold text-ink num">{{ $t('followUp.admin.milestonesCount', { done: number(ms.done), total: number(ms.total) }) }}<span v-if="ms.overdue" class="ms-2 text-xs text-danger font-medium">{{ $t('followUp.admin.overdueCount', { n: number(ms.overdue) }) }}</span></dd>
+          <div class="mt-2 h-2 rounded-full bg-ink/10 overflow-hidden"><div class="h-full rounded-full bg-navy" :style="{ width: `${msPct}%` }" /></div>
         </div>
-        <div v-if="primary" class="rounded-lg bg-bg p-3">
+        <div v-if="primary" class="rounded-xl border border-border bg-glass p-3">
           <dt class="text-xs text-muted truncate" :title="primary.name">{{ primary.name }}</dt>
-          <dd class="mt-0.5 font-semibold num">{{ percent(primary.progress_percent) }}<span v-if="primary.latest_verified" class="ms-2 text-xs text-muted font-normal">{{ number(primary.latest_verified.value) }} / {{ number(primary.target) }}</span></dd>
-          <div class="mt-2 h-1.5 rounded-full bg-surface overflow-hidden"><div class="h-full rounded-full bg-teal" :style="{ width: `${impactPct}%` }" /></div>
+          <dd class="mt-0.5 font-display text-lg font-extrabold text-accent-text num">{{ percent(primary.progress_percent) }}<span v-if="primary.latest_verified" class="ms-2 text-xs text-muted font-normal">{{ number(primary.latest_verified.value) }} / {{ number(primary.target) }}</span></dd>
+          <div class="mt-2 h-2 rounded-full bg-ink/10 overflow-hidden"><div class="h-full rounded-full bg-accent" :style="{ width: `${impactPct}%` }" /></div>
         </div>
       </dl>
     </div>

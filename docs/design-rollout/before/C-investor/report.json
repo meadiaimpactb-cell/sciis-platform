@@ -1,0 +1,68 @@
+[
+ {
+  "route": "LOGIN",
+  "landed": "/app/investor/dashboard",
+  "consoleErrors": [],
+  "badRequests": []
+ },
+ {
+  "route": "/app/investor/dashboard",
+  "path": "/app/investor/dashboard",
+  "title": "لوحة المستثمر | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "مرحبًا، عبدالله (مستثمر فرد — افتراضي)",
+  "overflow": 0,
+  "textLen": 837,
+  "loading": false,
+  "dashes": 3,
+  "suspicious": false,
+  "snippet": "بوابة المستثمر مرحبًا، عبدالله (مستثمر فرد — افتراضي) اكتمال الملف 94% حالة العضوية معتمد عناصر ناقصة وصف موجز لخبرتك أكمل ملفك فرص محفوظة 0 اهتمامات 1 طلبات مع",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/C-investor/app_investor_dashboard.png"
+ },
+ {
+  "route": "/app/opportunities",
+  "path": "/app/opportunities",
+  "title": "الفرص | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "الفرص الاستثمارية الاجتماعية",
+  "overflow": 0,
+  "textLen": 1686,
+  "loading": false,
+  "dashes": 2,
+  "suspicious": false,
+  "snippet": "الفرص الاستثمارية الاجتماعية فرص مؤهّلة بعد تقييم مستقل. الملخصات معتمدة من أصحاب المشاريع. سياسة الوصول الحالية: الترشيح فقط — معلّق — بانتظار الرأي القانوني ا",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/C-investor/app_opportunities.png"
+ },
+ {
+  "route": "/app/investor/interests",
+  "path": "/app/investor/interests",
+  "title": "اهتماماتي | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "اهتماماتي",
+  "overflow": 0,
+  "textLen": 192,
+  "loading": false,
+  "dashes": 1,
+  "suspicious": false,
+  "snippet": "اهتماماتي تتبّع كل اهتمام من الإرسال حتى الربط. تمت مشاركة الملف 19 أكتوبر 2026 سُلّم (افتراضي) — · A-2026-0001 مُرسل موافقة صاحب المشروع مشاركة الملف الربط الا",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/C-investor/app_investor_interests.png"
+ },
+ {
+  "route": "/app/account",
+  "path": "/app/account",
+  "title": "ملفي الشخصي | المجلس السعودي للمستثمرين الاجتماعيين",
+  "h1": "ملفي الشخصي",
+  "overflow": 0,
+  "textLen": 1665,
+  "loading": false,
+  "dashes": 7,
+  "suspicious": false,
+  "snippet": "ملفي الشخصي ملفي الشخصي حدّث صورتك وبياناتك وكلمة المرور وتفضيلات الإشعارات. ع عبدالله (مستثمر فرد — افتراضي) مستثمر فرد رفع صورة PNG أو JPG أو WebP حتى 3 ميجاب",
+  "consoleErrors": [],
+  "badRequests": [],
+  "screenshot": "C:/laragon/www/sciis-platform/docs/design-rollout/before/C-investor/app_account.png"
+ }
+]

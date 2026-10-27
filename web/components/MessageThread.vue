@@ -113,13 +113,13 @@ defineExpose({ refresh: load })
     <template v-else-if="view">
       <div ref="scroller" class="max-h-[26rem] overflow-y-auto scrollbar-thin space-y-3 pe-1" aria-live="polite">
         <p v-if="!view.messages.length" class="text-sm text-muted text-center py-6">{{ $t('collab.messages.empty') }}</p>
-        <article v-for="m in view.messages" :key="m.uuid" class="max-w-[85%] rounded-xl px-4 py-3 text-sm" :class="m.author.is_me ? 'ms-auto bg-navy text-white' : m.author.side === 'staff' ? 'bg-teal-50 text-ink border border-teal/20' : 'bg-bg text-ink border border-border'">
-          <p class="text-xs font-medium" :class="m.author.is_me ? 'text-white/80' : 'text-muted'">
+        <article v-for="m in view.messages" :key="m.uuid" class="max-w-[85%] rounded-2xl px-4 py-3 text-sm" :class="m.author.is_me ? 'ms-auto bg-accent text-on-accent rounded-ee-md' : m.author.side === 'staff' ? 'bg-teal-50 text-ink border border-accent/25 rounded-es-md' : 'bg-glass text-ink border border-border rounded-es-md'">
+          <p class="text-xs font-medium" :class="m.author.is_me ? 'text-on-accent/75' : 'text-muted'">
             {{ m.author.is_me ? $t('collab.messages.you') : m.author.name }} · {{ sideLabel(m) }}
           </p>
           <p v-if="m.body" class="mt-1 leading-6 whitespace-pre-line break-words">{{ m.body }}</p>
           <ul v-if="m.attachments.length" class="mt-2 space-y-1.5">
-            <li v-for="a in m.attachments" :key="a.uuid" class="flex flex-wrap items-center gap-2 rounded-lg px-2.5 py-1.5" :class="m.author.is_me ? 'bg-white/10' : 'bg-surface border border-border'">
+            <li v-for="a in m.attachments" :key="a.uuid" class="flex flex-wrap items-center gap-2 rounded-lg px-2.5 py-1.5" :class="m.author.is_me ? 'bg-on-accent/10' : 'bg-surface border border-border'">
               <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12.5l-8.5 8.5a5 5 0 01-7-7L14 5.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4L15.5 8.6" /></svg>
               <span class="min-w-0 flex-1 truncate">{{ a.title }} <span class="text-xs opacity-70 num">({{ fileSize(a.size_bytes) }})</span></span>
               <span v-if="a.scan_pending" class="text-xs opacity-70">{{ $t('collab.messages.scanPending') }}</span>
@@ -127,7 +127,7 @@ defineExpose({ refresh: load })
               <span v-else class="text-xs opacity-70">{{ $t('collab.messages.unavailable') }}</span>
             </li>
           </ul>
-          <p class="mt-1.5 text-[11px] num" :class="m.author.is_me ? 'text-white/60' : 'text-muted'"><time :datetime="m.created_at">{{ dateTime(m.created_at) }}</time></p>
+          <p class="mt-1.5 text-xs num" :class="m.author.is_me ? 'text-on-accent/70' : 'text-muted'"><time :datetime="m.created_at">{{ dateTime(m.created_at) }}</time></p>
         </article>
       </div>
 

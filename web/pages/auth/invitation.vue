@@ -90,9 +90,9 @@ const signOut = async () => {
 </script>
 
 <template>
-  <div class="card card-pad">
-    <h1 class="text-2xl font-semibold">{{ $t('collab.invitation.title') }}</h1>
-    <p v-if="state === 'loading'" class="text-muted mt-4">{{ $t('common.loading') }}</p>
+  <div class="card p-6 sm:p-8">
+    <h1 class="text-2xl">{{ $t('collab.invitation.title') }}</h1>
+    <p v-if="state === 'loading'" class="mt-4 text-base text-muted">{{ $t('common.loading') }}</p>
 
     <template v-else-if="state !== 'ready'">
       <InlineAlert tone="warning" class="mt-5" :title="$t(state === 'expired' ? 'collab.invitation.expiredTitle' : 'collab.invitation.invalidTitle')">{{ $t(state === 'expired' ? 'collab.invitation.expiredText' : 'collab.invitation.invalidText') }}</InlineAlert>
@@ -100,11 +100,11 @@ const signOut = async () => {
     </template>
 
     <template v-else-if="preview">
-      <p class="text-muted mt-1">{{ $t('collab.invitation.sub', { org: preview.organization.name }) }}</p>
-      <dl class="mt-5 divide-y divide-border rounded-xl border border-border text-sm">
-        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-2.5"><dt class="text-muted">{{ $t('collab.invitation.organization') }}</dt><dd class="font-medium">{{ preview.organization.name }}</dd></div>
-        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-2.5"><dt class="text-muted">{{ $t('auth.register.typeTitle') }}</dt><dd class="font-medium">{{ preview.type_label }}</dd></div>
-        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-2.5"><dt class="text-muted">{{ $t('common.email') }}</dt><dd class="font-medium ltr text-start" dir="ltr">{{ preview.email }}</dd></div>
+      <p class="mt-2 text-base text-muted">{{ $t('collab.invitation.sub', { org: preview.organization.name }) }}</p>
+      <dl class="mt-6 divide-y divide-border overflow-hidden rounded-xl border border-border bg-ink/5 text-sm">
+        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-3"><dt class="text-muted">{{ $t('collab.invitation.organization') }}</dt><dd class="font-medium text-ink">{{ preview.organization.name }}</dd></div>
+        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-3"><dt class="text-muted">{{ $t('auth.register.typeTitle') }}</dt><dd class="font-medium text-ink">{{ preview.type_label }}</dd></div>
+        <div class="grid sm:grid-cols-[160px_1fr] gap-1 px-4 py-3"><dt class="text-muted">{{ $t('common.email') }}</dt><dd class="font-medium text-ink ltr text-start" dir="ltr">{{ preview.email }}</dd></div>
       </dl>
 
       <div v-if="auth.isAuthenticated" class="mt-6">
@@ -112,7 +112,7 @@ const signOut = async () => {
         <AppButton class="mt-4" variant="secondary" :loading="signingOut" @click="signOut">{{ $t('common.logout') }}</AppButton>
       </div>
 
-      <form v-else class="mt-6 space-y-5" novalidate @submit.prevent="accept">
+      <form v-else class="mt-7 space-y-5" novalidate @submit.prevent="accept">
         <div class="grid sm:grid-cols-2 gap-4">
           <FormField v-model="form.values.name" name="name" :label="$t('common.name')" :error="form.errors.value.name" required autocomplete="name" class="sm:col-span-2" />
           <PhoneField v-model="form.values.phone" name="phone" :label="$t('common.phone')" :error="form.errors.value.phone" required />
@@ -123,8 +123,8 @@ const signOut = async () => {
           </div>
           <FormField v-model="form.values.password_confirmation" name="password_confirmation" type="password" :label="$t('common.passwordConfirm')" :error="form.errors.value.password_confirmation" required autocomplete="new-password" ltr />
         </div>
-        <fieldset class="rounded-xl border border-border p-4 space-y-3">
-          <legend class="px-1 text-sm font-medium">{{ $t('auth.register.declarations') }}</legend>
+        <fieldset class="rounded-xl border border-border p-4 sm:p-5 space-y-3">
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('auth.register.declarations') }}</legend>
           <FormField v-if="isInvestor" v-model="form.values.consent_accuracy" name="consent_accuracy" type="checkbox" :label="$t('auth.register.consentAccuracy')" :error="form.errors.value.consent_accuracy" required />
           <FormField v-model="form.values.consent_privacy" name="consent_privacy" type="checkbox" :error="form.errors.value.consent_privacy" required>
             <template #label>{{ $t('auth.register.consentPrivacy') }} (<NuxtLink :to="$localePath('/legal/privacy')" class="link" target="_blank">{{ $t('footer.privacy') }}</NuxtLink>)</template>

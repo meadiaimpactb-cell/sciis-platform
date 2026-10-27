@@ -33,27 +33,28 @@ Lighthouse in Chrome) against a staging build before launch and append the resul
 | 16 | Reflow / zoom (1.4.4, 1.4.10) | Pass (static) | Fluid layouts, `rem` type scale, tables scroll horizontally inside their card, no fixed-height text boxes. Verify at 400 % zoom on staging. |
 | 17 | Error identification (3.3.1, 3.3.3) | Pass | Client rules (`utils/validation.ts`) and API 422 messages land under the field (Arabic / English), with a form-level message for rate limits. |
 | 18 | Consistent navigation / identification (3.2.3, 3.2.4) | Pass | Shared header / sidebar / footer across pages. |
-| 19 | Dark theme (BRD-04, portal) | Pass | When enabled, every semantic pair stays AA on the dark surface #141B3D: ink 14.8, text 12.5, muted 7.4 (6.7 on navy-50), links 8.7, teal 8.9, success 9.1, warning 9.6, danger 8.8, input outline 3.8, white on primary 12.3, status badges ≥ 6.4. Scope and limits: see "Dark theme" below. |
+| 19 | Themes (design v3, BRD-04) | Pass | Dark (default) and light, site and portals. Text pairs on the card colour (dark #203068 / light white): ink 12.5 / 18.2, text 8.0 / 9.1, muted 5.5 / 5.9, accent text 7.2 / 4.9, success 7.2 / 5.2, warning 6.4 / 5.0, danger 4.8 / 6.1, #07102A on the accent #58B0A8 7.3, input outline 3.6 / 3.2 (≥ 3:1). See "Themes" below. |
 | 20 | Digits | Pass | Latin digits only (platform rule), including Hijri dates (`nu-latn`). |
 
-## Dark theme (BRD-04)
+## Themes (design v3, BRD-04)
 
-Off by default (`FEATURE_DARK_MODE=false`). When on, the portal header shows a light / dark switch and "My account →
-Display" offers device / light / dark (default: device = `prefers-color-scheme`); the choice is stored on the account and
-in the browser. Public pages always stay light.
+One theme for the public site and the portals: dark by default, light on request (header / topbar switch, or
+"My account → Display": dark / light / device). The choice lives on `<html data-theme>` and in the browser
+(`scii-theme`), is applied before the first paint, and is saved on the account when signed in.
 
-How: the semantic Tailwind colours (`bg`, `surface`, `text`, `ink`, `muted`, `border`, `navy-50/100`, `teal-50/100/700`,
-`blue-soft`, `teal-soft/text`) read RGB-channel CSS variables (`web/assets/css/tokens.css`); `web/assets/css/theme-dark.css`
-(imported by `layouts/portal.vue` only) redefines them under `html.theme-dark`, plus text-only overrides for brand navy and
-the semantic colours, "light islands" for elements that must stay white, SweetAlert toasts / dialogs and status badges.
-No component needed `dark:` classes.
+How: every colour is a token in `web/assets/css/tokens.css` — the v3 names (`--bg0`, `--fg`, `--t2` …) and RGB
+channels (`--c-*`) that the Tailwind colours read, so utilities and their opacity modifiers follow the theme without
+`dark:` classes. Status hues (`--hue-*`) are lighter on the dark palette so dots, bars and badge text stay visible.
+`data-theme="light"` on an element makes a light island (the printable agreement; QR codes); printing always uses the
+light palette.
 
-Not themed (deliberately or still to do): hard-coded hex dots / bars in `FileTimeline` and `BarChart` series colours
-(decorative, still visible); the printable agreement view; email templates; PDFs.
+Not themed: email templates and PDFs (always light).
 
 ## Remaining / to verify
 
-- Run axe DevTools or Lighthouse on staging (public pages + one page per portal) and record the scores here.
+- Lighthouse 13.5 accessibility, 2026-10-27, local build, default (dark) theme, mobile: `/`, `/about`,
+  `/for-investors`, `/faq`, `/auth/login`, `/en/contact` — 100 each. Still to run: one signed-in page per portal
+  (Lighthouse can't sign in by itself — use DevTools on a signed-in session).
 - Screen-reader pass (NVDA + Chrome, VoiceOver + Safari) on registration, the opportunity form and the membership file.
 - `FilterSidebar` shows zero-count options in muted 60 % (2.6:1); acceptable only while they are treated as disabled —
   consider full muted text.

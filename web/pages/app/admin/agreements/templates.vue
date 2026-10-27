@@ -111,7 +111,7 @@ const editFromPreview = () => { const p = preview.value; preview.value = null; i
 
 <template>
   <div>
-    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/admin/agreements')" class="hover:text-blue">{{ $t('agreements.title') }}</NuxtLink> / <span>{{ $t('agreements.templates.title') }}</span></nav>
+    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/admin/agreements')" class="hover:text-accent-text">{{ $t('agreements.title') }}</NuxtLink> / <span>{{ $t('agreements.templates.title') }}</span></nav>
     <PageHeader :title="$t('agreements.templates.title')" :sub="$t('agreements.templates.sub')">
       <template v-if="!forbidden" #actions><AppButton @click="openCreate">{{ $t('agreements.templates.new') }}</AppButton></template>
     </PageHeader>
@@ -127,21 +127,21 @@ const editFromPreview = () => { const p = preview.value; preview.value = null; i
               <div class="flex flex-wrap items-center gap-2">
                 <AppBadge v-if="f.active" kind="generic" value="active" :label="$t('agreements.templates.active', { n: f.active.version })" />
                 <AppBadge v-else kind="generic" value="suspended" :label="$t('agreements.templates.inactive')" />
-                <code class="text-[11px] ltr rounded bg-bg px-1.5 py-0.5">{{ f.key }}</code>
+                <code class="text-xs ltr rounded-full border border-border bg-ink/5 text-muted px-2 py-0.5">{{ f.key }}</code>
                 <span class="text-xs text-muted num">{{ $t('agreements.templates.latest', { n: f.latest.version }) }} · {{ dateTime(f.latest.created_at) }}</span>
               </div>
               <h2 class="mt-2 card-title">{{ f.latest.title }}</h2>
               <p v-if="f.latest.title_en" class="text-sm text-muted ltr text-start">{{ f.latest.title_en }}</p>
               <p v-if="f.latest.description" class="mt-1 text-desc text-muted">{{ f.latest.description }}</p>
-              <ul v-if="f.latest.placeholders.length" class="mt-3 flex flex-wrap gap-1.5" :aria-label="$t('agreements.templates.used')"><li v-for="k in f.latest.placeholders" :key="k"><code class="text-[11px] ltr rounded-full bg-blue-soft text-blue px-2 py-0.5">{{ ph(k) }}</code></li></ul>
+              <ul v-if="f.latest.placeholders.length" class="mt-3 flex flex-wrap gap-1.5" :aria-label="$t('agreements.templates.used')"><li v-for="k in f.latest.placeholders" :key="k"><code class="text-xs ltr rounded-full border border-accent/30 bg-accent/10 text-accent-text px-2 py-0.5">{{ ph(k) }}</code></li></ul>
             </div>
             <div class="flex sm:flex-col gap-2 shrink-0">
               <AppButton size="sm" variant="secondary" @click="openVersion(f.latest)">{{ $t('agreements.templates.edit') }}</AppButton>
               <AppButton v-if="!f.latest.is_active" size="sm" :loading="busy === f.latest.id" @click="setActive(f.latest.id, f.latest.title, f.latest.version, true)">{{ $t('agreements.templates.activateVersion', { n: f.latest.version }) }}</AppButton>
-              <AppButton v-else size="sm" variant="ghost" class="text-danger" :loading="busy === f.latest.id" @click="setActive(f.latest.id, f.latest.title, f.latest.version, false)">{{ $t('agreements.templates.deactivate') }}</AppButton>
+              <AppButton v-else size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" :loading="busy === f.latest.id" @click="setActive(f.latest.id, f.latest.title, f.latest.version, false)">{{ $t('agreements.templates.deactivate') }}</AppButton>
             </div>
           </div>
-          <button type="button" class="mt-4 text-xs text-blue hover:underline kbd-focus rounded" :aria-expanded="!!open[f.key]" @click="open[f.key] = !open[f.key]">{{ $t('agreements.templates.versions', { n: f.versions.length }) }}</button>
+          <button type="button" class="mt-4 link text-xs kbd-focus rounded" :aria-expanded="!!open[f.key]" @click="open[f.key] = !open[f.key]">{{ $t('agreements.templates.versions', { n: f.versions.length }) }}</button>
           <div v-if="open[f.key]" class="mt-3 overflow-x-auto">
             <table class="table-base">
               <thead><tr><th>{{ $t('common.version') }}</th><th>{{ $t('common.createdAt') }}</th><th>{{ $t('agreements.versions.author') }}</th><th>{{ $t('agreements.versions.note') }}</th><th>{{ $t('common.status') }}</th><th><span class="sr-only">{{ $t('common.actions') }}</span></th></tr></thead>
@@ -162,7 +162,7 @@ const editFromPreview = () => { const p = preview.value; preview.value = null; i
 
       <SectionCard :title="$t('agreements.templates.placeholders')" :sub="$t('agreements.templates.placeholdersSub')" class="lg:sticky lg:top-6">
         <ul class="space-y-2 text-sm">
-          <li v-for="p in data.placeholders" :key="p.key" class="flex items-center justify-between gap-2"><span>{{ p.label }}</span><code class="text-[11px] ltr rounded bg-bg px-1.5 py-0.5">{{ ph(p.key) }}</code></li>
+          <li v-for="p in data.placeholders" :key="p.key" class="flex items-center justify-between gap-2"><span>{{ p.label }}</span><code class="text-xs ltr rounded-full border border-border bg-ink/5 text-muted px-2 py-0.5">{{ ph(p.key) }}</code></li>
         </ul>
         <p class="mt-3 text-xs text-muted leading-5">{{ $t('agreements.templates.customHint') }}</p>
       </SectionCard>
@@ -202,7 +202,7 @@ const editFromPreview = () => { const p = preview.value; preview.value = null; i
     <Modal :open="!!preview" :title="preview ? `${preview.title} — v${preview.version}` : ''" size="lg" @close="preview = null">
       <div v-if="preview" class="space-y-4">
         <Tabs v-model="previewLang" :tabs="langTabs" variant="pills" />
-        <div class="rounded-xl border border-border p-5">
+        <div class="rounded-xl border border-border bg-ink/[0.03] p-5">
           <AgreementText v-if="previewLang === 'ar'" :text="preview.body" lang="ar" />
           <AgreementText v-else-if="preview.body_en" :text="preview.body_en" lang="en" />
           <p v-else class="text-sm text-muted">{{ $t('agreements.text.noEn') }}</p>

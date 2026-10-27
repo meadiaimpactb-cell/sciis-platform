@@ -80,12 +80,12 @@ const pad = (n: number) => String(n).padStart(2, '0')
   align-items: center;
   gap: 16px;
   flex: none;
-  font: 700 17px var(--fd);
+  font: 700 var(--fs-desc) var(--fd);
   color: var(--fg);
   white-space: nowrap;
 }
 .stages__num {
-  font: 700 13px var(--fd);
+  font: 700 var(--fs-small) var(--fd);
   color: var(--accent-text);
 }
 .stages__sep {

@@ -17,13 +17,16 @@ const currentIdx = computed(() => {
 
 <template>
   <div>
-    <ol class="grid grid-cols-9 gap-1" :aria-label="$t('components.statusStrip.title')">
-      <li v-for="(s, i) in steps" :key="s" class="flex flex-col items-center gap-1.5 min-w-0">
-        <div class="h-2 w-full rounded-full" :style="{ backgroundColor: i <= currentIdx ? opportunityStatusColor(s) : 'var(--border)' }" aria-hidden="true" />
-        <span class="text-[11px] sm:text-xs text-center leading-tight truncate w-full" :class="i === currentIdx ? 'font-semibold text-ink' : i < currentIdx ? 'text-ink/70' : 'text-muted'" :aria-current="i === currentIdx ? 'step' : undefined" :title="label('opportunityStatus', s)">{{ label('opportunityStatus', s) }}</span>
-        <span v-if="i === currentIdx" class="hidden sm:inline-flex rounded-full bg-blue-soft text-blue text-[10px] px-1.5 py-0.5 whitespace-nowrap">{{ $t('components.statusStrip.youAreHere') }}</span>
-      </li>
-    </ol>
+    <!-- phones: the strip scrolls inside itself so the nine labels stay readable (never the page) -->
+    <div class="overflow-x-auto scrollbar-thin -mx-1 px-1 pb-1">
+      <ol class="grid min-w-[42rem] grid-cols-9 gap-1 md:min-w-0" :aria-label="$t('components.statusStrip.title')">
+        <li v-for="(s, i) in steps" :key="s" class="flex flex-col items-center gap-1.5 min-w-0">
+          <div class="h-2 w-full rounded-full" :style="{ backgroundColor: i <= currentIdx ? opportunityStatusColor(s) : 'var(--border)' }" aria-hidden="true" />
+          <span class="text-xs text-center leading-tight truncate w-full" :class="i === currentIdx ? 'font-semibold text-ink' : i < currentIdx ? 'text-ink/70' : 'text-muted'" :aria-current="i === currentIdx ? 'step' : undefined" :title="label('opportunityStatus', s)">{{ label('opportunityStatus', s) }}</span>
+          <span v-if="i === currentIdx" class="inline-flex rounded-full border border-accent/35 bg-accent/10 text-accent-text text-xs px-2 py-0.5 whitespace-nowrap">{{ $t('components.statusStrip.youAreHere') }}</span>
+        </li>
+      </ol>
+    </div>
     <p v-if="terminal" class="mt-3 text-sm flex items-center gap-2">
       <AppBadge kind="opportunity" :value="status" />
     </p>

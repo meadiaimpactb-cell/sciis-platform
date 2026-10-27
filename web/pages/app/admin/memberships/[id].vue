@@ -59,7 +59,7 @@ const btn: Record<string, { label: string; variant: 'primary' | 'secondary' | 'd
 </script>
 <template>
   <div>
-    <nav class="text-xs text-muted mb-3"><NuxtLink :to="$localePath('/app/admin/memberships')" class="hover:text-blue">{{ $t('admin.memberships.title') }}</NuxtLink> / #{{ id }}</nav>
+    <nav class="text-xs text-muted mb-3"><NuxtLink :to="$localePath('/app/admin/memberships')" class="hover:text-accent-text">{{ $t('admin.memberships.title') }}</NuxtLink> / <span class="num">#{{ id }}</span></nav>
     <div v-if="loading && !m" class="text-muted">{{ $t('common.loading') }}</div>
     <template v-else-if="m">
       <PageHeader :title="m.user?.name ?? ''" :sub="`${label('userType', m.user?.type)} · ${m.user?.organization?.name ?? ''}`"><template #actions><AppBadge kind="membership" :value="m.status" size="md" :soft="false" /><AppButton v-if="m.user_id" size="sm" variant="outline" :to="$localePath(`/app/admin/users/${m.user_id}`)">{{ $t('admin.userFile.open') }}</AppButton></template></PageHeader>
@@ -83,7 +83,7 @@ const btn: Record<string, { label: string; variant: 'primary' | 'secondary' | 'd
           <SectionCard :title="$t('investor.profile.documents.title')" :sub="$t('admin.memberships.documentsHint')" flush>
             <ul v-if="missingDocs.length" class="flex flex-wrap items-center gap-1.5 px-5 pt-4 text-xs">
               <li class="text-muted">{{ $t('investor.profile.documents.missing') }}:</li>
-              <li v-for="k in missingDocs" :key="k" class="rounded-full bg-warning/10 text-warning px-2 py-0.5">{{ label('documentKind', k) }}</li>
+              <li v-for="k in missingDocs" :key="k" class="rounded-full border border-warning/30 bg-warning/10 text-warning px-2.5 py-0.5">{{ label('documentKind', k) }}</li>
             </ul>
             <DocumentVersions :documents="profile.documents ?? []" download-base="/admin/documents" show-notes show-size :caption="$t('investor.profile.documents.title')" />
           </SectionCard>
@@ -92,16 +92,16 @@ const btn: Record<string, { label: string; variant: 'primary' | 'secondary' | 'd
         </div>
         <aside class="space-y-4 lg:sticky lg:top-6">
           <div class="card card-pad">
-            <div class="flex items-center justify-between"><h3 class="font-semibold">{{ $t('admin.memberships.columns.completion') }}</h3><CompletionRing :percent="profile.completion_percent ?? 0" :size="56" :stroke="6" /></div>
+            <div class="flex items-center justify-between"><h3 class="card-title">{{ $t('admin.memberships.columns.completion') }}</h3><CompletionRing :percent="profile.completion_percent ?? 0" :size="56" :stroke="6" /></div>
             <template v-if="missing.length">
               <p class="mt-3 text-xs text-muted">{{ $t('admin.memberships.missingItems') }}</p>
-              <ul class="mt-1 flex flex-wrap gap-1.5"><li v-for="x in missing" :key="x" class="text-xs rounded-full bg-warning/10 text-warning px-2 py-0.5">{{ missingLabels[x] ?? x }}</li></ul>
+              <ul class="mt-1 flex flex-wrap gap-1.5"><li v-for="x in missing" :key="x" class="text-xs rounded-full border border-warning/30 bg-warning/10 text-warning px-2.5 py-0.5">{{ missingLabels[x] ?? x }}</li></ul>
             </template>
           </div>
           <div class="card card-pad">
-            <h3 class="font-semibold">{{ $t('admin.memberships.decision') }}</h3>
-            <p v-if="m.completion_note" class="mt-2 text-sm text-muted rounded-lg bg-bg p-2"><span class="block text-xs">{{ $t('admin.memberships.completionNote') }}</span>{{ m.completion_note }}</p>
-            <p v-if="m.decision_note" class="mt-2 text-sm text-muted rounded-lg bg-bg p-2"><span class="block text-xs">{{ $t('admin.memberships.decisionNote') }}</span>{{ m.decision_note }}</p>
+            <h3 class="card-title">{{ $t('admin.memberships.decision') }}</h3>
+            <p v-if="m.completion_note" class="mt-3 text-sm text-text rounded-xl border border-border bg-ink/5 px-3 py-2"><span class="block text-xs text-muted">{{ $t('admin.memberships.completionNote') }}</span>{{ m.completion_note }}</p>
+            <p v-if="m.decision_note" class="mt-3 text-sm text-text rounded-xl border border-border bg-ink/5 px-3 py-2"><span class="block text-xs text-muted">{{ $t('admin.memberships.decisionNote') }}</span>{{ m.decision_note }}</p>
             <FormField v-model="decision.values.decision_note" name="decision_note" type="textarea" :label="$t('admin.memberships.decisionNote')" :help="$t('admin.memberships.noteRequired')" :error="decision.errors.value.decision_note" :rows="3" :maxlength="RULES.noteMax" class="mt-3" />
             <FormAlert :message="decision.formError.value" class="mt-3" />
             <div class="mt-3 flex flex-col gap-2">

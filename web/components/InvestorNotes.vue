@@ -48,8 +48,8 @@ const remove = async (n: InvestorNote) => {
 <template>
   <section class="card card-pad" :aria-labelledby="`notes-${uuid}`">
     <div class="flex items-center gap-2">
-      <svg class="h-4 w-4 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg>
-      <h2 :id="`notes-${uuid}`" class="text-sm font-semibold text-ink">{{ $t('investor.detail.notes.title') }}</h2>
+      <svg class="h-4 w-4 text-accent-text shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg>
+      <h2 :id="`notes-${uuid}`" class="text-base text-ink">{{ $t('investor.detail.notes.title') }}</h2>
     </div>
     <p class="text-xs text-muted mt-1">{{ $t('investor.detail.notes.hint') }}</p>
 
@@ -61,14 +61,14 @@ const remove = async (n: InvestorNote) => {
 
     <p v-if="loading && !notes" class="mt-3 text-xs text-muted">{{ $t('common.loading') }}</p>
     <ul v-else-if="notes?.length" class="mt-4 space-y-3">
-      <li v-for="n in notes" :key="n.id" class="rounded-lg bg-bg p-3 text-sm">
+      <li v-for="n in notes" :key="n.id" class="rounded-xl border border-border bg-glass p-3 text-sm">
         <form v-if="editing === n.id" class="space-y-2" novalidate @submit.prevent="saveEdit(n)">
           <FormField v-model="editForm.values.body" name="body" type="textarea" :label="$t('investor.detail.notes.body')" :error="editForm.errors.value.body" :rows="3" :maxlength="NOTE_MAX" />
           <FormAlert :message="editForm.formError.value" />
           <div class="flex justify-end gap-2"><AppButton size="sm" variant="ghost" @click="editing = null">{{ $t('common.cancel') }}</AppButton><AppButton type="submit" size="sm" :loading="editForm.submitting.value">{{ $t('common.save') }}</AppButton></div>
         </form>
         <template v-else>
-          <p class="leading-6 text-text/90 whitespace-pre-line break-words">{{ n.body }}</p>
+          <p class="leading-6 text-text whitespace-pre-line break-words">{{ n.body }}</p>
           <div class="mt-2 flex items-center justify-between gap-2 text-xs text-muted">
             <span class="num">{{ dateTime(n.updated_at ?? n.created_at) }}</span>
             <span class="flex items-center gap-3">

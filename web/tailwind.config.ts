@@ -1,10 +1,9 @@
 import type { Config } from 'tailwindcss'
 
-// Brand tokens derived from the official SCII logo (navy #24306C, teal #58B4A8).
-// Hex values mirror assets/css/tokens.css. The semantic surface / text tokens read RGB-channel variables (`tok()`), so the
-// portal dark theme (BRD-04, assets/css/theme-dark.css) swaps them without per-class `dark:` edits; opacity modifiers
-// like `text-muted/70` keep working. Light values are unchanged.
-// AA contrast verified for text pairs (UX-04): navy-700 on white 10.4:1 · teal-700 on white 4.7:1 · ink on teal-500 7.1:1.
+// SCII identity v3. Every themed colour reads an RGB-channel variable from assets/css/tokens.css (`tok()`), so the
+// dark default and [data-theme="light"] swap them without per-class `dark:` edits, and opacity modifiers like
+// `text-muted/70` keep working. The v3 names (bg0, bg1, fg, t2, t3, line, accent …) and the older semantic names
+// (bg, surface, ink, text, muted, border, navy, blue …) read the same tokens. Contrast pairs are listed in tokens.css.
 const tok = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)`
 
 export default <Partial<Config>>{
@@ -28,68 +27,75 @@ export default <Partial<Config>>{
     },
     extend: {
       colors: {
+        // v3 names
+        bg0: tok('bg'),
+        bg1: tok('surface'),
+        deep: tok('deep'),
+        field: tok('field'),
+        fg: tok('ink'),
+        t2: tok('text'),
+        t3: tok('muted'),
+        line: tok('border'),
+        accent: { DEFAULT: '#58B0A8', text: tok('teal-700'), hi: tok('accent-hi') },
+        'on-accent': '#07102A',
+        'on-status': tok('on-status'),
+        overlay: tok('overlay'),
+        glass: 'rgb(var(--c-ink) / 0.06)',
+        // semantic names used across the app (same tokens)
         ink: tok('ink'),
-        navy: {
-          DEFAULT: '#24306C',
-          950: '#0E1330',
-          900: '#121A3F',
-          800: '#1B2555',
-          700: '#24306C',
-          600: '#33428A',
-          100: tok('navy-100'),
-          50: tok('navy-50'),
-        },
-        teal: {
-          DEFAULT: '#58B4A8',
-          700: tok('teal-700'),
-          600: '#3F9A8F',
-          500: '#58B4A8',
-          400: '#7FCBC0',
-          100: tok('teal-100'),
-          50: tok('teal-50'),
-          hover: '#3F9A8F',
-          soft: tok('teal-100'),
-          text: tok('teal-700'),
-        },
-        // Legacy alias: "blue" = brand primary (navy). Existing components keep working.
-        blue: {
-          DEFAULT: '#24306C',
-          hover: '#1B2555',
-          soft: tok('navy-100'),
-        },
         bg: tok('bg'),
         surface: tok('surface'),
         text: tok('text'),
         muted: tok('muted'),
         border: tok('border'),
-        success: '#1F7A5C',
-        warning: '#B45309',
-        danger: '#B91C1C',
-        info: '#24306C',
-        status: {
-          draft: '#94A3B8',
-          new: '#24306C',
-          under_review: '#B45309',
-          needs_completion: '#D97706',
-          not_eligible: '#B91C1C',
-          eligible: '#2F7D74',
-          connected: '#0F766E',
-          negotiating: '#6D28D9',
-          in_execution: '#33428A',
-          operating: '#065F46',
-          withdrawn: '#6B7280',
-          closed: '#374151',
+        // navy as text / line / small marks = brand emphasis (navy on light, accent text on dark); the numbered
+        // dark shades stay the fixed logo colours.
+        navy: {
+          DEFAULT: tok('link'),
+          950: '#0E1330',
+          900: '#121A3F',
+          800: '#1B2555',
+          700: tok('link'),
+          600: tok('link'),
+          100: tok('navy-100'),
+          50: tok('navy-50'),
         },
+        teal: {
+          DEFAULT: '#58B0A8',
+          700: tok('teal-700'),
+          600: '#3F9A8F',
+          500: '#58B0A8',
+          400: tok('accent-hi'),
+          100: tok('teal-100'),
+          50: tok('teal-50'),
+          hover: tok('accent-hi'),
+          soft: tok('teal-100'),
+          text: tok('teal-700'),
+        },
+        // Legacy alias: "blue" = brand emphasis (as navy).
+        blue: {
+          DEFAULT: tok('link'),
+          hover: tok('link'),
+          soft: tok('navy-100'),
+        },
+        success: tok('ok'),
+        warning: tok('warn'),
+        danger: tok('bad'),
+        info: tok('link'),
       },
+      // focus-ring offsets take the card colour of the active theme instead of white
+      ringOffsetColor: { DEFAULT: 'rgb(var(--c-surface))' },
       fontFamily: {
         sans: ['"IBM Plex Sans Arabic"', 'Segoe UI', 'Tahoma', 'Arial', 'sans-serif'],
+        // headings: Almarai in Arabic, Sora in English (tokens.css → --fd)
+        display: ['var(--fd)'],
       },
-      // Type scale measured on falak.sa (desktop 1440 / mobile 390) — the reference the platform follows.
+      // Type scale measured on falak.sa (desktop 1440 / mobile 390) — the reference the platform follows (tokens.css --fs-*).
       // Every `text-*` utility in the app maps onto one of these steps, so public pages and the portals share it:
       // 14 body · 16 description · 18 stat label · 20 lead / card title · 25 section label · 30 · 40 section title · 50 display.
       fontSize: {
-        '2xs': ['0.6875rem', { lineHeight: '1rem' }], // 11px — badges / dense meta only
-        xs: ['0.75rem', { lineHeight: '1.125rem' }], // 12px
+        '2xs': ['0.75rem', { lineHeight: '1.125rem' }], // 12px — badges / dense meta only
+        xs: ['0.8125rem', { lineHeight: '1.25rem' }], // 13px — the smallest reading size
         sm: ['0.875rem', { lineHeight: '1.3125rem' }], // 14 / 21 — Falak body
         base: ['1rem', { lineHeight: '1.5rem' }], // 16 / 24 (paragraphs use .text-desc → 16 / 30)
         lg: ['1.125rem', { lineHeight: '1.6875rem' }], // 18 / 27
@@ -110,7 +116,6 @@ export default <Partial<Config>>{
       },
       backgroundImage: {
         'gradient-brand': 'var(--gradient-brand)',
-        'gradient-hero': 'var(--gradient-hero)',
       },
       maxWidth: {
         '8xl': '88rem',

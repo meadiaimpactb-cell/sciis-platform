@@ -73,7 +73,7 @@ const pendingTitle = (r: FollowUpSummary) => (r.pending ? t('followUp.admin.pend
         <input v-model="search" type="search" class="input" :placeholder="$t('common.searchPlaceholder')" :aria-label="$t('common.search')" />
         <select v-model="execution" class="input" :aria-label="$t('followUp.admin.filters.execution')"><option value="">{{ $t('followUp.admin.filters.execution') }}: {{ $t('common.all') }}</option><option v-for="s in EXECUTION_STATUSES" :key="s" :value="s">{{ label('executionStatus', s) }}</option></select>
         <select v-model="status" class="input" :aria-label="$t('followUp.admin.filters.stage')"><option value="">{{ $t('followUp.admin.filters.stage') }}: {{ $t('common.all') }}</option><option v-for="s in followUpStatuses" :key="s" :value="s">{{ label('opportunityStatus', s) }}</option></select>
-        <label class="inline-flex items-center gap-2 text-sm"><input v-model="needsAction" type="checkbox" class="h-4 w-4 rounded border-border text-blue" />{{ $t('followUp.admin.filters.needsAction') }}</label>
+        <label class="inline-flex items-center gap-2 text-sm text-ink cursor-pointer"><input v-model="needsAction" type="checkbox" class="h-4 w-4 rounded border-border accent-accent" />{{ $t('followUp.admin.filters.needsAction') }}</label>
       </div>
       <DataTable :columns="columns" :rows="rows" row-key="uuid" :loading="loading && !rows.length" :empty-text="$t('followUp.admin.noProjects')">
         <template #cell-name="{ row }">
@@ -84,8 +84,8 @@ const pendingTitle = (r: FollowUpSummary) => (r.pending ? t('followUp.admin.pend
         <template #cell-execution_status="{ row }">
           <div class="flex flex-col items-start gap-1">
             <FollowUpBadge group="execution" :value="row.execution_status" />
-            <span v-if="row.status_overridden" class="text-[11px] text-warning">{{ $t('followUp.status.overridden') }}</span>
-            <span v-if="row.escalated_at" class="text-[11px] text-danger num">{{ $t('followUp.status.escalated', { date: date(row.escalated_at) }) }}</span>
+            <span v-if="row.status_overridden" class="text-xs text-warning">{{ $t('followUp.status.overridden') }}</span>
+            <span v-if="row.escalated_at" class="text-xs text-danger num">{{ $t('followUp.status.escalated', { date: date(row.escalated_at) }) }}</span>
           </div>
         </template>
         <template #cell-plan_status="{ value }"><FollowUpBadge group="plan" :value="value" /></template>
@@ -100,7 +100,7 @@ const pendingTitle = (r: FollowUpSummary) => (r.pending ? t('followUp.admin.pend
           <span v-if="row.next_report_due_on" class="block text-xs text-muted num">{{ $t('followUp.admin.nextDue', { date: date(row.next_report_due_on) }) }}</span>
         </template>
         <template #cell-pending="{ row }">
-          <span v-if="row.pending?.total" class="inline-flex items-center rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning num" :title="pendingTitle(row)">{{ number(row.pending.total) }}</span>
+          <span v-if="row.pending?.total" class="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning num" :title="pendingTitle(row)">{{ number(row.pending.total) }}</span>
           <span v-else class="text-muted">—</span>
         </template>
       </DataTable>

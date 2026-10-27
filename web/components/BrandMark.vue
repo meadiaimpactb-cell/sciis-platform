@@ -12,8 +12,8 @@ const id = `scii-mark-${useId()}`
   <svg viewBox="0 0 100 136" :width="width" :height="Math.round(width * 1.36)" aria-hidden="true">
     <defs>
       <linearGradient :id="id" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#7FD3C9" />
-        <stop offset="1" stop-color="#58B4A8" />
+        <stop offset="0" stop-color="var(--mark-1)" />
+        <stop offset="1" stop-color="var(--teal-500)" />
       </linearGradient>
     </defs>
     <rect v-if="framed" x="4.5" y="4.5" width="91" height="127" stroke-width="7" stroke="var(--mark-2)" fill="none" />

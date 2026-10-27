@@ -16,6 +16,6 @@ const current = computed(() => {
 <template>
   <div>
     <p v-if="status === 'cancelled'" class="text-sm text-muted">{{ $t('agreements.flow.cancelled') }}</p>
-    <Stepper v-else :steps="steps" :current="current" />
+    <StageTrack v-else :stages="steps.map((s) => s.label)" :current="current" :label="$t('common.status')" />
   </div>
 </template>

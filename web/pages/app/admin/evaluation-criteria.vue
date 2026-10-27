@@ -51,11 +51,11 @@ const canManage = computed(() => auth.canAny('settings.manage'))
 </script>
 <template>
   <div>
-    <PageHeader :title="$t('admin.criteria.title')" :sub="$t('admin.criteria.sub')"><template #actions><span class="text-sm text-muted">{{ $t('admin.criteria.version', { v: data?.version ?? 1 }) }} · Σ {{ number(totalWeight, { maximumFractionDigits: 2 }) }}</span><AppButton v-if="canManage" @click="open()">{{ $t('admin.criteria.addCriterion') }}</AppButton></template></PageHeader>
+    <PageHeader :title="$t('admin.criteria.title')" :sub="$t('admin.criteria.sub')"><template #actions><span class="inline-flex h-10 items-center rounded-full border border-ink/15 px-4 text-sm text-muted num">{{ $t('admin.criteria.version', { v: data?.version ?? 1 }) }} · Σ {{ number(totalWeight, { maximumFractionDigits: 2 }) }}</span><AppButton v-if="canManage" @click="open()">{{ $t('admin.criteria.addCriterion') }}</AppButton></template></PageHeader>
     <div class="space-y-5">
       <SectionCard v-for="ax in EVALUATION_AXES" :key="ax" :title="label('evaluationAxis', ax)" flush>
-        <table class="table-base"><thead><tr><th>{{ $t('admin.settings.termKey') }}</th><th>{{ $t('admin.settings.labelAr') }}</th><th>{{ $t('admin.criteria.weight') }}</th><th>{{ $t('admin.criteria.scale') }}</th><th></th></tr></thead>
-          <tbody><tr v-for="c in (data?.data ?? []).filter((x) => x.axis === ax)" :key="c.id" :class="!c.is_active && 'opacity-50'"><td class="num text-xs ltr text-start">{{ c.key }}</td><td class="font-medium">{{ c.label_ar }}<span class="block text-xs text-muted ltr text-start">{{ c.label_en }}</span></td><td class="num">{{ number(Number(c.weight), { maximumFractionDigits: 2 }) }}</td><td class="text-xs text-muted"><ol class="space-y-0.5"><li v-for="n in 5" :key="n"><span class="num font-medium text-ink">{{ n }}</span> — {{ c.scale_descriptions?.[String(n) as '1'] }}</li></ol></td><td class="text-end"><AppButton v-if="canManage" size="sm" variant="outline" @click="open(c)">{{ $t('common.edit') }}</AppButton></td></tr></tbody></table>
+        <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('admin.settings.termKey') }}</th><th>{{ $t('admin.settings.labelAr') }}</th><th>{{ $t('admin.criteria.weight') }}</th><th>{{ $t('admin.criteria.scale') }}</th><th></th></tr></thead>
+          <tbody><tr v-for="c in (data?.data ?? []).filter((x) => x.axis === ax)" :key="c.id" :class="!c.is_active && 'opacity-50'"><td class="num text-xs ltr text-start">{{ c.key }}</td><td class="font-medium">{{ c.label_ar }}<span class="block text-xs text-muted ltr text-start">{{ c.label_en }}</span></td><td class="num">{{ number(Number(c.weight), { maximumFractionDigits: 2 }) }}</td><td class="text-xs text-muted"><ol class="space-y-0.5"><li v-for="n in 5" :key="n"><span class="num font-medium text-ink">{{ n }}</span> — {{ c.scale_descriptions?.[String(n) as '1'] }}</li></ol></td><td class="text-end"><AppButton v-if="canManage" size="sm" variant="outline" @click="open(c)">{{ $t('common.edit') }}</AppButton></td></tr></tbody></table></div>
       </SectionCard>
     </div>
     <Modal :open="show" :title="editing ? $t('common.edit') : $t('admin.criteria.addCriterion')" size="lg" @close="show = false">
@@ -73,10 +73,10 @@ const canManage = computed(() => auth.canAny('settings.manage'))
           <legend class="label">{{ $t('admin.criteria.scale') }} <span class="text-danger ms-0.5" aria-hidden="true">*</span></legend>
           <div v-for="n in LEVELS" :key="n">
             <div class="flex items-center gap-2">
-              <span class="num w-6 text-center font-medium">{{ n }}</span>
+              <span class="num h-7 w-7 shrink-0 rounded-full border border-accent/40 bg-accent/10 text-accent-text text-xs font-bold flex items-center justify-center">{{ n }}</span>
               <input v-model="form.values.scale_descriptions[n]" class="input" :class="form.errors.value[`scale_descriptions.${n}`] && 'input-error'" :maxlength="RULES.shortTextMax" :aria-label="`${$t('admin.criteria.scale')} ${n}`" :aria-invalid="!!form.errors.value[`scale_descriptions.${n}`]" @blur="form.validateField(`scale_descriptions.${n}`)">
             </div>
-            <p v-if="form.errors.value[`scale_descriptions.${n}`]" class="error-text ps-8" role="alert">{{ form.errors.value[`scale_descriptions.${n}`] }}</p>
+            <p v-if="form.errors.value[`scale_descriptions.${n}`]" class="error-text ps-9" role="alert">{{ form.errors.value[`scale_descriptions.${n}`] }}</p>
           </div>
         </fieldset>
       </form>

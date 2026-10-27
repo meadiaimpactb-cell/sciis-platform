@@ -141,7 +141,7 @@ const columns = computed(() => [
           <template #cell-can_act="{ row }">
             <span v-if="row.is_representative" class="text-xs text-muted">{{ $t('common.yes') }}</span>
             <label v-else-if="isRep" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" class="h-4 w-4 accent-navy" :checked="row.can_act" :disabled="busy === `m-${row.id}` || row.status !== 'active'" :aria-label="`${$t('collab.team.canAct')} — ${row.name}`" @change="toggleAct(row as TeamMember)">
+              <input type="checkbox" class="h-4 w-4 accent-accent" :checked="row.can_act" :disabled="busy === `m-${row.id}` || row.status !== 'active'" :aria-label="`${$t('collab.team.canAct')} — ${row.name}`" @change="toggleAct(row as TeamMember)">
               {{ row.can_act ? $t('common.yes') : $t('common.no') }}
             </label>
             <span v-else class="text-sm">{{ row.can_act ? $t('common.yes') : $t('common.no') }}</span>

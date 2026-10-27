@@ -78,22 +78,23 @@ useSeo({
 
 <template>
   <div v-if="event">
-    <section class="surface-dark relative overflow-hidden">
-      <NightSky />
-      <div class="container-x relative max-w-4xl py-20 text-center md:py-[6.25rem]">
-        <nav class="text-sm text-white/60 flex flex-wrap items-center justify-center gap-1.5" :aria-label="$t('news.breadcrumb')">
-          <NuxtLink :to="localePath('/')" class="hover:text-white transition">{{ $t('nav.home') }}</NuxtLink><span aria-hidden="true">/</span>
-          <NuxtLink :to="localePath('/events')" class="hover:text-white transition">{{ $t('events.title') }}</NuxtLink>
+    <!-- hero: the PageHero surface with the breadcrumb above the pill label -->
+    <section class="surface-hero">
+      <OrbitBackdrop />
+      <div class="container-x relative flex flex-col items-center text-center py-20 md:py-24">
+        <nav class="text-sm text-t3 flex flex-wrap items-center justify-center gap-1.5" :aria-label="$t('news.breadcrumb')">
+          <NuxtLink :to="localePath('/')" class="hover:text-ink transition">{{ $t('nav.home') }}</NuxtLink><span aria-hidden="true">/</span>
+          <NuxtLink :to="localePath('/events')" class="hover:text-ink transition">{{ $t('events.title') }}</NuxtLink>
         </nav>
-        <p class="mt-5 text-xl text-white/60">{{ isPast ? $t('events.past') : $t('events.upcoming') }}</p>
-        <h1 class="section-title mt-2 text-white text-balance">{{ title }}</h1>
+        <SectionLabel pill class="mt-6">{{ isPast ? $t('events.past') : $t('events.upcoming') }}</SectionLabel>
+        <h1 class="display mt-6 max-w-4xl text-ink text-balance">{{ title }}</h1>
       </div>
     </section>
 
     <section class="container-x section-y grid lg:grid-cols-[1fr_20rem] gap-10 items-start">
       <div class="min-w-0">
         <figure v-if="cover?.url" class="mb-10">
-          <img :src="cover.url" :alt="coverAlt" :width="cover.width ?? 1200" :height="cover.height ?? 675" loading="eager" fetchpriority="high" decoding="async" class="w-full rounded-md object-cover aspect-video bg-surface">
+          <img :src="cover.url" :alt="coverAlt" :width="cover.width ?? 1200" :height="cover.height ?? 675" loading="eager" fetchpriority="high" decoding="async" class="w-full rounded-2xl border border-border object-cover aspect-video bg-surface">
         </figure>
         <!-- eslint-disable-next-line vue/no-v-html -- body is sanitized/escaped by renderCmsBody -->
         <article v-if="html" class="prose-basic text-base" v-html="html" />

@@ -1,12 +1,11 @@
 /**
- * UX-05 / BRD-04 — this browser's display choices (localStorage). Visitors use them on the public site; signed-in
- * users carry the same values on their account (PATCH /me/preferences), which wins when known.
- * Kept tiny: imported by a global plugin.
+ * UX-05 — this browser's calendar choice (localStorage). Visitors use it on the public site; signed-in users carry
+ * the same value on their account (PATCH /me/preferences), which wins when known. The theme has its own store
+ * (composables/useSiteTheme.ts). Kept tiny: imported by a global plugin.
  */
-import type { CalendarPref, ThemePref } from '~/types/platform'
+import type { CalendarPref } from '~/types/platform'
 
 const CALENDAR_KEY = 'sciis.calendar'
-const THEME_KEY = 'sciis.theme'
 
 const readKey = (key: string): string | null => {
   if (!import.meta.client) return null
@@ -30,9 +29,3 @@ export const readStoredCalendar = (): CalendarPref | null => {
   return v === 'gregorian' || v === 'hijri' || v === 'both' ? v : null
 }
 export const storeCalendarChoice = (v: CalendarPref) => writeKey(CALENDAR_KEY, v)
-
-export const readStoredTheme = (): ThemePref | null => {
-  const v = readKey(THEME_KEY)
-  return v === 'system' || v === 'light' || v === 'dark' ? v : null
-}
-export const storeThemeChoice = (v: ThemePref) => writeKey(THEME_KEY, v)

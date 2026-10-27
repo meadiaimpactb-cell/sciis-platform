@@ -18,9 +18,6 @@
 import type { SweetAlertIcon } from 'sweetalert2'
 import { parseApiError } from '~/utils/apiError'
 
-const BRAND = '#24306C' // navy-700 (tokens.css)
-const MUTED = '#9CA3AF'
-
 type ToastKind = Extract<SweetAlertIcon, 'success' | 'error' | 'warning' | 'info'>
 const DURATION: Record<ToastKind, number> = { success: 4000, info: 4000, warning: 6000, error: 8000 }
 
@@ -108,12 +105,11 @@ export async function confirmDialog(title: string, text = '', confirmText?: stri
     showCancelButton: true,
     confirmButtonText: confirmText ?? tr('notify.confirm', 'تأكيد'),
     cancelButtonText: tr('notify.cancel', 'إلغاء'),
-    confirmButtonColor: BRAND,
-    cancelButtonColor: MUTED,
     // swal2 renders [confirm, cancel] in DOM order and the dialog itself is `dir=rtl` in Arabic, so the natural order
     // already puts confirm on the right (reading start); only LTR needs reversing to keep confirm on the right.
     reverseButtons: !isRtl(),
     focusCancel: true,
+    // buttons styled from the theme tokens (main.css), not swal2's inline colours
     customClass: { container: 'sciis-swal-layer', popup: 'sciis-dialog' },
     didOpen: (el) => el.setAttribute('dir', isRtl() ? 'rtl' : 'ltr'),
   })

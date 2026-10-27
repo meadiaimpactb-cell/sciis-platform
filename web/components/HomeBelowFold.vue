@@ -87,9 +87,9 @@ const paths = computed(() => [
       <svg class="join__rings" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs>
           <linearGradient id="home-ring" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#7FD3C9" stop-opacity=".9" />
-            <stop offset=".5" stop-color="#58B0A8" stop-opacity=".25" />
-            <stop offset="1" stop-color="#203068" stop-opacity="0" />
+            <stop offset="0" stop-color="var(--mark-1)" stop-opacity=".9" />
+            <stop offset=".5" stop-color="var(--scii-teal)" stop-opacity=".25" />
+            <stop offset="1" stop-color="var(--bg1)" stop-opacity="0" />
           </linearGradient>
         </defs>
         <circle cx="700" cy="1020" r="560" fill="none" stroke="url(#home-ring)" stroke-width="1.2" />
@@ -135,7 +135,7 @@ const paths = computed(() => [
 </template>
 
 <style scoped>
-.section-heading { font: 800 clamp(30px, 4vw, 44px)/1.35 var(--fd); }
+.section-heading { font: 800 var(--fs-title)/1.4 var(--fd); }
 
 /* ------------------------------------------------------------------------------------------------ impact */
 .impact { position: relative; overflow: hidden; background: var(--bg0); }
@@ -147,8 +147,8 @@ const paths = computed(() => [
   align-items: center;
 }
 .impact__copy { display: flex; flex-direction: column; gap: 26px; }
-.impact__title { font: 800 clamp(30px, 4.4vw, 50px)/1.35 var(--fd); }
-.impact__text { margin: 0; max-width: 560px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
+.impact__title { font: 800 var(--fs-title)/1.4 var(--fd); }
+.impact__text { margin: 0; max-width: 560px; font: 400 var(--fs-desc)/1.85 var(--fb); color: var(--t2); }
 .impact__criteria { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
 .impact__criteria li {
   display: flex;
@@ -156,7 +156,7 @@ const paths = computed(() => [
   gap: 18px;
   padding-block: 16px;
   border-top: 1px solid rgba(var(--fg-rgb), 0.12);
-  font: 500 16px/1.5 var(--fb);
+  font: 500 var(--fs-desc)/1.5 var(--fb);
   color: var(--fg);
 }
 .impact__criteria li:last-child { border-bottom: 1px solid rgba(var(--fg-rgb), 0.12); }
@@ -198,12 +198,12 @@ const paths = computed(() => [
   flex-direction: column;
   gap: 24px;
 }
-.paths__half--investor { background: linear-gradient(180deg, rgba(88, 176, 168, 0.14), rgba(88, 176, 168, 0) 60%) var(--bg1); }
-.paths__half--project { background: linear-gradient(180deg, var(--tint2), rgba(32, 48, 104, 0) 60%) var(--bg1); }
-.paths__num { font: 800 15px var(--fd); color: var(--accent-text); }
+.paths__half--investor { background: linear-gradient(180deg, rgba(var(--scii-teal-rgb), 0.14), transparent 60%) var(--bg1); }
+.paths__half--project { background: linear-gradient(180deg, var(--tint2), transparent 60%) var(--bg1); }
+.paths__num { font: 800 var(--fs-body) var(--fd); color: var(--accent-text); }
 .paths__half--project .paths__num { color: var(--t2); }
-.paths__title { font: 800 clamp(30px, 3.4vw, 40px)/1.3 var(--fd); }
-.paths__text { margin: 0; max-width: 520px; font: 400 17px/1.85 var(--fb); color: var(--t2); }
+.paths__title { font: 800 var(--fs-subtitle)/1.4 var(--fd); }
+.paths__text { margin: 0; max-width: 520px; font: 400 var(--fs-desc)/1.85 var(--fb); color: var(--t2); }
 .paths__points { margin-top: 8px; }
 .paths__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 28px; margin-top: 18px; }
 .paths__actions .site-btn { height: 54px; padding-inline: 28px; }
@@ -246,7 +246,7 @@ const paths = computed(() => [
 .join__inner { position: relative; padding-block: 120px 136px; display: flex; flex-direction: column; gap: 80px; }
 .join__benefits { display: flex; flex-direction: column; gap: 32px; }
 .join__head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
-.join__title { font: 800 clamp(28px, 3.4vw, 40px)/1.4 var(--fd); }
+.join__title { font: 800 var(--fs-title)/1.4 var(--fd); }
 .join__tiles {
   list-style: none;
   margin: 0;
@@ -263,13 +263,13 @@ const paths = computed(() => [
   border-radius: 14px;
   background: rgba(var(--fg-rgb), 0.05);
   border: 1px solid rgba(var(--fg-rgb), 0.1);
-  font: 500 15px/1.65 var(--fb);
+  font: 500 var(--fs-body)/1.7 var(--fb);
   color: var(--fg);
 }
 .join__tile svg { flex: none; margin-top: 3px; }
 .join__cta { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; padding-top: 16px; }
-.join__cta-title { font: 800 clamp(36px, 5vw, 56px)/1.25 var(--fd); }
-.join__cta-text { margin: 0; font: 400 18px/1.7 var(--fb); color: var(--t2); }
+.join__cta-title { font: 800 var(--fs-display)/1.3 var(--fd); }
+.join__cta-text { margin: 0; font: 400 var(--fs-lead)/1.7 var(--fb); color: var(--t2); }
 .join__cta-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px 28px; margin-top: 8px; }
 .join__login {
   font: 500 15px var(--fb);
@@ -285,8 +285,8 @@ const paths = computed(() => [
 .news__inner { padding-block: 52px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 40px; }
 .news__label { flex: none; margin: 0; font-family: var(--fb); color: var(--accent-text); }
 .news__item { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 6px; }
-.news__date { font: 400 13px var(--fb); color: var(--t3); }
-.news__title { font: 700 22px/1.5 var(--fd); color: var(--fg); transition: color 0.15s ease; }
+.news__date { font: 400 var(--fs-small) var(--fb); color: var(--t3); }
+.news__title { font: 700 var(--fs-card)/1.5 var(--fd); color: var(--fg); transition: color 0.15s ease; }
 .news__title:hover { color: var(--accent-text); }
 
 @media (max-width: 640px) {

@@ -43,9 +43,9 @@ useSeo({ title: t('events.metaTitle'), description: t('events.lead'), image: upc
                 </NuxtLink>
                 <div class="card-pad flex flex-col flex-1">
                   <div class="flex items-start gap-3">
-                    <time v-if="e.starts_at" :datetime="e.starts_at" class="shrink-0 rounded-xl bg-navy-100 text-navy text-center px-3 py-2 num leading-none"><span class="block text-xl font-semibold">{{ new Date(e.starts_at).getDate() }}</span><span class="block text-[11px] mt-1 font-medium">{{ date(e.starts_at, { month: 'short' }) }}</span></time>
+                    <time v-if="e.starts_at" :datetime="e.starts_at" class="shrink-0 rounded-xl border border-accent/35 bg-accent/10 text-accent-text text-center px-3 py-2 num leading-none"><span class="block text-xl font-semibold">{{ new Date(e.starts_at).getDate() }}</span><span class="block text-xs mt-1 font-medium">{{ date(e.starts_at, { month: 'short' }) }}</span></time>
                     <div class="min-w-0">
-                      <h3 class="card-title leading-8"><NuxtLink :to="localePath(`/events/${e.slug}`)" class="hover:text-navy transition">{{ e.title ?? e.title_ar }}</NuxtLink></h3>
+                      <h3 class="card-title leading-8"><NuxtLink :to="localePath(`/events/${e.slug}`)" class="hover:text-accent-text transition">{{ e.title ?? e.title_ar }}</NuxtLink></h3>
                       <p class="mt-1 text-xs text-muted num">{{ dateTime(e.starts_at) }}<template v-if="e.location"> · {{ e.location }}</template></p>
                     </div>
                   </div>

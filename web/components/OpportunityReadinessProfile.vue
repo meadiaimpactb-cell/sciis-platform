@@ -79,8 +79,8 @@ const compactFacts = computed(() => [
 
 <template>
   <!-- compact: one dense card (evaluator score modal) -->
-  <div v-if="compact" class="rounded-lg border border-border bg-bg/60 p-3">
-    <p class="text-sm font-semibold">{{ $t('admin.opportunity.readinessProfile') }}</p>
+  <div v-if="compact" class="rounded-xl border border-border bg-glass p-3">
+    <p class="text-sm font-semibold text-ink">{{ $t('admin.opportunity.readinessProfile') }}</p>
     <p class="text-xs text-muted mb-3">{{ $t('admin.opportunity.readinessHint') }}</p>
     <KeyValue :cols="2" :items="compactFacts" />
     <p v-if="founders.length" class="mt-3 text-xs text-muted">
@@ -95,13 +95,13 @@ const compactFacts = computed(() => [
         <KeyValue :cols="2" :items="teamFacts" />
         <KeyValue :cols="1" :items="teamExperience" />
       </div>
-      <h3 class="mt-5 text-sm font-semibold">{{ $t('admin.opportunity.founders') }} <span class="text-xs text-muted num">({{ founders.length }})</span></h3>
-      <div v-if="founders.length" class="mt-2 overflow-x-auto">
+      <h3 class="mt-5 text-base">{{ $t('admin.opportunity.founders') }} <span class="text-xs text-muted num">({{ founders.length }})</span></h3>
+      <div v-if="founders.length" class="mt-2 overflow-x-auto rounded-xl border border-border">
         <table class="table-base">
           <thead><tr><th>{{ $t('entrepreneur.form.team.founderName') }}</th><th>{{ $t('entrepreneur.form.team.founderRole') }}</th><th>{{ $t('entrepreneur.form.team.founderLinkedin') }}</th><th>{{ $t('entrepreneur.form.team.founderFullTime') }}</th></tr></thead>
           <tbody>
             <tr v-for="(f, i) in founders" :key="`${f.name}-${i}`">
-              <td class="font-medium">{{ f.name }}</td>
+              <td class="font-medium text-ink">{{ f.name }}</td>
               <td>{{ f.role || '—' }}</td>
               <td><a v-if="f.linkedin_url" :href="f.linkedin_url" target="_blank" rel="noopener noreferrer nofollow" class="ltr inline-block text-blue hover:underline break-all text-xs">{{ displayUrl(f.linkedin_url) }}</a><span v-else class="text-muted">—</span></td>
               <td>{{ f.is_full_time ? $t('common.yes') : $t('common.no') }}</td>
@@ -116,11 +116,11 @@ const compactFacts = computed(() => [
     <SectionCard v-if="show('market')" :title="$t('admin.opportunity.marketSection')" :sub="$t('admin.opportunity.publicSubsetHint')" class="lg:col-span-2">
       <dl class="grid md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
         <div class="md:col-span-2">
-          <dt class="text-xs text-muted">{{ $t('entrepreneur.form.market.productStage') }} <span class="ms-1 text-[10px] rounded-full bg-success/10 text-success px-1.5">{{ label('sensitivity', 'public') }}</span></dt>
-          <dd class="font-medium mt-0.5">{{ enumOr('productStage', market.product_stage) }}</dd>
+          <dt class="text-xs text-muted">{{ $t('entrepreneur.form.market.productStage') }} <span class="ms-1 text-xs rounded-full border border-success/30 bg-success/10 text-success px-2 py-0.5">{{ label('sensitivity', 'public') }}</span></dt>
+          <dd class="font-medium text-ink mt-0.5">{{ enumOr('productStage', market.product_stage) }}</dd>
         </div>
         <div v-for="m in marketTexts" :key="m.key" class="min-w-0">
-          <dt class="text-xs text-muted">{{ m.label }} <span v-if="m.public" class="ms-1 text-[10px] rounded-full bg-success/10 text-success px-1.5">{{ label('sensitivity', 'public') }}</span></dt>
+          <dt class="text-xs text-muted">{{ m.label }} <span v-if="m.public" class="ms-1 text-xs rounded-full border border-success/30 bg-success/10 text-success px-2 py-0.5">{{ label('sensitivity', 'public') }}</span></dt>
           <dd class="text-text/85 leading-6 mt-0.5 whitespace-pre-line break-words">{{ m.value || '—' }}</dd>
         </div>
       </dl>

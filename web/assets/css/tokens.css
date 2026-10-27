@@ -1,83 +1,293 @@
-/* SCII brand tokens — derived from the official logo (navy #24306C · teal #58B4A8 · teal→navy gradient).
-   Single source of truth (BRD-01). Mirrored in tailwind.config.ts and the Flutter theme. */
-:root {
-  /* Brand */
-  --navy-950: #0E1330;
-  --navy-900: #121A3F;   /* ink: headings, dark sections */
-  --navy-800: #1B2555;
-  --navy-700: #24306C;   /* brand navy (logo) — primary */
-  --navy-600: #33428A;
-  --navy-100: #E7EAF5;   /* soft navy tint */
-  --navy-50: #F2F4FA;
+/*
+ * SCII design tokens (identity v3) — the single source of colour for the public site and the portals.
+ *
+ * Dark is the default; [data-theme="light"] switches the palette. The theme sits on <html> (the visitor's choice is
+ * kept in localStorage 'scii-theme' and applied by an inline script before the first paint, see nuxt.config), and the
+ * same attribute on any element makes that subtree follow the other palette (print pages, QR codes, previews).
+ *
+ * Two notations of one palette:
+ *  - the v3 names (--bg0, --fg, --t2, --accent-text …) read by the public pieces (theme-site.css, Site* components);
+ *  - RGB channels (--c-*) read by Tailwind (`rgb(var(--c-x) / <alpha-value>)`, tailwind.config.ts), so every utility
+ *    (bg-surface, text-ink, border-border …) and its opacity modifiers follow the theme.
+ *
+ * AA contrast (WCAG 2.1, text ≥ 4.5:1, controls ≥ 3:1), dark on the card colour #203068 / light on white:
+ *  ink 12.5 / 18.2 · text 8.0 / 9.1 · muted 5.5 / 5.9 · accent text 7.2 / 4.9 · success 7.2 / 5.2 · warning 6.4 / 5.0 ·
+ *  danger 4.8 / 6.1 · on-accent #07102A on #58B0A8 7.3 · input outline 3.6 / 3.2.
+ */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
 
-  --teal-700: #2F7D74;   /* teal for text on white (AA) */
-  --teal-600: #3F9A8F;
-  --teal-500: #58B4A8;   /* brand teal (logo) — accent */
-  --teal-400: #7FCBC0;
-  --teal-100: #E3F3F0;
-  --teal-50: #F1F9F8;
+  --bg0: #182455;
+  --bg0-rgb: 24, 36, 85;
+  --bg1: #203068;
+  --bg1-rgb: 32, 48, 104;
+  --bg-footer: #131c4a;
+  --glow: #2c4290;
+  --fg: #fff;
+  --fg-rgb: 255, 255, 255;
+  --t2: rgba(255, 255, 255, 0.78);
+  --t3: rgba(255, 255, 255, 0.62);
+  --accent-text: #7fd3c9;
+  --accent-hi: #7fd3c9;
+  --accent-rgb: 127, 211, 201;
+  --btn2-bg: #fff;
+  --btn2-fg: #182455;
+  --btn2-hover: #e6f3f1;
+  --mark-2: #fff;
+  --shadow-rgb: 0, 0, 0;
+  --tint2: rgba(44, 66, 144, 0.55);
+  --stars: 1;
+  --show-dark: block;
+  --show-light: none;
 
-  /* Aliases kept for existing components */
-  --ink: var(--navy-900);
-  --navy: var(--navy-700);
-  --blue: var(--navy-700);
-  --blue-hover: var(--navy-800);
-  --blue-soft: var(--navy-100);
-  --teal: var(--teal-500);
-  --teal-hover: var(--teal-600);
-  --teal-soft: var(--teal-100);
+  --c-bg: 24 36 85;            /* bg0 — page */
+  --c-surface: 32 48 104;      /* bg1 — cards, panels */
+  --c-deep: 19 28 74;          /* footer, portal sidebar */
+  --c-field: 26 39 92;         /* form controls (inset on a card) */
+  --c-ink: 255 255 255;        /* fg — headings, strong text */
+  --c-text: 204 207 218;       /* t2 — body text */
+  --c-muted: 167 172 190;      /* t3 — secondary text */
+  --c-border: 57 71 122;       /* line */
+  --c-navy-50: 38 56 116;      /* raised rows, table heads */
+  --c-navy-100: 41 60 128;     /* soft tint */
+  --c-teal-50: 36 58 109;
+  --c-teal-100: 39 63 112;
+  --c-teal-700: 127 211 201;   /* accent text */
+  --c-accent-hi: 127 211 201;
+  --c-input-border: 128 138 170;
+  --c-link: 127 211 201;       /* text-navy / text-blue: brand emphasis on the dark palette */
+  --c-ok: 134 214 172;
+  --c-warn: 224 179 90;
+  --c-bad: 224 138 138;
+  --c-on-status: 7 16 42;      /* text on a solid success / warning / danger fill */
+  --c-overlay: 6 10 32;
 
-  --bg: #F5F7FB;
-  --surface: #FFFFFF;
-  --text: #141B3F;
-  --muted: #5F6888;
-  --border: #E3E7F0;
+  /* status hues (badges, timeline dots, pipeline bars) */
+  --hue-slate: #aeb8c9;
+  --hue-amber: #e0b35a;
+  --hue-orange: #efa64a;
+  --hue-green: #86d6ac;
+  --hue-emerald: #6fc9a0;
+  --hue-teal: #7fd3c9;
+  --hue-teal-deep: #7fd3c9;
+  --hue-blue: #9db4ff;
+  --hue-navy: #b9c4f0;
+  --hue-indigo: #a9b4e8;
+  --hue-violet: #c3a6f5;
+  --hue-red: #e08a8a;
+  --hue-gray: #a7acbe;
+  --hue-charcoal: #c9ceda;
+  --hue-neutral: #a7acbe;
 
-  /* Semantic tokens as RGB channels — what the Tailwind colours read (`rgb(var(--c-x) / <alpha>)`), so a theme
-     (BRD-04 portal dark mode, assets/css/theme-dark.css) swaps them in one place. Values = the hex tokens above. */
-  --c-ink: 18 26 63;
-  --c-text: 20 27 63;
-  --c-muted: 95 104 136;
-  --c-border: 227 231 240;
-  --c-bg: 245 247 251;
+  --badge-ink: #fff;
+  --badge-tint: rgb(32 48 104);
+  --badge-text-pct: 45%;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.25), 0 8px 24px -12px rgb(0 0 0 / 0.45);
+  --shadow-pop: 0 24px 56px -20px rgb(0 0 0 / 0.7);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg0: #f4f6fa;
+  --bg0-rgb: 244, 246, 250;
+  --bg1: #fff;
+  --bg1-rgb: 255, 255, 255;
+  --bg-footer: #e9edf5;
+  --glow: #dce6f5;
+  --fg: #0e1330;
+  --fg-rgb: 32, 48, 104;
+  --t2: #3d4670;
+  --t3: #5b6286;
+  --accent-text: #2f7d74;
+  --accent-hi: #4a9e96;
+  --accent-rgb: 88, 176, 168;
+  --btn2-bg: #203068;
+  --btn2-fg: #fff;
+  --btn2-hover: #182455;
+  --mark-2: #203068;
+  --shadow-rgb: 32, 48, 104;
+  --tint2: rgba(32, 48, 104, 0.1);
+  --stars: 0.35;
+  --show-dark: none;
+  --show-light: block;
+
+  --c-bg: 244 246 250;
   --c-surface: 255 255 255;
+  --c-deep: 233 237 245;
+  --c-field: 255 255 255;
+  --c-ink: 14 19 48;
+  --c-text: 61 70 112;
+  --c-muted: 91 98 134;
+  --c-border: 227 231 240;
   --c-navy-50: 242 244 250;
   --c-navy-100: 231 234 245;
   --c-teal-50: 241 249 248;
   --c-teal-100: 227 243 240;
   --c-teal-700: 47 125 116;
-  /* UX-04 — form control outline: 3.2:1 on white / 3.0:1 on bg (WCAG 1.4.11 non-text contrast) */
+  --c-accent-hi: 74 158 150;
   --c-input-border: 133 142 171;
+  --c-link: 36 48 108;
+  --c-ok: 31 122 92;
+  --c-warn: 180 83 9;
+  --c-bad: 178 52 52;
+  --c-on-status: 255 255 255;
+  --c-overlay: 14 19 48;
 
-  /* Brand gradients */
-  --gradient-brand: linear-gradient(135deg, #58B4A8 0%, #3C6E8E 45%, #24306C 100%);
-  --gradient-hero: linear-gradient(120deg, #0E1330 0%, #1B2555 45%, #24306C 100%);
+  --hue-slate: #94a3b8;
+  --hue-amber: #b45309;
+  --hue-orange: #d97706;
+  --hue-green: #047857;
+  --hue-emerald: #065f46;
+  --hue-teal: #0f766e;
+  --hue-teal-deep: #2f7d74;
+  --hue-blue: #1f5bff;
+  --hue-navy: #24306c;
+  --hue-indigo: #33428a;
+  --hue-violet: #6d28d9;
+  --hue-red: #b91c1c;
+  --hue-gray: #6b7280;
+  --hue-charcoal: #374151;
+  --hue-neutral: #5b6478;
 
-  /* Opportunity status colors (OpportunityStatus) */
-  --status-draft: #94A3B8;
-  --status-new: #24306C;
-  --status-under_review: #B45309;
-  --status-needs_completion: #D97706;
-  --status-not_eligible: #B91C1C;
-  --status-eligible: #2F7D74;
-  --status-connected: #0F766E;
-  --status-negotiating: #6D28D9;
-  --status-in_execution: #33428A;
-  --status-operating: #065F46;
-  --status-withdrawn: #6B7280;
-  --status-closed: #374151;
+  --badge-ink: #000;
+  --badge-tint: #fff;
+  --badge-text-pct: 60%;
+  --shadow-card: 0 1px 2px rgba(18, 26, 63, 0.05), 0 4px 16px -8px rgba(18, 26, 63, 0.08);
+  --shadow-pop: 0 20px 48px -16px rgba(18, 26, 63, 0.3);
+}
 
-  /* Semantic */
-  --success: #1F7A5C;
-  --warning: #B45309;
-  --danger: #B91C1C;
-  --info: #24306C;
+/* Colour values read by plain CSS (charts, rings, toasts). Declared on every theme root so a nested
+   [data-theme] subtree recomputes them from its own channels. */
+:root,
+[data-theme] {
+  --bg: rgb(var(--c-bg));
+  --surface: rgb(var(--c-surface));
+  --text: rgb(var(--c-text));
+  --ink: rgb(var(--c-ink));
+  --muted: rgb(var(--c-muted));
+  --border: rgb(var(--c-border));
+  --blue: rgb(var(--c-link));
+  --success: rgb(var(--c-ok));
+  --warning: rgb(var(--c-warn));
+  --danger: rgb(var(--c-bad));
+  --info: rgb(var(--c-link));
+  /* opportunity statuses (OpportunityStatus) */
+  --status-draft: var(--hue-slate);
+  --status-new: var(--hue-navy);
+  --status-under_review: var(--hue-amber);
+  --status-needs_completion: var(--hue-orange);
+  --status-not_eligible: var(--hue-red);
+  --status-eligible: var(--hue-teal-deep);
+  --status-connected: var(--hue-teal);
+  --status-negotiating: var(--hue-violet);
+  --status-in_execution: var(--hue-indigo);
+  --status-operating: var(--hue-emerald);
+  --status-withdrawn: var(--hue-gray);
+  --status-closed: var(--hue-charcoal);
+}
 
-  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+/* Theme-independent brand constants. */
+:root {
+  /* official logo colours */
+  --navy-950: #0e1330;
+  --navy-900: #121a3f;
+  --navy-800: #1b2555;
+  --navy-700: #24306c;
+  --navy-600: #33428a;
+  --teal-500: #58b4a8;
+  --teal-400: #7fcbc0;
+  --teal-600: #3f9a8f;
+
+  /* v3 accent: fills (primary buttons, active states) with dark ink on top */
+  --scii-teal: #58b0a8;
+  --scii-teal-rgb: 88, 176, 168;
+  --scii-teal-ink: #07102a;
+  --mark-1: #7fd3c9;          /* light end of the emblem's teal arc */
+
+  /* solid status badges (AppBadge): the status colour darkened, white text */
+  --badge-shade: #000;
+  --badge-on-solid: #fff;
+
+  --gradient-brand: linear-gradient(135deg, #58b4a8 0%, #3c6e8e 45%, #24306c 100%);
+
+
+  /* type: body (Plex) and display (Almarai in Arabic, Sora in English) */
+  --font-sans: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --fb: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+  --fd: 'Almarai', 'IBM Plex Sans Arabic', sans-serif;
+
+  /* Type scale — falak.sa's proportions (measured): nothing above 50 px, reading text never below 14 px.
+     display 50 · title 40 · subtitle 30 · heading 25 · card 20 · lead 18 · description 16 · body 14 · small 13 */
+  --fs-display: clamp(30px, 4.2vw, 50px);
+  --fs-title: clamp(28px, 3.2vw, 40px);
+  --fs-subtitle: clamp(24px, 2.4vw, 30px);
+  --fs-heading: clamp(21px, 2vw, 25px);
+  --fs-card: 20px;
+  --fs-lead: 18px;
+  --fs-desc: 16px;
+  --fs-body: 14px;
+  --fs-small: 13px;
 
   --radius-xl: 0.875rem;
   --radius-2xl: 1.25rem;
-  --shadow-card: 0 1px 2px rgba(18, 26, 63, 0.05), 0 4px 16px -8px rgba(18, 26, 63, 0.08);
-  --shadow-pop: 0 20px 48px -16px rgba(18, 26, 63, 0.3);
-  --shadow-glow: 0 0 0 1px rgba(88, 180, 168, 0.35), 0 16px 40px -12px rgba(88, 180, 168, 0.35);
+  --shadow-glow: 0 0 0 1px rgba(var(--scii-teal-rgb), 0.4), 0 18px 40px -16px rgba(var(--scii-teal-rgb), 0.7);
+}
+[dir='ltr'] {
+  --fd: 'Sora', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+
+/* Printing is always on the light palette. */
+@media print {
+  :root,
+  [data-theme] {
+    color-scheme: light;
+    --bg0: #fff;
+    --bg1: #fff;
+    --fg: #0e1330;
+    --fg-rgb: 32, 48, 104;
+    --t2: #3d4670;
+    --t3: #5b6286;
+    --accent-text: #2f7d74;
+    --show-dark: none;
+    --show-light: block;
+    --c-bg: 255 255 255;
+    --c-surface: 255 255 255;
+    --c-deep: 255 255 255;
+    --c-field: 255 255 255;
+    --c-ink: 14 19 48;
+    --c-text: 61 70 112;
+    --c-muted: 91 98 134;
+    --c-border: 227 231 240;
+    --c-navy-50: 242 244 250;
+    --c-navy-100: 231 234 245;
+    --c-teal-50: 241 249 248;
+    --c-teal-100: 227 243 240;
+    --c-teal-700: 47 125 116;
+    --c-link: 36 48 108;
+    --c-ok: 31 122 92;
+    --c-warn: 180 83 9;
+    --c-bad: 178 52 52;
+    --c-on-status: 255 255 255;
+    --badge-ink: #000;
+    --badge-tint: #fff;
+    --badge-text-pct: 60%;
+    --shadow-card: none;
+    --hue-slate: #94a3b8;
+    --hue-amber: #b45309;
+    --hue-orange: #d97706;
+    --hue-green: #047857;
+    --hue-emerald: #065f46;
+    --hue-teal: #0f766e;
+    --hue-teal-deep: #2f7d74;
+    --hue-blue: #1f5bff;
+    --hue-navy: #24306c;
+    --hue-indigo: #33428a;
+    --hue-violet: #6d28d9;
+    --hue-red: #b91c1c;
+    --hue-gray: #6b7280;
+    --hue-charcoal: #374151;
+    --hue-neutral: #5b6478;
+  }
 }

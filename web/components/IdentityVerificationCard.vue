@@ -98,7 +98,7 @@ const verifiedAt = computed(() => state.value?.verified_at ?? auth.me?.national_
 <template>
   <SectionCard v-if="state?.available || verifiedAt" :title="$t('platform.identity.title')" :sub="$t('platform.identity.sub')">
     <div v-if="verifiedAt" class="flex items-center gap-3 text-sm">
-      <span class="inline-flex items-center gap-1 rounded-full bg-success/10 text-success font-medium px-2.5 py-1">
+      <span class="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success font-medium px-2.5 py-1">
         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
         {{ $t('platform.identity.verified') }}
       </span>
@@ -106,7 +106,7 @@ const verifiedAt = computed(() => state.value?.verified_at ?? auth.me?.national_
     </div>
     <div v-else-if="pending && request" class="space-y-3" aria-live="polite">
       <p class="text-sm text-ink">{{ $t('platform.identity.pickNumber') }}</p>
-      <p class="num text-5xl font-bold text-navy text-center tracking-widest">{{ request.random }}</p>
+      <p class="num font-display text-5xl font-extrabold text-accent-text text-center tracking-widest">{{ request.random }}</p>
       <p class="text-xs text-muted text-center num">{{ $t('platform.identity.expiresIn', { s: secondsLeft }) }}</p>
     </div>
     <form v-else class="grid sm:grid-cols-[1fr_auto] gap-3 items-start" novalidate @submit.prevent="start">

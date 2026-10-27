@@ -63,13 +63,13 @@ onMounted(async () => {
         {{ label }}<span v-if="required" class="text-danger ms-0.5" aria-hidden="true">*</span>
         <span v-else class="text-xs text-muted font-normal ms-1">({{ $t('common.optional') }})</span>
       </label>
-      <span v-if="verified === true" class="inline-flex items-center gap-1 rounded-full bg-success/10 text-success text-[11px] font-medium px-2 py-0.5">
+      <span v-if="verified === true" class="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-medium px-2 py-0.5">
         <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
         {{ $t('phoneField.verified') }}
       </span>
-      <span v-else-if="verified === false" class="inline-flex items-center gap-2 text-[11px]">
-        <span class="rounded-full bg-warning/10 text-warning font-medium px-2 py-0.5">{{ $t('phoneField.unverified') }}</span>
-        <button type="button" class="link text-[11px]" @click="emit('verify')">{{ $t('phoneField.verifyNow') }}</button>
+      <span v-else-if="verified === false" class="inline-flex items-center gap-2 text-xs">
+        <span class="rounded-full border border-warning/30 bg-warning/10 text-warning font-medium px-2 py-0.5">{{ $t('phoneField.unverified') }}</span>
+        <button type="button" class="link text-xs" @click="emit('verify')">{{ $t('phoneField.verifyNow') }}</button>
       </span>
     </div>
     <component
@@ -90,18 +90,31 @@ onMounted(async () => {
       @on-input="onInput"
       @blur="onBlur"
     />
-    <input v-else :id="id" type="tel" class="input ltr" dir="ltr" :value="modelValue ?? ''" placeholder="+966 5X XXX XXXX" disabled>
+    <input v-else :id="id" type="tel" class="input ltr disabled:bg-field" dir="ltr" :value="modelValue ?? ''" placeholder="+966 5X XXX XXXX" disabled>
     <p v-if="help && !error" :id="helpId" class="help">{{ help }}</p>
     <p v-if="error" :id="errId" class="error-text" role="alert">{{ error }}</p>
   </div>
 </template>
 
 <style>
-/* Brand skin for vue-tel-input (same height/radius/focus ring as .input → no layout shift when it mounts) */
-.sciis-tel.vue-tel-input { border: 1px solid #E3E7F0; border-radius: 0.5rem; background: #fff; min-height: 2.625rem; box-shadow: none; }
-.sciis-tel.vue-tel-input:focus-within { border-color: #58B4A8; box-shadow: 0 0 0 4px rgb(88 180 168 / 0.15); }
-.sciis-tel--error.vue-tel-input { border-color: #B91C1C; }
-.sciis-tel .vti__input { font-size: 0.875rem; padding: 0.625rem 0.75rem; border-radius: 0 0.5rem 0.5rem 0; background: transparent; }
-.sciis-tel .vti__dropdown { border-radius: 0.5rem 0 0 0.5rem; }
-.sciis-tel .vti__dropdown-list { z-index: 50; border-radius: 0.5rem; }
+/* Theme skin for vue-tel-input: the same height, radius, colours and focus ring as `.input` (main.css), so nothing
+   shifts when it replaces the placeholder field, and both palettes follow the tokens (tokens.css). */
+.sciis-tel.vue-tel-input { border: 1px solid rgb(var(--c-input-border)); border-radius: var(--radius-xl); background: rgb(var(--c-field)); color: rgb(var(--c-ink)); min-height: 2.625rem; box-shadow: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.sciis-tel.vue-tel-input:focus-within { border-color: rgb(var(--c-teal-700)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--scii-teal) 20%, transparent); }
+.sciis-tel--error.vue-tel-input,
+.sciis-tel--error.vue-tel-input:focus-within { border-color: rgb(var(--c-bad)); }
+.sciis-tel--error.vue-tel-input:focus-within { box-shadow: 0 0 0 4px rgb(var(--c-bad) / 0.15); }
+.sciis-tel.vue-tel-input.disabled { background: rgb(var(--c-bg)); color: rgb(var(--c-muted)); }
+.sciis-tel .vti__input { font-size: 0.875rem; padding: 0.625rem 0.75rem; border-radius: 0 var(--radius-xl) var(--radius-xl) 0; background: transparent; color: rgb(var(--c-ink)); }
+.sciis-tel .vti__input::placeholder { color: rgb(var(--c-muted) / 0.8); }
+.sciis-tel .vti__dropdown { border-radius: var(--radius-xl) 0 0 var(--radius-xl); }
+.sciis-tel .vti__dropdown:hover,
+.sciis-tel .vti__dropdown.open { background-color: rgb(var(--c-ink) / 0.06); }
+.sciis-tel .vti__dropdown-arrow,
+.sciis-tel .vti__selection .vti__country-code { color: rgb(var(--c-muted)); }
+.sciis-tel .vti__dropdown-list { z-index: 50; max-width: calc(100vw - 4rem); border: 1px solid rgb(var(--c-border)); border-radius: var(--radius-xl); background-color: rgb(var(--c-surface)); color: rgb(var(--c-ink)); box-shadow: var(--shadow-pop); font-size: 0.875rem; }
+.sciis-tel .vti__dropdown-item { padding: 0.375rem 0.875rem; }
+.sciis-tel .vti__dropdown-item.highlighted { background-color: rgb(var(--c-navy-50)); }
+.sciis-tel .vti__dropdown-item.last-preferred { border-bottom-color: rgb(var(--c-border)); }
+.sciis-tel .vti__search_box { border: 1px solid rgb(var(--c-input-border)); border-radius: 0.625rem; background: rgb(var(--c-field)); color: rgb(var(--c-ink)); }
 </style>

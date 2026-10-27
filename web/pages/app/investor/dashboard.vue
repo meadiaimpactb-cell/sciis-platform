@@ -57,53 +57,54 @@ const submitMembership = () => termsForm.submit(async () => {
     </InlineAlert>
 
     <div v-if="loading && !data" class="text-muted">{{ $t('common.loading') }}</div>
-    <div v-else-if="data" class="grid gap-6 lg:grid-cols-3">
-      <!-- completion + membership -->
-      <SectionCard :title="$t('investor.dashboard.completion')" class="lg:col-span-1">
-        <div class="flex items-center gap-5">
-          <CompletionRing :percent="data.completion?.percent ?? data.completion_percent ?? 0" />
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-muted">{{ $t('investor.dashboard.membership') }}</p>
-            <AppBadge kind="membership" :value="data.membership_status" size="md" class="mt-1" />
-            <p v-if="auth.me?.membership?.completion_note" class="mt-2 text-xs text-warning">{{ auth.me.membership.completion_note }}</p>
-            <AppButton v-if="canSubmit" size="sm" class="mt-3" @click="openTerms">{{ $t('investor.dashboard.submitMembership') }}</AppButton>
+    <div v-else-if="data" class="grid gap-6 lg:grid-cols-3 items-start">
+      <!-- main column: counters (template C stat row) + requests -->
+      <div class="lg:col-span-2 space-y-6 min-w-0">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard :label="$t('investor.dashboard.counters.saved')" :value="number(data.counters.saved)" to="/app/investor/saved" />
+          <StatCard :label="$t('investor.dashboard.counters.interests')" :value="number(data.counters.interests)" to="/app/investor/interests" tone="blue" />
+          <StatCard :label="$t('investor.dashboard.counters.info_requests')" :value="number(data.counters.info_requests)" to="/app/investor/info-requests" />
+          <StatCard :label="$t('investor.dashboard.counters.meetings')" :value="number(data.counters.meetings)" to="/app/investor/meetings" tone="success" />
+        </div>
+
+        <!-- requests table -->
+        <SectionCard :title="$t('investor.dashboard.requestsTitle')" flush>
+          <div class="overflow-x-auto">
+            <table class="table-base">
+              <thead><tr><th>{{ $t('investor.dashboard.requestKind.interest') }}/{{ $t('investor.dashboard.requestKind.nomination') }}</th><th>{{ $t('admin.interests.opportunity') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('investor.dashboard.nextStep') }}</th><th>{{ $t('common.updatedAt') }}</th></tr></thead>
+              <tbody>
+                <tr v-for="r in data.requests ?? []" :key="`${r.kind}-${r.id}`">
+                  <td><NuxtLink :to="$localePath(requestLink(r.kind))" class="link text-xs">{{ $t(`investor.dashboard.requestKind.${r.kind}`) }}</NuxtLink></td>
+                  <td><NuxtLink :to="$localePath(`/app/opportunities/${r.opportunity.uuid}`)" class="font-medium text-ink hover:text-accent-text">{{ r.opportunity.name }}</NuxtLink><span class="block text-xs text-muted num">{{ r.opportunity.reference_no }}</span></td>
+                  <td><AppBadge :kind="kindBadge(r.kind) as never" :value="r.status" :label="r.kind === 'nomination' ? $t('common.new') : undefined" /></td>
+                  <td class="text-muted max-w-xs">{{ nextStep(r) }}</td>
+                  <td class="text-muted whitespace-nowrap">{{ relative(r.updated_at) }}</td>
+                </tr>
+                <tr v-if="!data.requests?.length"><td colspan="5" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div v-if="data.completion?.missing_items?.length" class="mt-4">
-          <p class="text-xs font-medium text-muted mb-2">{{ $t('investor.dashboard.missingItems') }}</p>
-          <ul class="flex flex-wrap gap-1.5"><li v-for="m in data.completion.missing_items" :key="m" class="text-xs rounded-full bg-warning/10 text-warning px-2 py-0.5">{{ missingLabels[m] ?? m }}</li></ul>
-          <AppButton to="/app/investor/profile" variant="outline" size="sm" class="mt-3">{{ $t('investor.dashboard.completeProfile') }}</AppButton>
-        </div>
-      </SectionCard>
-      <!-- counters -->
-      <div class="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard :label="$t('investor.dashboard.counters.saved')" :value="number(data.counters.saved)" to="/app/investor/saved" />
-        <StatCard :label="$t('investor.dashboard.counters.interests')" :value="number(data.counters.interests)" to="/app/investor/interests" tone="blue" />
-        <StatCard :label="$t('investor.dashboard.counters.info_requests')" :value="number(data.counters.info_requests)" to="/app/investor/info-requests" />
-        <StatCard :label="$t('investor.dashboard.counters.meetings')" :value="number(data.counters.meetings)" to="/app/investor/meetings" tone="success" />
+        </SectionCard>
       </div>
 
-      <!-- requests table -->
-      <SectionCard :title="$t('investor.dashboard.requestsTitle')" class="lg:col-span-2" flush>
-        <div class="overflow-x-auto">
-          <table class="table-base">
-            <thead><tr><th>{{ $t('investor.dashboard.requestKind.interest') }}/{{ $t('investor.dashboard.requestKind.nomination') }}</th><th>{{ $t('admin.interests.opportunity') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('investor.dashboard.nextStep') }}</th><th>{{ $t('common.updatedAt') }}</th></tr></thead>
-            <tbody>
-              <tr v-for="r in data.requests ?? []" :key="`${r.kind}-${r.id}`">
-                <td><NuxtLink :to="$localePath(requestLink(r.kind))" class="link text-xs">{{ $t(`investor.dashboard.requestKind.${r.kind}`) }}</NuxtLink></td>
-                <td><NuxtLink :to="$localePath(`/app/opportunities/${r.opportunity.uuid}`)" class="font-medium hover:text-blue">{{ r.opportunity.name }}</NuxtLink><span class="block text-xs text-muted num">{{ r.opportunity.reference_no }}</span></td>
-                <td><AppBadge :kind="kindBadge(r.kind) as never" :value="r.status" :label="r.kind === 'nomination' ? $t('common.new') : undefined" /></td>
-                <td class="text-muted max-w-xs">{{ nextStep(r) }}</td>
-                <td class="text-muted whitespace-nowrap">{{ relative(r.updated_at) }}</td>
-              </tr>
-              <tr v-if="!data.requests?.length"><td colspan="5" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      <!-- next meeting + updates -->
-      <div class="space-y-6">
+      <!-- side column: completion + membership, tasks, next meeting, updates -->
+      <div class="space-y-6 min-w-0">
+        <SectionCard :title="$t('investor.dashboard.completion')">
+          <div class="flex items-center gap-5">
+            <CompletionRing :percent="data.completion?.percent ?? data.completion_percent ?? 0" />
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-muted">{{ $t('investor.dashboard.membership') }}</p>
+              <AppBadge kind="membership" :value="data.membership_status" size="md" class="mt-1" />
+              <p v-if="auth.me?.membership?.completion_note" class="mt-2 text-xs text-warning">{{ auth.me.membership.completion_note }}</p>
+              <AppButton v-if="canSubmit" size="sm" class="mt-3" @click="openTerms">{{ $t('investor.dashboard.submitMembership') }}</AppButton>
+            </div>
+          </div>
+          <div v-if="data.completion?.missing_items?.length" class="mt-4">
+            <p class="text-xs font-medium text-muted mb-2">{{ $t('investor.dashboard.missingItems') }}</p>
+            <ul class="flex flex-wrap gap-1.5"><li v-for="m in data.completion.missing_items" :key="m" class="text-xs rounded-full border border-warning/30 bg-warning/10 text-warning px-2.5 py-0.5">{{ missingLabels[m] ?? m }}</li></ul>
+            <AppButton to="/app/investor/profile" variant="outline" size="sm" class="mt-3">{{ $t('investor.dashboard.completeProfile') }}</AppButton>
+          </div>
+        </SectionCard>
         <!-- MTG-02 — meeting follow-up actions assigned to the investor -->
         <SectionCard v-if="data.tasks?.length" :title="$t('components.meetingActions.tasksTitle')" :sub="$t('components.meetingActions.tasksSub')">
           <ul class="divide-y divide-border">
@@ -129,10 +130,10 @@ const submitMembership = () => termsForm.submit(async () => {
         <SectionCard :title="$t('investor.dashboard.updatesTitle')">
           <ul class="space-y-3">
             <li v-for="u in data.updates" :key="u.id" class="text-sm">
-              <NuxtLink v-if="u.href" :to="$localePath(u.href)" class="font-medium hover:text-blue">{{ u.title }}</NuxtLink>
-              <p v-else class="font-medium">{{ u.title }}</p>
+              <NuxtLink v-if="u.href" :to="$localePath(u.href)" class="font-medium text-ink hover:text-accent-text">{{ u.title }}</NuxtLink>
+              <p v-else class="font-medium text-ink">{{ u.title }}</p>
               <p class="text-muted text-xs mt-0.5">{{ u.body }}</p>
-              <p class="text-muted text-[11px] mt-0.5">{{ relative(u.created_at) }}</p>
+              <p class="text-muted text-xs mt-0.5">{{ relative(u.created_at) }}</p>
             </li>
             <li v-if="!data.updates?.length" class="text-sm text-muted">{{ $t('common.noData') }}</li>
           </ul>
@@ -142,7 +143,7 @@ const submitMembership = () => termsForm.submit(async () => {
       <!-- suggested -->
       <section class="lg:col-span-3">
         <div class="flex items-end justify-between gap-3 mb-4">
-          <div><h2 class="text-lg font-semibold">{{ $t('investor.dashboard.suggestedTitle') }}</h2><p class="text-sm text-muted">{{ $t('investor.dashboard.suggestedSub') }}</p></div>
+          <div><h2 class="card-title">{{ $t('investor.dashboard.suggestedTitle') }}</h2><p class="text-sm text-muted mt-0.5">{{ $t('investor.dashboard.suggestedSub') }}</p></div>
           <AppButton to="/app/opportunities" variant="outline" size="sm">{{ $t('investor.dashboard.viewAll') }}</AppButton>
         </div>
         <div v-if="data.suggested.length" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">

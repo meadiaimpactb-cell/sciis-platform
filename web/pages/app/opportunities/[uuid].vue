@@ -149,7 +149,7 @@ const indicators = computed(() => {
     <div v-if="loading && !o" class="text-muted">{{ $t('common.loading') }}</div>
     <EmptyState v-else-if="error" :title="$t('errors.404.title')" :text="error" />
     <template v-else-if="o">
-      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/opportunities')" class="hover:text-blue">{{ $t('portal.nav.opportunities') }}</NuxtLink> / <span class="num">{{ o.reference_no }}</span></nav>
+      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/opportunities')" class="hover:text-accent-text transition">{{ $t('portal.nav.opportunities') }}</NuxtLink> / <span class="num">{{ o.reference_no }}</span></nav>
       <!-- badges header -->
       <header class="card card-pad">
         <div class="flex flex-wrap items-center gap-2">
@@ -157,12 +157,12 @@ const indicators = computed(() => {
           <span class="chip chip-active text-xs !py-0.5">{{ term(o.sector) }}</span>
           <span class="chip text-xs !py-0.5">{{ label('stage', o.stage) }}</span>
           <span v-for="r in o.regions" :key="r.id" class="chip text-xs !py-0.5">{{ term(r) }}</span>
-          <span v-if="o.my_nomination" class="ms-auto text-xs rounded-full bg-blue-soft text-blue px-2.5 py-1 font-medium">{{ $t('investor.detail.nominatedFor') }} · {{ $t('investor.detail.matchScore', { n: o.my_nomination.match_score }) }}</span>
+          <span v-if="o.my_nomination" class="ms-auto text-xs rounded-full border border-accent/35 bg-accent/10 text-accent-text px-2.5 py-1 font-medium">{{ $t('investor.detail.nominatedFor') }} · {{ $t('investor.detail.matchScore', { n: o.my_nomination.match_score }) }}</span>
         </div>
-        <h1 class="mt-3 text-2xl sm:text-3xl font-semibold">{{ o.name }}</h1>
+        <h1 class="mt-3 font-display text-2xl md:text-3xl font-extrabold text-ink">{{ o.name }}</h1>
         <p v-if="o.organization_name" class="text-muted">{{ o.organization_name }}<span v-if="o.founded_year" class="num"> · {{ $t('investor.detail.founded') }} {{ o.founded_year }}</span></p>
-        <p class="mt-3 leading-7 text-text/85 max-w-3xl">{{ o.teaser_summary }}</p>
-        <ul v-if="o.teaser_highlights?.length" class="mt-3 flex flex-wrap gap-2"><li v-for="h in o.teaser_highlights" :key="h" class="text-xs rounded-lg bg-bg border border-border px-2.5 py-1">{{ h }}</li></ul>
+        <p class="mt-3 text-desc text-text max-w-3xl">{{ o.teaser_summary }}</p>
+        <ul v-if="o.teaser_highlights?.length" class="mt-3 flex flex-wrap gap-2"><li v-for="h in o.teaser_highlights" :key="h" class="text-xs rounded-full bg-glass border border-ink/15 px-3 py-1 text-ink">{{ h }}</li></ul>
       </header>
 
       <div class="mt-6 grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
@@ -198,10 +198,10 @@ const indicators = computed(() => {
                 <ul class="mt-3 flex flex-wrap gap-1.5"><li v-for="g in o.beneficiary_groups" :key="g.id" class="chip text-xs !py-0.5">{{ term(g) }}</li></ul>
               </SectionCard>
               <SectionCard v-if="o.primary_indicator" :title="$t('investor.detail.primaryIndicator')">
-                <p class="font-medium">{{ o.primary_indicator.name }}</p>
+                <p class="font-medium text-ink">{{ o.primary_indicator.name }}</p>
                 <KeyValue class="mt-3" :cols="3" :items="[{ label: $t('investor.detail.baseline'), value: `${number(o.primary_indicator.baseline)} ${o.primary_indicator.unit}`, num: true }, { label: $t('investor.detail.target'), value: `${number(o.primary_indicator.target)} ${o.primary_indicator.unit}`, num: true }, { label: $t('investor.detail.source'), value: o.primary_indicator.data_source }]" />
                 <div v-if="o.primary_indicator.latest_value != null && o.primary_indicator.target != null" class="mt-4">
-                  <div class="h-2 rounded-full bg-bg overflow-hidden"><div class="h-full bg-success rounded-full" :style="{ width: `${Math.min(100, ((o.primary_indicator.latest_value - (o.primary_indicator.baseline ?? 0)) / Math.max(1, Math.abs(o.primary_indicator.target - (o.primary_indicator.baseline ?? 0)))) * 100)}%` }" /></div>
+                  <div class="h-2.5 rounded-full bg-ink/10 overflow-hidden"><div class="h-full bg-accent rounded-full" :style="{ width: `${Math.min(100, ((o.primary_indicator.latest_value - (o.primary_indicator.baseline ?? 0)) / Math.max(1, Math.abs(o.primary_indicator.target - (o.primary_indicator.baseline ?? 0)))) * 100)}%` }" /></div>
                   <p class="text-xs text-muted mt-1 num">{{ number(o.primary_indicator.latest_value) }} / {{ number(o.primary_indicator.target) }} {{ o.primary_indicator.unit }}</p>
                 </div>
               </SectionCard>
@@ -211,13 +211,13 @@ const indicators = computed(() => {
             <div v-show="tab === 'indicators'" id="panel-indicators" role="tabpanel" aria-labelledby="tab-indicators">
               <div class="card overflow-hidden"><div class="overflow-x-auto"><table class="table-base">
                 <thead><tr><th>{{ $t('entrepreneur.form.impact.indicator') }}</th><th>{{ $t('investor.detail.unit') }}</th><th>{{ $t('investor.detail.baseline') }}</th><th>{{ $t('investor.detail.target') }}</th><th>{{ $t('investor.detail.source') }}</th><th>{{ $t('investor.detail.frequency') }}</th></tr></thead>
-                <tbody><tr v-for="i in indicators" :key="i.name"><td class="font-medium">{{ i.name }} <span v-if="i.is_primary" class="text-[10px] rounded-full bg-blue-soft text-blue px-1.5">{{ $t('entrepreneur.form.impact.primary') }}</span><span class="text-[10px] rounded-full bg-bg text-muted px-1.5 ms-1">{{ $t('investor.detail.disclosed') }}</span><span v-if="i.iris_code" class="text-[10px] rounded-full bg-teal/10 text-teal-700 px-1.5 ms-1 num" :title="$t('entrepreneur.form.impact.irisCode')" dir="ltr">IRIS+ {{ i.iris_code }}</span></td><td>{{ i.unit }}</td><td class="num">{{ number(i.baseline) }}</td><td class="num">{{ number(i.target) }}</td><td class="text-muted">{{ i.data_source }}</td><td>{{ label('frequency', i.frequency) }}</td></tr></tbody>
+                <tbody><tr v-for="i in indicators" :key="i.name"><td class="font-medium">{{ i.name }} <span v-if="i.is_primary" class="text-xs rounded-full bg-accent/10 text-accent-text px-2 py-0.5">{{ $t('entrepreneur.form.impact.primary') }}</span><span class="text-xs rounded-full bg-ink/5 text-muted px-2 py-0.5 ms-1">{{ $t('investor.detail.disclosed') }}</span><span v-if="i.iris_code" class="text-xs rounded-full bg-accent/10 text-accent-text px-2 py-0.5 ms-1 num" :title="$t('entrepreneur.form.impact.irisCode')" dir="ltr">IRIS+ {{ i.iris_code }}</span></td><td>{{ i.unit }}</td><td class="num">{{ number(i.baseline) }}</td><td class="num">{{ number(i.target) }}</td><td class="text-muted">{{ i.data_source }}</td><td>{{ label('frequency', i.frequency) }}</td></tr></tbody>
               </table></div></div>
             </div>
             <!-- risks -->
             <div v-show="tab === 'risks'" id="panel-risks" role="tabpanel" aria-labelledby="tab-risks" class="space-y-5">
               <SectionCard :title="$t('investor.detail.useOfFunds')">
-                <ul class="space-y-2"><li v-for="u in o.use_of_funds ?? []" :key="u.item" class="text-sm"><div class="flex justify-between gap-2"><span>{{ u.item }}</span><span class="num text-muted">{{ number(u.percent) }}%</span></div><div class="h-1.5 rounded-full bg-bg mt-1"><div class="h-full rounded-full bg-blue" :style="{ width: `${u.percent}%` }" /></div></li></ul>
+                <ul class="space-y-2"><li v-for="u in o.use_of_funds ?? []" :key="u.item" class="text-sm"><div class="flex justify-between gap-2"><span>{{ u.item }}</span><span class="num text-muted">{{ number(u.percent) }}%</span></div><div class="h-2 rounded-full bg-ink/10 mt-1.5 overflow-hidden"><div class="h-full rounded-full bg-accent" :style="{ width: `${u.percent}%` }" /></div></li></ul>
               </SectionCard>
               <SectionCard :title="$t('investor.detail.risksSummary')">
                 <p class="text-sm leading-7 text-text/85">{{ o.risks_summary ?? '—' }}</p>
@@ -235,25 +235,27 @@ const indicators = computed(() => {
             <!-- documents -->
             <div v-show="tab === 'documents'" id="panel-documents" role="tabpanel" aria-labelledby="tab-documents">
               <div v-if="o.documents?.locked ?? true" class="card card-pad text-center">
-                <span class="mx-auto h-12 w-12 rounded-full bg-bg flex items-center justify-center text-muted" aria-hidden="true"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg></span>
-                <h3 class="mt-3 font-semibold">{{ $t('investor.detail.docsLocked') }}</h3>
+                <span class="mx-auto h-12 w-12 rounded-full border border-accent/40 bg-accent/10 flex items-center justify-center text-accent-text" aria-hidden="true"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg></span>
+                <h3 class="mt-3 card-title">{{ $t('investor.detail.docsLocked') }}</h3>
                 <p class="text-sm text-muted mt-1 max-w-md mx-auto">{{ $t('investor.detail.docsLockedText') }}</p>
+                <!-- both consents that open the documents: the owner's approval and the investor's NDA acceptance -->
+                <DualConsent v-if="o.my_interest" class="mt-5 max-w-md mx-auto text-start" :parties="[{ label: $t('enums.agreementParty.owner'), done: o.my_interest.owner_decision === 'approved' }, { label: $t('enums.agreementParty.investor'), done: !!o.my_interest.nda_accepted_at }]" />
                 <AppButton v-if="o.my_interest?.owner_decision === 'approved' && !o.my_interest?.nda_accepted_at" class="mt-4" :loading="ndaLoading && !ndaOpen" @click="openNda">{{ $t('investor.detail.nda.review') }}</AppButton>
               </div>
               <div v-else class="card overflow-hidden">
                 <InlineAlert tone="info" class="m-4">{{ $t('investor.detail.downloadLogged') }}</InlineAlert>
-                <table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.date') }}</th><th></th></tr></thead>
-                  <tbody><tr v-for="d in o.documents?.items ?? []" :key="d.uuid"><td>{{ label('documentKind', d.kind) }}</td><td class="font-medium">{{ d.title }} <span class="text-xs text-muted num">({{ fileSize(d.size_bytes) }})</span></td><td class="text-muted">{{ date(d.created_at) }}</td><td class="text-end"><AppButton size="sm" variant="outline" @click="download(d)">{{ $t('common.download') }}</AppButton></td></tr></tbody></table>
+                <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('entrepreneur.form.documents.kind') }}</th><th>{{ $t('common.name') }}</th><th>{{ $t('common.date') }}</th><th></th></tr></thead>
+                  <tbody><tr v-for="d in o.documents?.items ?? []" :key="d.uuid"><td>{{ label('documentKind', d.kind) }}</td><td class="font-medium text-ink">{{ d.title }} <span class="text-xs text-muted num">({{ fileSize(d.size_bytes) }})</span></td><td class="text-muted num">{{ date(d.created_at) }}</td><td class="text-end"><AppButton size="sm" variant="outline" @click="download(d)">{{ $t('common.download') }}</AppButton></td></tr></tbody></table></div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- sticky side column -->
-        <aside class="lg:sticky lg:top-6 space-y-4">
+        <aside class="lg:sticky lg:top-20 space-y-4">
           <div class="card card-pad">
             <dl class="space-y-3 text-sm">
-              <div><dt class="text-xs text-muted">{{ $t('investor.detail.need') }}</dt><dd class="text-xl font-semibold num">{{ funding }}</dd></div>
+              <div><dt class="text-xs text-muted">{{ $t('investor.detail.need') }}</dt><dd class="mt-0.5 font-display text-2xl font-extrabold text-ink num">{{ funding }}</dd></div>
               <div><dt class="text-xs text-muted">{{ $t('investor.detail.type') }}</dt><dd class="font-medium">{{ investmentTypes.map((k) => label('investmentType', k)).join('، ') || '—' }}</dd></div>
               <div><dt class="text-xs text-muted">{{ $t('investor.detail.stage') }}</dt><dd class="font-medium">{{ label('stage', o.stage) }}</dd></div>
               <div><dt class="text-xs text-muted">{{ $t('investor.detail.beneficiaries') }}</dt><dd class="font-medium num">{{ number(o.beneficiaries_target) }}</dd></div>

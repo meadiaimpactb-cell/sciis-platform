@@ -101,7 +101,7 @@ const toggleProfile = async (ev: Event) => {
   <section class="card p-4" :aria-label="$t('investor.opportunities.saved.title')">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
-        <h2 class="text-sm font-semibold text-ink">{{ $t('investor.opportunities.saved.title') }}</h2>
+        <h2 class="text-base text-ink">{{ $t('investor.opportunities.saved.title') }}</h2>
         <p class="text-xs text-muted mt-0.5">{{ $t('investor.opportunities.saved.sub') }}</p>
       </div>
       <AppButton size="sm" variant="outline" :disabled="!hasCriteria" :title="hasCriteria ? undefined : $t('investor.opportunities.saved.needCriteria')" @click="openSave">
@@ -111,8 +111,8 @@ const toggleProfile = async (ev: Event) => {
     </div>
 
     <ul v-if="state.filters.length" class="mt-3 flex flex-wrap gap-2">
-      <li v-for="f in state.filters" :key="f.id" class="inline-flex items-center rounded-full border text-sm transition" :class="signature(f.filters) === currentSignature ? 'border-navy bg-navy-50' : 'border-border bg-surface'">
-        <button type="button" class="ps-3 pe-2 py-1.5 inline-flex items-center gap-1.5 rounded-s-full kbd-focus hover:text-navy" :aria-pressed="signature(f.filters) === currentSignature" @click="emit('apply', f.filters)">
+      <li v-for="f in state.filters" :key="f.id" class="inline-flex items-center rounded-full border text-sm transition" :class="signature(f.filters) === currentSignature ? 'border-accent bg-accent/10' : 'border-ink/15 bg-surface'">
+        <button type="button" class="ps-3 pe-2 py-1.5 inline-flex items-center gap-1.5 rounded-s-full kbd-focus hover:text-accent-text transition" :aria-pressed="signature(f.filters) === currentSignature" @click="emit('apply', f.filters)">
           <span class="font-medium text-ink truncate max-w-[12rem]">{{ f.name }}</span>
           <span class="num text-xs text-muted">{{ number(f.count) }}</span>
         </button>
@@ -127,7 +127,7 @@ const toggleProfile = async (ev: Event) => {
     <p v-else-if="loaded" class="mt-3 text-xs text-muted">{{ $t('investor.opportunities.saved.empty') }}</p>
 
     <label class="mt-3 pt-3 border-t border-border flex items-start gap-2.5 text-sm cursor-pointer">
-      <input type="checkbox" class="mt-0.5 h-4 w-4 rounded border-border text-blue focus:ring-blue" :checked="state.profile_alerts" :disabled="!loaded || busy === 'profile'" @change="toggleProfile" />
+      <input type="checkbox" class="mt-0.5 h-4 w-4 rounded accent-accent" :checked="state.profile_alerts" :disabled="!loaded || busy === 'profile'" @change="toggleProfile" />
       <span><span class="font-medium text-ink">{{ $t('investor.opportunities.saved.profileAlerts') }}</span><span class="block text-xs text-muted mt-0.5">{{ $t('investor.opportunities.saved.profileAlertsHint') }}</span></span>
     </label>
 

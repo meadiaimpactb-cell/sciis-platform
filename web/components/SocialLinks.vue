@@ -1,9 +1,7 @@
 <script setup lang="ts">
-/** Official social accounts from settings (`platform.social.*`); renders nothing until at least one is set. */
+/** Official social accounts from settings (`platform.social.*`), as round theme-coloured icons (design v3); renders nothing until at least one is set. */
 import type { SocialNetwork } from '~/composables/usePlatformContact'
 
-// `site` follows the public theme (design v3 footer); `dark` is for fixed navy surfaces.
-withDefaults(defineProps<{ dark?: boolean; site?: boolean }>(), { dark: false, site: false })
 const { social } = usePlatformContact()
 const NAMES: Record<SocialNetwork, string> = { x: 'X', linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube' }
 // Simple Icons (CC0) brand marks, 24×24.
@@ -20,8 +18,7 @@ const ICONS: Record<SocialNetwork, string> = {
     <li v-for="s in social" :key="s.network">
       <a
         :href="s.url" target="_blank" rel="me noopener"
-        class="h-10 w-10 rounded-lg flex items-center justify-center transition kbd-focus"
-        :class="site ? 'site-social' : dark ? 'bg-white/10 text-white/85 hover:bg-teal hover:text-navy-900' : 'bg-navy-50 text-navy hover:bg-navy hover:text-white'"
+        class="site-social h-10 w-10 rounded-full flex items-center justify-center transition kbd-focus"
         :aria-label="$t('footer.socialLabel', { network: NAMES[s.network] })"
       >
         <svg class="h-[1.1rem] w-[1.1rem]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path :d="ICONS[s.network]" /></svg>

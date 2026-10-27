@@ -4,7 +4,8 @@
 const props = withDefaults(defineProps<{ series: { label: string; value: number; color?: string; key?: string }[]; clickable?: boolean; selectedKey?: string | null; unit?: string }>(), { clickable: false, selectedKey: null })
 const emit = defineEmits<{ (e: 'select', item: { label: string; value: number; key?: string }, index: number): void }>()
 const { number, percent } = useFormat()
-const PALETTE = ['#24306C', '#58B4A8', '#33428A', '#2F7D74', '#7FCBC0', '#B45309', '#6B7280', '#A5B4FC']
+// theme-aware series colours (tokens.css)
+const PALETTE = ['var(--hue-navy)', 'var(--scii-teal)', 'var(--hue-indigo)', 'var(--hue-teal-deep)', 'var(--accent-hi)', 'var(--hue-amber)', 'var(--hue-gray)', 'var(--hue-violet)']
 const R = 15.9155 // circumference 100
 const total = computed(() => props.series.reduce((a, s) => a + Math.max(0, s.value), 0))
 const segments = computed(() => {
@@ -23,7 +24,7 @@ const pick = (i: number) => { if (props.clickable) emit('select', props.series[i
 <template>
   <div v-if="series.length && total > 0" class="flex flex-col sm:flex-row items-center gap-4">
     <svg viewBox="0 0 42 42" class="h-36 w-36 shrink-0" role="img" :aria-label="series.map((s) => `${s.label}: ${number(s.value)}`).join('، ')">
-      <circle cx="21" cy="21" :r="R" fill="none" stroke="var(--border, #E5E7EB)" stroke-width="5" />
+      <circle cx="21" cy="21" :r="R" fill="none" stroke="var(--border)" stroke-width="5" />
       <circle
         v-for="s in segments"
         :key="keyOf(s)"
@@ -33,7 +34,7 @@ const pick = (i: number) => { if (props.clickable) emit('select', props.series[i
         :class="clickable && 'cursor-pointer transition-[stroke-width] hover:opacity-90'"
         @click="pick(s.i)"
       ><title>{{ s.label }}: {{ number(s.value) }}{{ unit ?? '' }} ({{ percent(s.share) }})</title></circle>
-      <text x="21" y="22.5" text-anchor="middle" class="num" style="font-size: 6px; font-weight: 600; fill: var(--ink, #121A3F); unicode-bidi: isolate;">{{ number(total) }}</text>
+      <text x="21" y="22.5" text-anchor="middle" class="num" style="font-size: 6px; font-weight: 600; fill: var(--ink); unicode-bidi: isolate;">{{ number(total) }}</text>
     </svg>
     <ul class="flex-1 min-w-0 space-y-1 text-sm w-full">
       <li v-for="s in segments" :key="keyOf(s)">

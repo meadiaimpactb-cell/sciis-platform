@@ -95,7 +95,7 @@ const save = () => saveForm.submit(async (v) => {
           <legend class="label">{{ $t('admin.reportBuilder.columns') }}</legend>
           <div class="flex flex-wrap gap-1.5">
             <button v-for="c in def.columns" :key="c.key" type="button" class="chip kbd-focus" :class="[columns.includes(c.key) && 'chip-active', !c.allowed && 'opacity-50 cursor-not-allowed']" :disabled="!c.allowed" :aria-pressed="columns.includes(c.key)" :title="c.allowed ? sensitivityHint(c.sensitivity) : $t('admin.reportBuilder.lockedColumn')" @click="toggleColumn(c.key)">
-              <svg v-if="!c.allowed" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg>
+              <svg v-if="!c.allowed" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 118 0v4" /></svg>
               {{ c.label }}
             </button>
           </div>
@@ -115,7 +115,7 @@ const save = () => saveForm.submit(async (v) => {
           <FormField v-if="has('region')" v-model="f.region" name="rb_region" type="select" :label="$t('admin.reports.filters.region')" :options="tax.list('regions').map((s) => ({ value: s.key, label: term(s) }))" />
           <FormField v-if="has('investor_type')" v-model="f.investor_type" name="rb_investor_type" type="select" class="col-span-2" :label="$t('admin.reportBuilder.accountType')" :options="def!.filters.investor_type" />
         </div>
-        <label v-if="has('overdue')" class="inline-flex items-center gap-2 text-sm"><input v-model="f.overdue" type="checkbox" class="h-4 w-4 rounded border-border text-blue" />{{ $t('admin.opportunities.filters.overdue') }}</label>
+        <label v-if="has('overdue')" class="inline-flex items-center gap-2 text-sm"><input v-model="f.overdue" type="checkbox" class="h-4 w-4 rounded border-border accent-accent" />{{ $t('admin.opportunities.filters.overdue') }}</label>
 
         <FormField v-model="groupBy" name="rb_group_by" type="select" :label="$t('admin.reportBuilder.groupBy')" :help="$t('admin.reportBuilder.groupHint')" :options="groupable.map((c) => ({ value: c.key, label: c.label }))" />
 
@@ -135,7 +135,7 @@ const save = () => saveForm.submit(async (v) => {
       </template>
       <div v-if="result" class="space-y-4">
         <InlineAlert v-if="result.total > catalog.max_export_rows" tone="warning">{{ $t('admin.reportBuilder.exportCap', { n: catalog.max_export_rows }) }}</InlineAlert>
-        <div v-if="result.grouped && chartSeries.length" class="rounded-xl border border-border p-4">
+        <div v-if="result.grouped && chartSeries.length" class="rounded-xl border border-border bg-ink/[0.03] p-4">
           <LineChart v-if="groupBy === 'month'" :series="chartSeries" />
           <BarChart v-else :series="chartSeries" />
         </div>

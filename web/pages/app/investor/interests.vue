@@ -45,14 +45,9 @@ const messagesFor = ref<Interest | null>(null)
         <div class="flex flex-col md:flex-row md:items-start gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2"><AppBadge kind="interest" :value="i.status" size="md" /><span class="text-xs text-muted num">{{ date(i.created_at) }}</span></div>
-            <h2 class="mt-2 text-lg font-semibold"><NuxtLink :to="$localePath(`/app/opportunities/${i.opportunity.uuid}`)" class="hover:text-blue">{{ i.opportunity.name }}</NuxtLink></h2>
+            <h2 class="mt-2 card-title"><NuxtLink :to="$localePath(`/app/opportunities/${i.opportunity.uuid}`)" class="hover:text-accent-text transition">{{ i.opportunity.name }}</NuxtLink></h2>
             <p class="text-sm text-muted">{{ term(i.opportunity.sector) }} · <span class="num">{{ i.opportunity.reference_no }}</span></p>
-            <ol v-if="i.status !== 'closed'" class="mt-4 flex items-center gap-1">
-              <li v-for="(s, idx) in steps" :key="s" class="flex-1 flex flex-col gap-1 min-w-0">
-                <div class="h-1.5 rounded-full" :class="idx <= stepIdx(i.status) ? 'bg-blue' : 'bg-border'" />
-                <span class="text-[10px] sm:text-xs truncate" :class="idx === stepIdx(i.status) ? 'text-blue font-medium' : 'text-muted'">{{ $t(`investor.interests.steps.${s}`) }}</span>
-              </li>
-            </ol>
+            <StageTrack v-if="i.status !== 'closed'" class="mt-4" :stages="steps.map((s) => $t(`investor.interests.steps.${s}`))" :current="stepIdx(i.status)" :label="i.opportunity.name" />
             <p v-if="i.next_step" class="mt-3 text-sm"><span class="text-muted">{{ $t('investor.dashboard.nextStep') }}:</span> {{ i.next_step }}</p>
             <p v-if="i.closed_reason" class="mt-2 text-sm text-muted">{{ $t('common.reason') }}: {{ i.closed_reason }}</p>
           </div>

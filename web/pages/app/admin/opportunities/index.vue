@@ -56,7 +56,7 @@ const columns = [{ key: 'reference_no', label: t('admin.opportunities.columns.re
       <select v-model="status" class="input" :aria-label="$t('admin.opportunities.filters.status')"><option value="">{{ $t('admin.opportunities.filters.status') }}: {{ $t('common.all') }}</option><option v-for="s in OPPORTUNITY_STATUSES" :key="s" :value="s">{{ label('opportunityStatus', s) }}</option></select>
       <select v-model="sector" class="input" :aria-label="$t('admin.opportunities.filters.sector')"><option value="">{{ $t('admin.opportunities.filters.sector') }}: {{ $t('common.all') }}</option><option v-for="s in tax.list('sectors')" :key="s.key" :value="s.key">{{ term(s) }}</option></select>
       <select v-model="assignee" class="input" :aria-label="$t('admin.opportunities.filters.assignee')"><option value="">{{ $t('admin.opportunities.filters.assignee') }}: {{ $t('common.all') }}</option><option value="none">{{ $t('admin.listFilters.unassigned') }}</option><option v-for="r in reviewers" :key="r.id" :value="String(r.id)">{{ r.name }}</option></select>
-      <label class="inline-flex items-center gap-2 text-sm"><input v-model="overdue" type="checkbox" class="h-4 w-4 rounded border-border text-blue" />{{ $t('admin.opportunities.filters.overdue') }}</label>
+      <label class="inline-flex items-center gap-2 text-sm text-ink cursor-pointer"><input v-model="overdue" type="checkbox" class="h-4 w-4 rounded border-border accent-accent" />{{ $t('admin.opportunities.filters.overdue') }}</label>
     </div>
     <DataTable :columns="columns" :rows="rows" row-key="uuid" :loading="loading">
       <template #cell-reference_no="{ value }"><span class="num text-muted">{{ value ?? '—' }}</span></template>

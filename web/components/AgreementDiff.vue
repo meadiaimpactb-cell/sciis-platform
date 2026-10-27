@@ -40,14 +40,14 @@ const expand = (id: number) => { expanded.value = new Set([...expanded.value, id
 </script>
 
 <template>
-  <div class="rounded-lg border border-border overflow-hidden">
+  <div class="rounded-xl border border-border overflow-hidden">
     <p v-if="!part.added && !part.removed" class="p-4 text-sm text-muted">{{ $t('agreements.compare.identical') }}</p>
     <div v-else class="overflow-x-auto">
       <table class="w-full text-sm" :dir="lang === 'en' ? 'ltr' : 'rtl'" :lang="lang" :aria-label="caption">
         <tbody>
           <template v-for="(r, i) in rows" :key="i">
             <tr v-if="r.kind === 'fold'">
-              <td colspan="4" class="bg-bg/70 text-center py-1"><button type="button" class="text-xs text-blue hover:underline kbd-focus rounded" @click="expand(r.id)">{{ $t('agreements.compare.folded', { n: r.count }) }}</button></td>
+              <td colspan="4" class="bg-ink/5 text-center py-1.5"><button type="button" class="link text-xs kbd-focus rounded" @click="expand(r.id)">{{ $t('agreements.compare.folded', { n: r.count }) }}</button></td>
             </tr>
             <tr v-else :class="r.line.type === 'added' ? 'bg-success/10' : r.line.type === 'removed' ? 'bg-danger/10' : ''">
               <td class="w-10 px-2 py-1 text-xs text-muted num text-end align-top select-none" dir="ltr">{{ r.line.old ?? '' }}</td>

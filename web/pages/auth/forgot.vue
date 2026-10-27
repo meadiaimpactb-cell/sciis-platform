@@ -26,14 +26,14 @@ const submit = () => form.submit(async (v) => {
 </script>
 
 <template>
-  <div class="card card-pad">
-    <h1 class="text-2xl font-semibold">{{ $t('auth.forgot.title') }}</h1>
-    <p class="text-muted mt-1">{{ sent ? $t('auth.forgot.sent') : $t('auth.forgot.sub') }}</p>
-    <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
+  <div class="card p-6 sm:p-8 mx-auto max-w-lg">
+    <h1 class="text-2xl">{{ $t('auth.forgot.title') }}</h1>
+    <p class="mt-2 text-base text-muted">{{ sent ? $t('auth.forgot.sent') : $t('auth.forgot.sub') }}</p>
+    <form class="mt-7 space-y-5" novalidate @submit.prevent="submit">
       <FormField v-model="form.values.email" name="email" type="email" :label="$t('common.email')" :error="form.errors.value.email" required ltr autocomplete="email" />
       <FormAlert />
       <AppButton type="submit" block size="lg" :loading="form.submitting.value">{{ sent ? $t('auth.verify.resend') : $t('auth.forgot.submit') }}</AppButton>
     </form>
-    <p class="mt-5 text-sm text-center"><NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
+    <p class="mt-6 border-t border-border pt-5 text-sm text-center"><NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
   </div>
 </template>

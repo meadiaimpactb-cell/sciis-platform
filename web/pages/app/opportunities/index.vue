@@ -111,7 +111,7 @@ const toggleCompare = (o: OpportunityCard) => {
     <PageHeader :title="$t('investor.opportunities.title')" :sub="$t('investor.opportunities.sub')" />
     <InlineAlert tone="info" class="mb-5">{{ $t('investor.opportunities.policyNote', { policy: $t(`investor.opportunities.policy.${policy}`) }) }} <span class="text-xs text-muted">— {{ $t('app.pendingDecision') }}</span></InlineAlert>
     <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
-      <FilterSidebar v-model="filters" :groups="groups" class="lg:sticky lg:top-6" @reset="reset" />
+      <FilterSidebar v-model="filters" :groups="groups" class="lg:sticky lg:top-20" @reset="reset" />
       <div class="min-w-0">
         <div class="card p-3 flex flex-col sm:flex-row gap-3 sm:items-center">
           <label class="sr-only" for="opp-search">{{ $t('common.search') }}</label>
@@ -119,7 +119,7 @@ const toggleCompare = (o: OpportunityCard) => {
           <div class="flex items-center gap-3">
             <label class="text-sm text-muted whitespace-nowrap" for="opp-sort">{{ $t('common.sortBy') }}</label>
             <select id="opp-sort" v-model="sort" class="input w-auto"><option v-for="o in sortOpts" :key="o.value" :value="o.value">{{ o.label }}</option></select>
-            <label class="inline-flex items-center gap-2 text-sm whitespace-nowrap cursor-pointer"><input v-model="nominatedOnly" type="checkbox" class="h-4 w-4 rounded border-border text-blue focus:ring-blue" />{{ $t('investor.opportunities.nominatedOnly') }}</label>
+            <label class="inline-flex items-center gap-2 text-sm whitespace-nowrap cursor-pointer"><input v-model="nominatedOnly" type="checkbox" class="h-4 w-4 rounded accent-accent" />{{ $t('investor.opportunities.nominatedOnly') }}</label>
           </div>
         </div>
         <SavedSearches class="mt-3" :current="current" @apply="applySaved" />
@@ -128,7 +128,7 @@ const toggleCompare = (o: OpportunityCard) => {
           <OpportunityCard v-for="o in list" :key="o.uuid" :opportunity="o" saveable @toggle-save="toggleSave">
             <template #footer>
               <label class="inline-flex items-center gap-2 text-xs text-muted cursor-pointer w-fit" :class="compare.full.value && !compare.has(o.uuid) && 'opacity-60'">
-                <input type="checkbox" class="h-4 w-4 rounded border-border text-blue focus:ring-blue" :checked="compare.has(o.uuid)" @change="toggleCompare(o)" />
+                <input type="checkbox" class="h-4 w-4 rounded accent-accent" :checked="compare.has(o.uuid)" @change="toggleCompare(o)" />
                 {{ $t('investor.opportunities.compare.add') }}
               </label>
             </template>
@@ -136,10 +136,10 @@ const toggleCompare = (o: OpportunityCard) => {
         </div>
         <EmptyState v-else-if="!loading" class="mt-3" :title="$t('investor.opportunities.empty')"><AppButton variant="outline" size="sm" @click="reset">{{ $t('common.clearAll') }}</AppButton></EmptyState>
         <!-- OPP-12 compare bar -->
-        <div v-if="compare.picks.value.length" class="sticky bottom-4 z-20 mt-5 card p-3 shadow-lg flex flex-col sm:flex-row sm:items-center gap-3" role="region" :aria-label="$t('investor.opportunities.compare.bar')">
+        <div v-if="compare.picks.value.length" class="sticky bottom-4 z-20 mt-5 card p-3 shadow-pop border-accent/40 flex flex-col sm:flex-row sm:items-center gap-3" role="region" :aria-label="$t('investor.opportunities.compare.bar')">
           <p class="text-sm font-medium text-ink shrink-0">{{ $t('investor.opportunities.compare.selected', { n: compare.picks.value.length, max: compareMax }) }}</p>
           <ul class="flex flex-wrap gap-1.5 min-w-0 flex-1">
-            <li v-for="p in compare.picks.value" :key="p.uuid" class="inline-flex items-center gap-1 rounded-full bg-bg border border-border ps-2.5 pe-1 py-0.5 text-xs">
+            <li v-for="p in compare.picks.value" :key="p.uuid" class="inline-flex items-center gap-1 rounded-full bg-glass border border-ink/15 ps-3 pe-1 py-0.5 text-xs text-ink">
               <span class="truncate max-w-[10rem]">{{ p.name }}</span>
               <button type="button" class="h-5 w-5 inline-flex items-center justify-center rounded-full text-muted hover:text-danger kbd-focus" :aria-label="$t('investor.opportunities.compare.remove', { name: p.name })" @click="compare.remove(p.uuid)"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
             </li>

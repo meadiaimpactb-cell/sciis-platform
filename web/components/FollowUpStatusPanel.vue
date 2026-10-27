@@ -48,7 +48,7 @@ const tiles = computed(() => {
         <p v-if="fu?.execution_started_at" class="text-xs text-muted num">{{ $t('followUp.status.startedAt') }}: {{ date(fu.execution_started_at) }}<template v-if="fu.report_frequency"> · {{ $t('followUp.status.frequency') }}: {{ label('frequency', fu.report_frequency) }}</template></p>
       </div>
       <dl v-if="tiles.length" class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div v-for="x in tiles" :key="x.key" class="rounded-lg bg-bg p-3"><dt class="text-xs text-muted">{{ x.label }}</dt><dd class="mt-0.5 text-lg font-semibold num" :class="x.tone">{{ x.value }}</dd></div>
+        <div v-for="x in tiles" :key="x.key" class="rounded-xl border border-border bg-glass p-3"><dt class="text-xs text-muted">{{ x.label }}</dt><dd class="mt-0.5 font-display text-xl font-extrabold num" :class="x.tone ?? 'text-ink'">{{ x.value }}</dd></div>
       </dl>
     </div>
     <p class="mt-4 text-xs text-muted leading-6">{{ $t('followUp.status.definitions', { n: number(fu?.stalled_after_days ?? 45) }) }}</p>

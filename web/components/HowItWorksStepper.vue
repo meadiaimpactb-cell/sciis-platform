@@ -99,8 +99,8 @@ const onKey = (e: KeyboardEvent) => {
   transition: background-color 0.15s ease;
 }
 .how__tab:hover { background: rgba(var(--fg-rgb), 0.04); }
-.how__tab-num { min-width: 30px; font: 800 15px var(--fd); color: var(--t3); }
-.how__tab-title { font: 700 18px var(--fd); color: var(--t2); }
+.how__tab-num { min-width: 30px; font: 800 var(--fs-body) var(--fd); color: var(--t3); }
+.how__tab-title { font: 700 var(--fs-desc) var(--fd); color: var(--t2); }
 .how__tab--active,
 .how__tab--active:hover {
   background: rgba(var(--accent-rgb), 0.08);
@@ -122,7 +122,7 @@ const onKey = (e: KeyboardEvent) => {
   justify-content: space-between;
   gap: 12px;
 }
-.how__counter { font: 500 13px var(--fb); color: var(--t3); }
+.how__counter { font: 500 var(--fs-small) var(--fb); color: var(--t3); }
 .how__preview {
   display: inline-flex;
   align-items: center;
@@ -136,9 +136,9 @@ const onKey = (e: KeyboardEvent) => {
 .how__segment--done { background: var(--scii-teal); }
 .how__segment--current { background: var(--accent-hi); }
 .how__body { display: flex; flex-direction: column; gap: 14px; }
-.how__num { font: 800 64px/1 var(--fd); color: var(--accent-text); }
-.how__title { font: 800 30px/1.35 var(--fd); }
-.how__text { margin: 0; font: 400 17px/1.85 var(--fb); color: var(--t2); }
+.how__num { font: 800 clamp(36px, 3.4vw, 48px)/1 var(--fd); color: var(--accent-text); }
+.how__title { font: 800 var(--fs-heading)/1.45 var(--fd); }
+.how__text { margin: 0; font: 400 var(--fs-desc)/1.85 var(--fb); color: var(--t2); }
 .how__foot {
   margin-top: auto;
   display: flex;
@@ -149,11 +149,9 @@ const onKey = (e: KeyboardEvent) => {
   padding-top: 22px;
   border-top: 1px solid rgba(var(--fg-rgb), 0.1);
 }
-.how__meta { font: 400 14px/1.6 var(--fb); color: var(--t3); }
+.how__meta { font: 400 var(--fs-body)/1.6 var(--fb); color: var(--t3); }
 .how__next { height: 42px; font-size: 14px; padding-inline: 18px; }
 @media (max-width: 640px) {
   .how__panel { padding: 24px; min-height: 0; }
-  .how__num { font-size: 48px; }
-  .how__title { font-size: 24px; }
 }
 </style>

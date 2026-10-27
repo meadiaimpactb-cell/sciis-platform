@@ -13,17 +13,17 @@ const calendarItem = (m: Meeting) => ({ title: m.title, starts_at: m.starts_at, 
 <template>
   <div class="space-y-8">
     <section v-for="(group, key) in { upcoming, past }" :key="key">
-      <h2 class="text-lg font-semibold mb-3">{{ $t(`investor.meetings.${key}`) }}</h2>
+      <h2 class="card-title mb-3">{{ $t(`investor.meetings.${key}`) }}</h2>
       <EmptyState v-if="!group.length" compact :title="$t('common.noData')" />
       <div v-else class="space-y-3">
         <article v-for="m in group" :key="m.id" class="card card-pad">
           <div class="flex flex-col sm:flex-row sm:items-start gap-3">
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2"><AppBadge kind="meeting" :value="m.status" /><span class="text-sm text-muted num">{{ dateTime(m.starts_at) }}</span></div>
-              <h3 class="mt-1 font-semibold">{{ m.title }}</h3>
+              <h3 class="mt-1.5 text-lg text-ink">{{ m.title }}</h3>
               <p class="text-sm text-muted">{{ m.opportunity.name }} · {{ m.location ?? m.video_url ?? '' }}</p>
               <p class="text-xs text-muted mt-2">{{ $t('investor.meetings.participants') }}: {{ m.participants.map((p) => p.name).join('، ') }}</p>
-              <div v-if="m.minutes" class="mt-3 rounded-lg bg-bg p-3 text-sm"><p class="text-xs font-medium text-muted mb-1">{{ $t('investor.meetings.minutes') }}</p><p class="leading-6">{{ m.minutes }}</p><ul v-if="m.actions?.length" class="mt-3 space-y-2">
+              <div v-if="m.minutes" class="mt-3 rounded-xl border border-border bg-glass p-3 text-sm"><p class="text-xs font-medium text-muted mb-1">{{ $t('investor.meetings.minutes') }}</p><p class="leading-6">{{ m.minutes }}</p><ul v-if="m.actions?.length" class="mt-3 space-y-2">
                 <li v-for="a in m.actions" :key="a.id ?? a.description" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                   <span class="h-1.5 w-1.5 rounded-full shrink-0" :class="a.done_at ? 'bg-success' : 'bg-warning'" aria-hidden="true" />
                   <span :class="a.done_at && 'line-through text-muted'">{{ a.description }}</span>

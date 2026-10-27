@@ -16,17 +16,17 @@ const keyOf = (s: { label: string; key?: string }) => s.key ?? s.label
       :key="keyOf(s)"
       :type="clickable ? 'button' : undefined"
       class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm text-start"
-      :class="clickable && ['rounded-lg -mx-1.5 px-1.5 py-1 transition kbd-focus hover:bg-navy-50 cursor-pointer', selectedKey === keyOf(s) && 'bg-navy-50 ring-1 ring-navy/20']"
+      :class="clickable && ['rounded-xl -mx-2 px-2 py-1.5 transition kbd-focus hover:bg-ink/5 cursor-pointer', selectedKey === keyOf(s) && 'bg-accent/10 ring-1 ring-accent/40']"
       :aria-label="clickable ? `${s.label}: ${number(s.value)}${unit ?? ''} — ${$t('components.chart.drill')}` : undefined"
       @click="clickable && emit('select', s, i)"
     >
       <div class="min-w-0">
         <div class="flex items-center justify-between gap-2 mb-1">
-          <span class="truncate text-ink/90">{{ s.label }}</span>
-          <span class="num text-muted shrink-0">{{ number(s.value) }}<span v-if="unit" class="ms-0.5">{{ unit }}</span></span>
+          <span class="truncate text-text">{{ s.label }}</span>
+          <span class="num font-semibold text-ink shrink-0">{{ number(s.value) }}<span v-if="unit" class="ms-0.5">{{ unit }}</span></span>
         </div>
-        <div class="h-2.5 rounded-full bg-bg overflow-hidden" :class="funnel && 'mx-auto'" :style="funnel ? { width: `${100 - i * (40 / Math.max(1, series.length - 1))}%` } : undefined">
-          <div class="h-full rounded-full transition-all duration-500" :style="{ width: `${Math.max(2, (s.value / maxV) * 100)}%`, backgroundColor: s.color ?? 'var(--blue)' }" />
+        <div class="h-2 rounded-full bg-ink/10 overflow-hidden" :class="funnel && 'mx-auto'" :style="funnel ? { width: `${100 - i * (40 / Math.max(1, series.length - 1))}%` } : undefined">
+          <div class="h-full rounded-full transition-all duration-500" :style="{ width: `${Math.max(2, (s.value / maxV) * 100)}%`, backgroundColor: s.color ?? 'var(--accent-hi)' }" />
         </div>
       </div>
     </component>

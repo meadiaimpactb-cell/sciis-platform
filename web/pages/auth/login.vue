@@ -69,35 +69,42 @@ const fill = (email: string) => { form.values.email = email; form.values.passwor
 </script>
 
 <template>
-  <div class="card card-pad">
+  <div class="card p-6 sm:p-8 mx-auto max-w-lg">
     <template v-if="step === 'credentials'">
-      <h1 class="text-2xl font-semibold">{{ $t('auth.login.title') }}</h1>
-      <p class="text-muted mt-1">{{ $t('auth.login.sub') }}</p>
-      <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
+      <h1 class="text-2xl">{{ $t('auth.login.title') }}</h1>
+      <p class="mt-2 text-base text-muted">{{ $t('auth.login.sub') }}</p>
+      <form class="mt-7 space-y-5" novalidate @submit.prevent="submit">
         <FormField v-model="form.values.email" name="email" type="email" :label="$t('common.email')" :error="form.errors.value.email" required autocomplete="email" ltr />
-        <FormField v-model="form.values.password" name="password" type="password" :label="$t('common.password')" :error="form.errors.value.password" required autocomplete="current-password" ltr />
-        <div class="flex items-center justify-between text-sm"><NuxtLink :to="$localePath('/auth/forgot')" class="link">{{ $t('auth.login.forgot') }}</NuxtLink></div>
+        <div class="space-y-2">
+          <FormField v-model="form.values.password" name="password" type="password" :label="$t('common.password')" :error="form.errors.value.password" required autocomplete="current-password" ltr />
+          <div class="flex items-center justify-end text-sm"><NuxtLink :to="$localePath('/auth/forgot')" class="link">{{ $t('auth.login.forgot') }}</NuxtLink></div>
+        </div>
         <FormAlert :message="form.formError.value" />
         <AppButton type="submit" block size="lg" :loading="form.submitting.value">{{ $t('auth.login.submit') }}</AppButton>
       </form>
-      <p class="mt-5 text-sm text-muted text-center">{{ $t('auth.login.noAccount') }} <NuxtLink :to="$localePath('/auth/register')" class="link">{{ $t('auth.login.register') }}</NuxtLink></p>
-      <div v-if="mock" class="mt-6 rounded-xl border border-dashed border-border bg-bg p-4">
-        <p class="text-xs font-medium text-muted">{{ $t('auth.login.demoAccounts') }}</p>
+      <p class="mt-6 border-t border-border pt-5 text-sm text-muted text-center">{{ $t('auth.login.noAccount') }} <NuxtLink :to="$localePath('/auth/register')" class="link">{{ $t('auth.login.register') }}</NuxtLink></p>
+      <div v-if="mock" class="mt-6 rounded-xl border border-dashed border-ink/20 bg-ink/5 p-4">
+        <p class="text-xs font-medium text-ink">{{ $t('auth.login.demoAccounts') }}</p>
         <p class="text-xs text-muted mt-0.5">{{ $t('auth.login.demoHint') }}</p>
         <div class="mt-3 flex flex-wrap gap-2"><button v-for="d in demo" :key="d.key" type="button" class="chip text-xs" @click="fill(d.email)">{{ $t(`auth.login.demoRoles.${d.key}`) }}</button></div>
       </div>
     </template>
     <template v-else>
-      <h1 class="text-2xl font-semibold">{{ $t('auth.login.twoFactorTitle') }}</h1>
-      <p class="text-muted mt-1">{{ $t('auth.login.twoFactorText') }}</p>
-      <form class="mt-6 space-y-4" novalidate @submit.prevent="verify">
+      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent-text ring-1 ring-accent/30" aria-hidden="true">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /><path d="M12 14.5v2.5" /></svg>
+      </span>
+      <h1 class="mt-5 text-2xl">{{ $t('auth.login.twoFactorTitle') }}</h1>
+      <p class="mt-2 text-base text-muted">{{ $t('auth.login.twoFactorText') }}</p>
+      <form class="mt-7 space-y-5" novalidate @submit.prevent="verify">
         <FormField :model-value="codeForm.values.code" name="code" type="text" :label="$t('auth.login.twoFactorCode')" :help="$t('auth.login.twoFactorRecoveryHint')" :error="codeForm.errors.value.code" required ltr autocomplete="one-time-code" :maxlength="RULES.recoveryCodeLength" placeholder="000000" @update:model-value="codeForm.values.code = toLatinDigits(String($event ?? ''))" />
         <p v-if="mock" class="text-xs text-muted">{{ $t('auth.verify.demoHint') }}</p>
         <FormAlert :message="codeForm.formError.value" />
-        <AppButton type="submit" block size="lg" :loading="codeForm.submitting.value">{{ $t('auth.login.verify') }}</AppButton>
-        <AppButton type="button" variant="ghost" block @click="cancel2fa">{{ $t('common.back') }}</AppButton>
+        <div class="space-y-2">
+          <AppButton type="submit" block size="lg" :loading="codeForm.submitting.value">{{ $t('auth.login.verify') }}</AppButton>
+          <AppButton type="button" variant="ghost" block @click="cancel2fa">{{ $t('common.back') }}</AppButton>
+        </div>
       </form>
-      <div class="mt-6 border-t border-border pt-4">
+      <div class="mt-6 border-t border-border pt-5">
         <p class="text-sm text-muted">{{ $t('auth.login.twoFactorAlt') }}</p>
         <div class="mt-3 flex flex-wrap gap-2">
           <AppButton size="sm" variant="secondary" :loading="sendingCode === 'email'" :disabled="!!sendingCode" @click="sendLoginCode('email')">{{ $t('auth.login.sendCodeEmail') }}</AppButton>

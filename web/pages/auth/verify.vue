@@ -91,22 +91,25 @@ const sections = computed(() => [
 </script>
 
 <template>
-  <div class="card card-pad">
-    <h1 class="text-2xl font-semibold">{{ $t('auth.verify.title') }}</h1>
-    <p class="text-muted mt-1">{{ $t(auth.phoneRequired ? 'auth.verify.sub' : 'auth.verify.subEmailOnly') }}</p>
+  <div class="card p-6 sm:p-8">
+    <span class="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent-text ring-1 ring-accent/30" aria-hidden="true">
+      <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 2.8v5.2c0 4.3-2.9 7.9-7 9-4.1-1.1-7-4.7-7-9V6.3l7-2.8Z" /><path d="M9 12l2.2 2.2L15.5 10" /></svg>
+    </span>
+    <h1 class="mt-5 text-2xl">{{ $t('auth.verify.title') }}</h1>
+    <p class="mt-2 text-base text-muted">{{ $t(auth.phoneRequired ? 'auth.verify.sub' : 'auth.verify.subEmailOnly') }}</p>
     <p v-if="mock" class="text-xs text-muted mt-2">{{ $t('auth.verify.demoHint') }}</p>
-    <div class="mt-6 space-y-6">
-      <section v-for="s in sections" :key="s.ch" class="rounded-xl border border-border p-4">
+    <div class="mt-7 space-y-5">
+      <section v-for="s in sections" :key="s.ch" class="rounded-2xl border border-border bg-ink/5 p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-medium">{{ s.title }} <span class="text-muted text-sm ltr inline-block" :class="s.ch === 'phone' && 'num'" dir="ltr">{{ s.value }}</span></h2>
-          <span v-if="s.verified" class="inline-flex items-center gap-1 rounded-full bg-success/10 text-success text-xs font-medium px-2 py-0.5">
+          <h2 class="text-base font-bold">{{ s.title }} <span class="ms-1 font-sans font-normal text-muted text-sm ltr inline-block" :class="s.ch === 'phone' && 'num'" dir="ltr">{{ s.value }}</span></h2>
+          <span v-if="s.verified" class="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success text-xs font-medium px-2.5 py-0.5">
             <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd" /></svg>
             {{ s.ch === 'phone' ? $t('phoneField.verified') : $t('auth.verify.verified') }}
           </span>
-          <span v-else class="rounded-full bg-warning/10 text-warning text-xs font-medium px-2 py-0.5">{{ $t('phoneField.unverified') }}</span>
+          <span v-else class="rounded-full border border-warning/30 bg-warning/10 text-warning text-xs font-medium px-2.5 py-0.5">{{ $t('phoneField.unverified') }}</span>
         </div>
         <!-- one row on sm+: input (flex-1, h-10) and the two h-10 buttons share the same top edge; counter/error stay under the input -->
-        <form v-if="!s.verified" class="mt-3 space-y-2" novalidate @submit.prevent="verify(s.ch)">
+        <form v-if="!s.verified" class="mt-4 space-y-2" novalidate @submit.prevent="verify(s.ch)">
           <div class="flex flex-col sm:flex-row gap-2 sm:items-start">
             <div class="flex-1 min-w-0">
               <label :for="`${s.ch}_code`" class="label">{{ s.label }}<span class="text-danger ms-0.5" aria-hidden="true">*</span></label>
@@ -117,7 +120,7 @@ const sections = computed(() => [
                 type="text"
                 inputmode="numeric"
                 pattern="[0-9]*"
-                class="input h-10 ltr text-start tracking-[0.4em] num"
+                class="input h-10 ltr text-start text-base font-semibold tracking-[0.4em] num"
                 :class="forms[s.ch].errors.value[codeKey(s.ch)] && 'input-error'"
                 :maxlength="RULES.codeLength"
                 placeholder="000000"
@@ -145,7 +148,7 @@ const sections = computed(() => [
         </form>
       </section>
       <AppButton block size="lg" :disabled="!auth.isVerified" @click="goHome">{{ $t('auth.verify.continue') }}</AppButton>
-      <div v-if="canSkip" class="rounded-xl border border-dashed border-warning/50 bg-warning/5 p-3 text-center">
+      <div v-if="canSkip" class="rounded-xl border border-dashed border-warning/30 bg-warning/10 p-4 text-center">
         <p class="text-xs text-muted mb-2">{{ $t('auth.verify.skipHint') }}</p>
         <AppButton type="button" variant="secondary" size="sm" @click="goHome">{{ $t('auth.verify.skip') }}</AppButton>
       </div>

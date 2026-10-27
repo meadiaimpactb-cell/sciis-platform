@@ -55,11 +55,11 @@ const columns = [{ key: 'created_at', label: t('common.date'), sortable: true },
     </div>
     <DataTable :columns="columns" :rows="rows" row-key="uuid" :loading="loading" dense>
       <template #cell-created_at="{ value }"><span class="whitespace-nowrap num">{{ dateTime(value) }}</span></template>
-      <template #cell-user="{ value }"><NuxtLink v-if="value?.id && auth.canAny('users.manage')" :to="$localePath(`/app/admin/users/${value.id}`)" class="hover:text-blue">{{ value.name }}</NuxtLink><span v-else>{{ value?.name ?? $t('admin.audit.system') }}</span></template>
+      <template #cell-user="{ value }"><NuxtLink v-if="value?.id && auth.canAny('users.manage')" :to="$localePath(`/app/admin/users/${value.id}`)" class="text-ink hover:text-accent-text">{{ value.name }}</NuxtLink><span v-else>{{ value?.name ?? $t('admin.audit.system') }}</span></template>
       <template #cell-action="{ row }"><AuditAction :action="row.action" :after="row.after" /></template>
       <template #cell-auditable="{ row }"><span class="ltr inline-block text-xs">{{ row.auditable_type ?? '—' }}<template v-if="row.auditable_id">#{{ row.auditable_id }}</template></span></template>
       <template #cell-ip="{ value }"><span class="ltr num inline-block text-xs whitespace-nowrap">{{ value || '—' }}</span></template>
-      <template #cell-diff="{ row }"><button v-if="row.before || row.after" type="button" class="link text-xs" @click="expanded = expanded === row.uuid ? null : row.uuid">{{ expanded === row.uuid ? $t('common.showLess') : $t('common.showMore') }}</button><pre v-if="expanded === row.uuid" class="mt-1 text-[11px] ltr text-start bg-bg rounded p-2 overflow-auto max-w-xs">{{ JSON.stringify({ before: row.before, after: row.after }, null, 1) }}</pre><span v-else-if="!row.before && !row.after">—</span></template>
+      <template #cell-diff="{ row }"><button v-if="row.before || row.after" type="button" class="link text-xs" @click="expanded = expanded === row.uuid ? null : row.uuid">{{ expanded === row.uuid ? $t('common.showLess') : $t('common.showMore') }}</button><pre v-if="expanded === row.uuid" class="mt-1.5 text-xs ltr text-start text-text bg-ink/5 border border-border rounded-xl p-2.5 overflow-auto max-w-xs">{{ JSON.stringify({ before: row.before, after: row.after }, null, 1) }}</pre><span v-else-if="!row.before && !row.after">—</span></template>
       <template #footer><Pagination v-model:page="page" :last-page="meta.last_page" :total="meta.total" /></template>
     </DataTable>
   </div>

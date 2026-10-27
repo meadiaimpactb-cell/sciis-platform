@@ -193,14 +193,14 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
     <div v-if="loading && !a" class="text-muted">{{ $t('common.loading') }}</div>
     <EmptyState v-else-if="loadError || !a" :title="$t('agreements.detail.loadFailed')"><AppButton size="sm" variant="secondary" to="/app/admin/agreements">{{ $t('agreements.title') }}</AppButton></EmptyState>
     <template v-else>
-      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/admin/agreements')" class="hover:text-blue">{{ $t('agreements.title') }}</NuxtLink> / <span class="num">{{ a.number }}</span></nav>
+      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/admin/agreements')" class="hover:text-accent-text">{{ $t('agreements.title') }}</NuxtLink> / <span class="num">{{ a.number }}</span></nav>
 
       <header class="card card-pad">
         <div class="flex flex-col lg:flex-row lg:items-start gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2"><AppBadge kind="agreement" :value="a.status" :soft="false" size="md" /><span class="text-sm text-muted num">{{ a.number }}</span><span v-if="a.current_version" class="text-sm text-muted num">· v{{ a.current_version.version }}</span></div>
-            <h1 class="mt-2 text-2xl font-semibold">{{ a.title }}</h1>
-            <p v-if="a.opportunity" class="text-sm text-muted"><NuxtLink :to="$localePath(`/app/admin/opportunities/${a.opportunity.uuid}`)" class="hover:text-blue"><span class="num">{{ a.opportunity.reference_no ?? '' }}</span> {{ a.opportunity.name }}</NuxtLink></p>
+            <h1 class="mt-3 font-display text-2xl md:text-3xl font-extrabold text-ink">{{ a.title }}</h1>
+            <p v-if="a.opportunity" class="mt-1 text-sm text-muted"><NuxtLink :to="$localePath(`/app/admin/opportunities/${a.opportunity.uuid}`)" class="hover:text-blue"><span class="num">{{ a.opportunity.reference_no ?? '' }}</span> {{ a.opportunity.name }}</NuxtLink></p>
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
             <AppButton v-if="can('edit')" variant="secondary" @click="openEdit">{{ $t('agreements.actions.edit') }}</AppButton>
@@ -212,11 +212,11 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
             <AppButton v-if="can('archive')" :loading="busy === 'archive'" @click="archive">{{ $t('agreements.actions.archive') }}</AppButton>
             <AppButton v-if="a.signed_document" variant="secondary" :loading="busy === 'download'" @click="downloadSigned">{{ $t('agreements.actions.downloadSigned') }}</AppButton>
             <AppButton variant="ghost" @click="openPrint()">{{ $t('agreements.actions.print') }}</AppButton>
-            <AppButton v-if="can('cancel')" variant="ghost" class="text-danger" @click="openCancel">{{ $t('agreements.actions.cancel') }}</AppButton>
+            <AppButton v-if="can('cancel')" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="openCancel">{{ $t('agreements.actions.cancel') }}</AppButton>
           </div>
         </div>
         <div class="mt-5 border-t border-border pt-4"><AgreementFlow :status="a.status" /></div>
-        <dl class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+        <dl class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           <div><dt class="text-xs text-muted">{{ $t('enums.agreementParty.owner') }}</dt><dd class="font-medium">{{ a.owner?.name ?? '—' }}</dd></div>
           <div><dt class="text-xs text-muted">{{ $t('enums.agreementParty.investor') }}</dt><dd class="font-medium">{{ a.investor?.name ?? '—' }}</dd></div>
           <div><dt class="text-xs text-muted">{{ $t('agreements.detail.template') }}</dt><dd class="font-medium">{{ a.template ? `${a.template.title} (v${a.template.version})` : '—' }}</dd></div>
@@ -243,7 +243,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
               <Tabs v-model="lang" :tabs="langTabs" variant="pills" />
               <div class="flex flex-wrap items-center gap-2"><AppBadge v-if="shown.is_approved" kind="agreement" value="approved" :label="$t('agreements.versions.approved')" /><AppBadge v-if="shown.version === a.current_version?.version" kind="generic" value="new" :label="$t('agreements.versions.current')" /><AppButton size="sm" variant="ghost" @click="openPrint(shown.version)">{{ $t('agreements.actions.print') }}</AppButton></div>
             </div>
-            <p v-if="shown.change_note" class="mb-4 text-sm rounded-lg bg-bg p-3"><span class="text-muted">{{ $t('agreements.versions.note') }}:</span> {{ shown.change_note }}</p>
+            <p v-if="shown.change_note" class="mb-4 text-sm rounded-xl border border-border bg-ink/5 p-3"><span class="text-muted">{{ $t('agreements.versions.note') }}:</span> {{ shown.change_note }}</p>
             <div class="rounded-xl border border-border bg-surface p-5 lg:p-8">
               <AgreementText v-if="lang === 'ar'" :text="shown.body" lang="ar" />
               <AgreementText v-else-if="shown.body_en" :text="shown.body_en" lang="en" />
@@ -251,7 +251,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
             </div>
             <p class="mt-3 text-xs text-muted">{{ $t('agreements.text.hash') }}: <code class="ltr inline-block break-all num">{{ shown.text_hash }}</code></p>
             <details v-if="shown.placeholders && Object.keys(shown.placeholders).length" class="mt-3 text-sm">
-              <summary class="cursor-pointer text-blue">{{ $t('agreements.text.values') }}</summary>
+              <summary class="cursor-pointer font-medium text-accent-text hover:text-ink">{{ $t('agreements.text.values') }}</summary>
               <KeyValue class="mt-2" :cols="2" :items="Object.entries(shown.placeholders).map(([k, v]) => ({ label: placeholderLabel(k), value: v || '—' }))" />
             </details>
           </template>
@@ -264,7 +264,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
               <thead><tr><th>{{ $t('common.version') }}</th><th>{{ $t('common.createdAt') }}</th><th>{{ $t('agreements.versions.author') }}</th><th>{{ $t('agreements.versions.note') }}</th><th>{{ $t('agreements.versions.review') }}</th><th><span class="sr-only">{{ $t('common.actions') }}</span></th></tr></thead>
               <tbody>
                 <tr v-for="v in a.versions" :key="v.id" class="align-top">
-                  <td class="num font-medium whitespace-nowrap">v{{ v.version }}<span v-if="v.version === a.current_version?.version" class="ms-1 text-[10px] rounded-full bg-blue-soft text-blue px-1.5">{{ $t('agreements.versions.current') }}</span></td>
+                  <td class="num font-medium whitespace-nowrap">v{{ v.version }}<span v-if="v.version === a.current_version?.version" class="ms-1.5 text-xs font-normal rounded-full border border-accent/30 bg-accent/10 text-accent-text px-2 py-0.5">{{ $t('agreements.versions.current') }}</span></td>
                   <td class="num whitespace-nowrap text-muted">{{ dateTime(v.created_at) }}</td>
                   <td>{{ v.proposed_by?.name ?? '—' }}</td>
                   <td class="min-w-[12rem]">{{ v.change_note ?? '—' }}</td>
@@ -288,8 +288,8 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
             <p v-if="cmpFrom === cmpTo" class="text-sm text-muted">{{ $t('agreements.compare.pickTwo') }}</p>
             <div v-else-if="comparing && !diff" class="text-sm text-muted">{{ $t('common.loading') }}</div>
             <div v-else-if="diff" class="space-y-5">
-              <div><h3 class="font-semibold mb-2">{{ $t('agreements.text.ar') }}</h3><AgreementDiff :part="diff.body" lang="ar" :caption="$t('agreements.text.ar')" /></div>
-              <div><h3 class="font-semibold mb-2">{{ $t('agreements.text.en') }}</h3><AgreementDiff :part="diff.body_en" lang="en" :caption="$t('agreements.text.en')" /></div>
+              <div><h3 class="font-display font-bold text-base text-ink mb-2">{{ $t('agreements.text.ar') }}</h3><AgreementDiff :part="diff.body" lang="ar" :caption="$t('agreements.text.ar')" /></div>
+              <div><h3 class="font-display font-bold text-base text-ink mb-2">{{ $t('agreements.text.en') }}</h3><AgreementDiff :part="diff.body_en" lang="en" :caption="$t('agreements.text.en')" /></div>
             </div>
           </template>
         </SectionCard>
@@ -298,7 +298,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
         <SectionCard v-show="tab === 'reviews'" :title="$t('agreements.tabs.reviews')" :sub="$t('agreements.review.sub')">
           <p v-if="!a.reviews.length" class="text-sm text-muted">{{ $t('agreements.review.empty') }}</p>
           <ol v-else class="space-y-3">
-            <li v-for="r in a.reviews" :key="r.id" class="rounded-lg border border-border p-4">
+            <li v-for="r in a.reviews" :key="r.id" class="rounded-xl border border-border bg-ink/[0.03] p-4">
               <div class="flex flex-wrap items-center gap-2"><AppBadge kind="agreement" :value="r.decision === 'approved' ? 'approved' : 'changes_requested'" :label="$t(`agreements.review.decision.${r.decision}`)" /><span class="text-sm font-medium">{{ r.reviewer?.name ?? '—' }}</span><span class="text-xs text-muted num">· v{{ r.version }} · {{ dateTime(r.created_at) }}</span></div>
               <p v-if="r.note" class="mt-2 text-sm leading-6 whitespace-pre-line">{{ r.note }}</p>
             </li>
@@ -310,7 +310,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
           <div class="grid md:grid-cols-2 gap-4">
             <div v-for="p in (['owner', 'investor'] as const)" :key="p" class="card card-pad">
               <p class="text-xs text-muted">{{ $t(`enums.agreementParty.${p}`) }}</p>
-              <p class="mt-1 font-semibold">{{ partyName(p) }}</p>
+              <p class="mt-1 card-title">{{ partyName(p) }}</p>
               <p class="mt-2 text-sm" :class="a.parties_status[p].signed ? 'text-success' : 'text-muted'">{{ a.parties_status[p].signed ? $t('agreements.signatures.signedAt', { date: dateTime(a.parties_status[p].signed_at) }) : a.status === 'sent_for_signature' ? $t('agreements.signatures.pending') : '—' }}</p>
             </div>
           </div>
@@ -345,7 +345,7 @@ const partyName = (p: 'owner' | 'investor') => (p === 'owner' ? a.value?.owner?.
           <p v-if="!a.audit.length" class="text-sm text-muted">{{ $t('common.noData') }}</p>
           <ol v-else class="relative border-s border-border ms-2 space-y-4">
             <li v-for="e in a.audit" :key="e.id" class="ps-5 relative">
-              <span class="absolute -start-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-teal" aria-hidden="true" />
+              <span class="absolute -start-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-accent-hi ring-2 ring-surface" aria-hidden="true" />
               <p class="text-sm"><span class="font-medium">{{ auditLabel(e.action) }}</span> <span class="text-muted">— {{ e.user?.name ?? $t('agreements.auditSystem') }}</span></p>
               <p class="text-xs text-muted num">{{ dateTime(e.created_at) }}<template v-if="e.after?.version"> · v{{ e.after.version }}</template><template v-if="e.after?.party"> · {{ $t(`enums.agreementParty.${e.after.party}`) }}</template></p>
               <p v-if="e.after?.note || e.after?.reason" class="mt-1 text-sm text-text/85">{{ e.after.note ?? e.after.reason }}</p>

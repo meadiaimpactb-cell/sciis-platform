@@ -5,8 +5,8 @@
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: var(--bg);
-    color: var(--text);
+    background-color: rgb(var(--c-bg));
+    color: rgb(var(--c-text));
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
@@ -15,19 +15,20 @@
     @apply bg-bg text-text min-h-screen text-sm;
     font-feature-settings: "tnum" 1, "lnum" 1;
   }
+  /* design v3 — headings in the display face (Almarai / Sora) */
   h1, h2, h3, h4 {
-    @apply font-semibold text-ink tracking-tight;
+    @apply font-display font-bold text-ink tracking-normal;
     text-wrap: balance;
   }
-  /* UX-04 — teal-700 keeps the focus ring ≥3:1 on white, the light greys and the navy surfaces (teal-500 is 2.5:1 on white) */
+  /* UX-04 — the accent text colour keeps the focus ring ≥3:1 on both palettes */
   :focus-visible {
-    outline: 2px solid var(--teal-700);
+    outline: 2px solid rgb(var(--c-teal-700));
     outline-offset: 2px;
     border-radius: 0.25rem;
   }
   ::selection {
-    background: var(--teal-100);
-    color: var(--navy-900);
+    background: rgb(var(--c-teal-700) / 0.3);
+    color: rgb(var(--c-ink));
   }
   [dir="rtl"] input[type="email"],
   [dir="rtl"] input[type="url"],
@@ -46,44 +47,46 @@
 }
 
 @layer components {
-  /* 1200 px content frame with 12 px gutters (falak.sa measures) — public pages and portals alike */
+  /* 1280 px content frame with 32 px gutters (16 on phones) — the v3 header's frame, public pages and portals alike */
   .container-x {
-    @apply mx-auto w-full max-w-[75rem] px-3;
+    @apply mx-auto w-full max-w-[80rem] px-4 sm:px-8;
+  }
+  /* A grid without a column template gets one shrinkable column (an implicit `auto` column grows to its widest
+     content and pushes phones sideways); every grid-cols-* utility still overrides it. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
   }
   /* Vertical rhythm of a public section: 100 px desktop / 80 px phone */
   .section-y {
     @apply py-20 md:py-[6.25rem];
   }
-  /* Section label — 25 px bold (Falak «البرامج») */
+  /* Section label — 25 px display */
   .section-label {
-    @apply text-2xl font-bold text-ink;
+    @apply font-display text-2xl font-bold text-ink;
   }
   .card {
-    @apply rounded-xl border border-border bg-surface shadow-card;
+    @apply min-w-0 rounded-2xl border border-border bg-surface shadow-card;
   }
   .card-hover {
-    @apply transition duration-300 hover:-translate-y-0.5 hover:shadow-pop hover:border-teal/50;
+    @apply transition duration-200 hover:border-accent/60 hover:shadow-pop;
   }
   .card-pad {
     @apply p-5 sm:p-6;
   }
-  /* Eyebrow label above section titles — teal accent with a short rule */
+  /* Section label above titles (v3 SectionLabel) — accent text with a dot */
   .eyebrow {
-    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-teal-text;
+    @apply inline-flex items-center gap-2 text-sm font-medium text-accent-text;
   }
   .eyebrow::before {
     content: "";
-    @apply h-px w-6 bg-teal;
+    @apply h-1.5 w-1.5 shrink-0 rounded-full bg-accent-hi;
   }
-  .eyebrow-dark {
-    @apply text-teal-400;
+  .eyebrow-pill {
+    @apply h-9 rounded-full border border-accent/35 bg-accent/10 px-4;
   }
-  .eyebrow-dark::before {
-    @apply bg-teal-400;
-  }
-  /* Section title — 40 / 60 regular (30 / 45 on phones) */
+  /* Section title — display face, 40 px (30 on phones) */
   .section-title {
-    @apply text-3xl leading-[2.8125rem] md:text-4xl md:leading-[3.75rem] font-normal text-ink tracking-normal;
+    @apply font-display text-3xl leading-[2.8125rem] md:text-4xl md:leading-[3.5rem] font-extrabold text-ink tracking-normal;
   }
   /* Description under a title — 16 / 30 */
   .section-sub {
@@ -92,12 +95,12 @@
   .text-desc {
     @apply text-base leading-[1.875rem];
   }
-  /* Hero display line — 50 / 60 regular (30 / 36 on phones) and its 20 px lead */
+  /* Hero display line — 50 px display face (30 on phones) and its 20 px lead */
   .display {
-    @apply text-3xl md:text-5xl font-normal tracking-normal;
+    @apply font-display text-3xl md:text-5xl md:leading-[4.25rem] font-extrabold tracking-normal;
   }
   .lead {
-    @apply text-xl;
+    @apply text-lg md:text-xl;
   }
   /* Key figures — 50 px value, 35 px unit (28 on phones), 18 px label */
   /* Not `.num`: its `unicode-bidi: plaintext` would align a bare number to the left inside an Arabic column. */
@@ -112,9 +115,9 @@
   .stat-label {
     @apply text-lg;
   }
-  /* Card title — 20 px bold */
+  /* Card title — 20 px display */
   .card-title {
-    @apply text-xl leading-6 font-bold text-ink;
+    @apply font-display text-xl leading-7 font-bold text-ink;
   }
   /* Underlined call-to-action link — 25 px bold (20 on phones) */
   .link-cta {
@@ -124,19 +127,19 @@
   .link-more {
     @apply inline-flex items-center gap-2 text-lg md:text-[1.4375rem] md:leading-[2.15rem] text-ink transition hover:text-teal-text;
   }
-  /* Filter tabs — 14 px, 6 px radius, outlined; active = filled navy */
+  /* Filter tabs — pills, outlined; active = accent fill */
   .tab-pill {
-    @apply inline-flex items-center rounded-md border border-ink/80 px-4 py-2 text-sm text-ink transition hover:bg-navy-50;
+    @apply inline-flex items-center rounded-full border border-ink/20 px-4 py-2 text-sm text-ink transition hover:bg-ink/10;
   }
   .tab-pill-active {
-    @apply border-navy bg-navy text-white hover:bg-navy;
+    @apply border-accent bg-accent text-on-accent hover:bg-accent;
   }
   .label {
     @apply block text-sm font-medium text-ink mb-1.5;
   }
   .input {
     /* UX-04 — outline 3.2:1 (--c-input-border) and a teal-700 focus border (4.9:1), WCAG 1.4.11 */
-    @apply w-full rounded-lg border border-[rgb(var(--c-input-border))] bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-muted/60 focus:border-teal-700 focus:ring-4 focus:ring-teal/20 focus:outline-none disabled:bg-bg disabled:text-muted transition;
+    @apply w-full rounded-xl border border-[rgb(var(--c-input-border))] bg-field px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/80 focus:border-accent-text focus:ring-4 focus:ring-accent/20 focus:outline-none disabled:bg-bg disabled:text-muted transition;
   }
   .input-error {
     @apply border-danger focus:border-danger focus:ring-danger/15;
@@ -148,19 +151,19 @@
     @apply mt-1.5 text-xs text-danger;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink hover:border-teal hover:text-navy cursor-pointer select-none transition;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-ink/20 bg-transparent px-3 py-1.5 text-sm text-ink hover:bg-ink/10 cursor-pointer select-none transition;
   }
   .chip-active {
-    @apply border-navy bg-navy text-white font-medium hover:text-white;
+    @apply border-accent bg-accent text-on-accent font-medium hover:bg-accent hover:text-on-accent;
   }
   .link {
-    @apply text-navy font-medium hover:text-teal-text underline-offset-4 hover:underline transition;
+    @apply text-accent-text font-medium hover:text-ink underline-offset-4 hover:underline transition;
   }
   .table-base {
     @apply w-full text-sm text-start;
   }
   .table-base th {
-    @apply text-start text-xs font-semibold uppercase tracking-wide text-muted bg-navy-50 px-4 py-3 border-b border-border whitespace-nowrap;
+    @apply text-start text-xs font-semibold tracking-wide text-muted bg-navy-50 px-4 py-3 border-b border-border whitespace-nowrap;
   }
   .table-base td {
     @apply px-4 py-3 border-b border-border align-middle;
@@ -172,7 +175,7 @@
     @apply transition hover:bg-navy-50/60;
   }
   .kbd-focus {
-    @apply focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2;
+    @apply focus-visible:ring-2 focus-visible:ring-accent-text focus-visible:ring-offset-2;
   }
   .placeholder-img {
     @apply relative overflow-hidden text-white;
@@ -184,21 +187,22 @@
   .placeholder-img:not(.border-0) {
     @apply border border-dashed border-border;
   }
-  /* Dark brand surfaces (hero, numbers, CTA, footer, sidebar) — flat deep navy, like Falak's flat night sections */
-  .surface-dark {
-    @apply bg-navy-950 text-white;
+  /* Hero / call-to-action band (v3): the glow behind the emblem fading into the page colour */
+  .surface-hero {
+    @apply relative overflow-hidden text-ink;
+    background: radial-gradient(1100px 640px at 50% 30%, var(--glow) 0%, var(--bg1) 52%, var(--bg0) 100%);
   }
-  /* Subtle dotted grid overlay for dark hero surfaces */
+  /* Subtle dotted grid overlay for hero surfaces */
   .brand-grid {
-    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(var(--fg-rgb), 0.09) 1px, transparent 1px);
     background-size: 28px 28px;
     mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 90%);
   }
   .glass {
-    @apply rounded-xl border border-white/15 bg-white/10 backdrop-blur-md;
+    @apply rounded-2xl border border-ink/15 bg-glass backdrop-blur-md;
   }
   .text-gradient {
-    background: linear-gradient(90deg, #7FCBC0 0%, #58B4A8 100%);
+    background: linear-gradient(90deg, var(--accent-hi) 0%, var(--scii-teal) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -257,20 +261,20 @@ body.swal2-toast-shown .swal2-container.sciis-swal-layer {
   padding: 16px 0 0;
 }
 .sciis-swal-layer .swal2-popup.sciis-toast {
-  --toast-accent: var(--navy-700);
+  --toast-accent: var(--info);
   padding: 18px 22px;
-  border: 1px solid var(--navy-100);
+  border: 1px solid var(--border);
   border-inline-start: 5px solid var(--toast-accent);
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 0.2);
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgba(var(--shadow-rgb), 0.3);
   font-family: inherit;
   column-gap: 12px;
 }
-.sciis-swal-layer .swal2-popup.sciis-toast--success { --toast-accent: #2E9E6B; }
-.sciis-swal-layer .swal2-popup.sciis-toast--error { --toast-accent: #C0392B; }
-.sciis-swal-layer .swal2-popup.sciis-toast--warning { --toast-accent: #C6A15B; }
-.sciis-swal-layer .swal2-popup.sciis-toast--info { --toast-accent: var(--navy-700); }
+.sciis-swal-layer .swal2-popup.sciis-toast--success { --toast-accent: var(--success); }
+.sciis-swal-layer .swal2-popup.sciis-toast--error { --toast-accent: var(--danger); }
+.sciis-swal-layer .swal2-popup.sciis-toast--warning { --toast-accent: var(--warning); }
+.sciis-swal-layer .swal2-popup.sciis-toast--info { --toast-accent: var(--info); }
 .sciis-swal-layer .sciis-toast .sciis-toast__title {
   margin: 0;
   color: var(--ink);
@@ -290,14 +294,14 @@ body.swal2-toast-shown .swal2-container.sciis-swal-layer {
 .sciis-swal-layer .sciis-toast .swal2-success [class^='swal2-success-line'],
 .sciis-swal-layer .sciis-toast .swal2-error [class^='swal2-x-mark-line'] { background-color: var(--toast-accent); }
 .sciis-swal-layer .sciis-toast .swal2-close {
-  color: var(--muted, #6B7280);
+  color: var(--muted);
   font-size: 26px;
   width: 28px;
   height: 28px;
   border-radius: 8px;
 }
-.sciis-swal-layer .sciis-toast .swal2-close:hover { color: var(--ink); background: var(--navy-50); }
-.sciis-swal-layer .sciis-toast .swal2-close:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal-500) 45%, transparent); }
+.sciis-swal-layer .sciis-toast .swal2-close:hover { color: var(--ink); background: rgb(var(--c-navy-50)); }
+.sciis-swal-layer .sciis-toast .swal2-close:focus-visible { box-shadow: 0 0 0 3px rgb(var(--c-teal-700) / 0.45); }
 .sciis-swal-layer .sciis-toast .swal2-timer-progress-bar { background: var(--toast-accent); opacity: 0.85; }
 .sciis-toast-in { animation: sciis-toast-in 220ms ease-out; }
 .sciis-toast-out { animation: sciis-toast-out 180ms ease-in forwards; }
@@ -309,6 +313,12 @@ body.swal2-toast-shown .swal2-container.sciis-swal-layer {
 @media (prefers-reduced-motion: reduce) {
   .sciis-toast-in, .sciis-toast-out { animation: none; }
 }
-.sciis-swal-layer .swal2-popup.sciis-dialog { font-family: inherit; border-radius: 16px; }
+.sciis-swal-layer .swal2-popup.sciis-dialog { font-family: inherit; border-radius: 22px; background: var(--surface); color: var(--text); }
 .sciis-swal-layer .sciis-dialog .swal2-title { color: var(--ink); font-size: 1.25rem; }
 .sciis-swal-layer .sciis-dialog .swal2-html-container { color: var(--text); }
+.sciis-swal-layer .sciis-dialog .swal2-styled { border-radius: 999px; font-weight: 600; padding: 0.625rem 1.375rem; }
+.sciis-swal-layer .sciis-dialog .swal2-styled.swal2-confirm { background: var(--scii-teal); color: var(--scii-teal-ink); }
+.sciis-swal-layer .sciis-dialog .swal2-styled.swal2-confirm:hover { background: var(--accent-hi); background-image: none; }
+.sciis-swal-layer .sciis-dialog .swal2-styled.swal2-cancel { background: transparent; color: var(--ink); border: 1px solid rgba(var(--fg-rgb), 0.22); }
+.sciis-swal-layer .sciis-dialog .swal2-styled.swal2-cancel:hover { background: rgba(var(--fg-rgb), 0.1); background-image: none; }
+.sciis-swal-layer .sciis-dialog .swal2-styled:focus-visible { box-shadow: 0 0 0 3px rgb(var(--c-teal-700) / 0.45); }

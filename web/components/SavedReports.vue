@@ -70,7 +70,7 @@ const columns = computed(() => [
 <template>
   <div>
     <DataTable :columns="columns" :rows="items" row-key="uuid" :loading="loading" :empty-text="$t('admin.savedReports.empty')">
-      <template #cell-name="{ row }"><button type="button" class="font-medium hover:text-blue text-start kbd-focus rounded" @click="emit('open', row)">{{ row.name }}</button><span class="block text-xs text-muted">{{ relative(row.updated_at) }}</span></template>
+      <template #cell-name="{ row }"><button type="button" class="font-medium text-ink hover:text-accent-text text-start kbd-focus rounded" @click="emit('open', row)">{{ row.name }}</button><span class="block text-xs text-muted">{{ relative(row.updated_at) }}</span></template>
       <template #cell-created_by="{ value }">{{ value?.name ?? '—' }}</template>
       <template #cell-schedule="{ row }">
         <template v-if="row.schedule.frequency">
@@ -89,7 +89,7 @@ const columns = computed(() => [
           <template v-if="row.can_edit">
             <AppButton v-if="props.canExport" size="sm" variant="ghost" @click="openSchedule(row)">{{ $t('admin.savedReports.scheduleAction') }}</AppButton>
             <AppButton v-if="row.schedule.frequency" size="sm" variant="ghost" @click="unschedule(row)">{{ $t('admin.savedReports.unschedule') }}</AppButton>
-            <AppButton size="sm" variant="ghost" class="text-danger" @click="remove(row)">{{ $t('common.delete') }}</AppButton>
+            <AppButton size="sm" variant="ghost" class="!text-danger hover:!bg-danger/10" @click="remove(row)">{{ $t('common.delete') }}</AppButton>
           </template>
         </div>
       </template>

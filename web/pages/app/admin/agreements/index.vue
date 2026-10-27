@@ -134,7 +134,7 @@ const create = () => createForm.submit(async (v) => {
       </div>
       <div class="card p-3 mb-4 flex flex-col sm:flex-row gap-3 sm:items-center">
         <input v-model="search" type="search" class="input sm:max-w-sm" :placeholder="$t('agreements.filters.search')" :aria-label="$t('common.search')" />
-        <span v-if="opportunity" class="chip chip-active text-xs inline-flex items-center gap-1">{{ $t('agreements.filters.opportunity') }}<template v-if="opportunityName">: {{ opportunityName }}</template><button type="button" class="ms-1" :aria-label="$t('common.reset')" @click="opportunity = ''">×</button></span>
+        <span v-if="opportunity" class="chip chip-active text-xs inline-flex items-center gap-1">{{ $t('agreements.filters.opportunity') }}<template v-if="opportunityName">: {{ opportunityName }}</template><button type="button" class="ms-1 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-overlay/15 kbd-focus" :aria-label="$t('common.reset')" @click="opportunity = ''">×</button></span>
       </div>
 
       <DataTable :columns="columns" :rows="rows" row-key="uuid" :loading="loading" :empty-text="$t('agreements.empty')">
@@ -155,8 +155,8 @@ const create = () => createForm.submit(async (v) => {
         <FormField v-model="createForm.values.template_id" name="template_id" type="select" :label="$t('agreements.create.template')" :options="templates.map((f) => ({ value: String(f.active!.id), label: `${f.active!.title} (v${f.active!.version})` }))" :help="templates.length ? undefined : $t('agreements.create.noTemplates')" :error="createForm.errors.value.template_id" required />
         <FormField v-model="createForm.values.title" name="title" :label="$t('agreements.create.titleField')" :maxlength="RULES.titleMax" :error="createForm.errors.value.title" />
         <div v-if="preparing" class="text-sm text-muted">{{ $t('common.loading') }}</div>
-        <fieldset v-else-if="fields.length" class="rounded-lg border border-border p-4">
-          <legend class="px-1 text-sm font-semibold">{{ $t('agreements.create.fields') }}</legend>
+        <fieldset v-else-if="fields.length" class="rounded-xl border border-border bg-ink/[0.03] p-4">
+          <legend class="px-1 text-sm font-semibold text-ink">{{ $t('agreements.create.fields') }}</legend>
           <p class="text-xs text-muted mb-3">{{ $t('agreements.create.fieldsHint') }}</p>
           <div class="grid sm:grid-cols-2 gap-3">
             <FormField v-for="f in fields" :key="f.key" v-model="createForm.values.placeholders[f.key]" :name="`placeholders.${f.key}`" :label="fieldLabel(f.key)" :help="f.auto ? $t('agreements.create.auto') : $t('agreements.create.manual')" :maxlength="RULES.shortTextMax" :error="createForm.errors.value[`placeholders.${f.key}`]" />

@@ -76,7 +76,7 @@ const rows = computed<CompareRow[]>(() => [
 
 <template>
   <div>
-    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/opportunities')" class="hover:text-blue">{{ $t('portal.nav.opportunities') }}</NuxtLink> / <span>{{ $t('investor.opportunities.compare.title') }}</span></nav>
+    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath('/app/opportunities')" class="hover:text-accent-text transition">{{ $t('portal.nav.opportunities') }}</NuxtLink> / <span>{{ $t('investor.opportunities.compare.title') }}</span></nav>
     <PageHeader :title="$t('investor.opportunities.compare.title')" :sub="$t('investor.opportunities.compare.sub')" />
 
     <EmptyState v-if="ids.length < compareMin" :title="$t('investor.opportunities.compare.needTwo')" :text="$t('investor.opportunities.compare.needTwoText')">
@@ -96,10 +96,10 @@ const rows = computed<CompareRow[]>(() => [
               <th v-for="o in items" :key="o.uuid" scope="col" class="!normal-case !tracking-normal align-top min-w-[11rem]">
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
-                    <NuxtLink :to="$localePath(`/app/opportunities/${o.uuid}`)" class="text-sm font-semibold text-ink hover:text-navy">{{ o.name }}</NuxtLink>
-                    <p v-if="o.reference_no" class="num text-[11px] font-normal text-muted mt-0.5">{{ o.reference_no }}</p>
+                    <NuxtLink :to="$localePath(`/app/opportunities/${o.uuid}`)" class="text-sm font-bold text-ink hover:text-accent-text transition">{{ o.name }}</NuxtLink>
+                    <p v-if="o.reference_no" class="num text-xs font-normal text-muted mt-0.5">{{ o.reference_no }}</p>
                   </div>
-                  <button v-if="items.length > compareMin" type="button" class="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-full text-muted hover:text-danger kbd-focus" :aria-label="$t('investor.opportunities.compare.remove', { name: o.name })" @click="removeColumn(o.uuid)">
+                  <button v-if="items.length > compareMin" type="button" class="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-full border border-ink/15 text-muted hover:text-danger hover:border-danger/40 kbd-focus transition" :aria-label="$t('investor.opportunities.compare.remove', { name: o.name })" @click="removeColumn(o.uuid)">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                   </button>
                 </div>

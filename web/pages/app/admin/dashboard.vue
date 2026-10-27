@@ -87,7 +87,7 @@ const criteria5: MatchFlagKey[] = ['sector', 'stage', 'region', 'type', 'range']
     <div v-else-if="data" class="space-y-6">
       <!-- today counters -->
       <section>
-        <h2 class="text-sm font-medium text-muted mb-3">{{ $t('admin.dashboard.today') }} · {{ date(new Date().toISOString()) }}</h2>
+        <SectionLabel as="h2" class="mb-3">{{ $t('admin.dashboard.today') }} · <span class="num">{{ date(new Date().toISOString()) }}</span></SectionLabel>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard :label="$t('admin.dashboard.counters.new')" :value="number(data.today?.new ?? 0)" tone="blue" to="/app/admin/opportunities?status=new" />
           <StatCard :label="$t('admin.dashboard.counters.overdue')" :value="number(data.today?.overdue ?? 0)" :tone="data.today?.overdue ? 'danger' : 'default'" to="/app/admin/opportunities?overdue=1" />
@@ -99,11 +99,11 @@ const criteria5: MatchFlagKey[] = ['sector', 'stage', 'region', 'type', 'range']
       <div class="grid lg:grid-cols-3 gap-6">
         <SectionCard :title="$t('admin.dashboard.pipeline')"><BarChart :series="pipeline" /></SectionCard>
         <SectionCard :title="$t('admin.dashboard.membershipRequests')" class="lg:col-span-2" flush>
-          <table class="table-base"><thead><tr><th>{{ $t('admin.memberships.columns.name') }}</th><th>{{ $t('admin.memberships.columns.type') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('admin.memberships.columns.completion') }}</th><th></th></tr></thead>
+          <div class="overflow-x-auto"><table class="table-base"><thead><tr><th>{{ $t('admin.memberships.columns.name') }}</th><th>{{ $t('admin.memberships.columns.type') }}</th><th>{{ $t('common.status') }}</th><th>{{ $t('admin.memberships.columns.completion') }}</th><th></th></tr></thead>
             <tbody>
               <tr v-for="m in membershipRequests" :key="m.id"><td class="font-medium">{{ m.user?.name }}</td><td class="text-muted">{{ label('userType', m.user?.type) }}</td><td><AppBadge kind="membership" :value="m.status" /></td><td class="num">{{ number(m.profile?.completion_percent ?? 0) }}%</td><td class="text-end"><AppButton size="sm" variant="outline" :to="`/app/admin/memberships/${m.id}`">{{ $t('common.view') }}</AppButton></td></tr>
               <tr v-if="!membershipRequests.length"><td colspan="5" class="text-center text-muted py-6">{{ $t('common.noData') }}</td></tr>
-            </tbody></table>
+            </tbody></table></div>
         </SectionCard>
       </div>
 
@@ -124,10 +124,10 @@ const criteria5: MatchFlagKey[] = ['sector', 'stage', 'region', 'type', 'range']
           <template #actions><AppButton v-if="data.evaluation_focus" variant="ghost" size="sm" :to="`/app/admin/opportunities/${data.evaluation_focus.opportunity.uuid}?tab=evaluation`">{{ $t('common.details') }}</AppButton></template>
           <template v-if="panel && panel.assignments?.length === 2">
             <div class="overflow-x-auto"><table class="table-base text-sm">
-              <thead><tr><th>{{ $t('admin.dashboard.axis') }}</th><th v-for="(a, i) in panel.assignments" :key="a.id">{{ $t('admin.dashboard.evaluator', { n: i + 1 }) }}<span class="block text-[10px] font-normal normal-case text-muted">{{ a.evaluator.name }}</span></th><th>{{ $t('admin.opportunity.diff') }}</th></tr></thead>
+              <thead><tr><th>{{ $t('admin.dashboard.axis') }}</th><th v-for="(a, i) in panel.assignments" :key="a.id">{{ $t('admin.dashboard.evaluator', { n: i + 1 }) }}<span class="block text-xs font-normal normal-case text-muted">{{ a.evaluator.name }}</span></th><th>{{ $t('admin.opportunity.diff') }}</th></tr></thead>
               <tbody>
                 <tr v-for="ax in axes" :key="ax"><td class="font-medium">{{ label('evaluationAxis', ax) }}</td><td v-for="a in panel.assignments" :key="a.id" class="num">{{ axisValue(a.evaluation, ax) == null ? '—' : `${number(axisValue(a.evaluation, ax))} / 5` }}</td><td class="num text-muted">{{ number(Math.abs((axisValue(panel.assignments[0].evaluation, ax) ?? 0) - (axisValue(panel.assignments[1].evaluation, ax) ?? 0))) }}</td></tr>
-                <tr class="bg-bg/60"><td class="font-semibold">{{ $t('admin.dashboard.overall') }}</td><td v-for="a in panel.assignments" :key="a.id" class="num font-semibold">{{ a.evaluation ? number(a.evaluation.overall) : '—' }}</td><td class="num">{{ number(Math.abs((panel.assignments[0].evaluation?.overall ?? 0) - (panel.assignments[1].evaluation?.overall ?? 0))) }}</td></tr>
+                <tr class="bg-navy-50"><td class="font-semibold">{{ $t('admin.dashboard.overall') }}</td><td v-for="a in panel.assignments" :key="a.id" class="num font-semibold">{{ a.evaluation ? number(a.evaluation.overall) : '—' }}</td><td class="num">{{ number(Math.abs((panel.assignments[0].evaluation?.overall ?? 0) - (panel.assignments[1].evaluation?.overall ?? 0))) }}</td></tr>
                 <tr><td class="font-medium">{{ $t('admin.dashboard.recommendation') }}</td><td v-for="a in panel.assignments" :key="a.id"><AppBadge v-if="a.evaluation" kind="eval" :value="a.evaluation.recommendation" /><span v-else class="text-xs text-muted">{{ label('assignmentStatus', a.status) }}</span></td><td /></tr>
               </tbody></table></div>
             <ul v-if="panel.diffs?.length" class="mt-3 text-xs text-warning space-y-1"><li v-for="d in panel.diffs" :key="d.criterion_key">{{ $t('admin.opportunity.diff') }} ≥ 2: {{ criterionName(d.criterion_key) }}</li></ul>
@@ -143,9 +143,9 @@ const criteria5: MatchFlagKey[] = ['sector', 'stage', 'region', 'type', 'range']
             <li v-for="c in candidates" :key="c.investor.uuid" class="py-3 flex flex-col sm:flex-row sm:items-center gap-3">
               <div class="flex-1 min-w-0">
                 <p class="font-medium">{{ c.investor.name }} <span class="text-xs text-muted">· {{ label('userType', c.investor.type) }}</span></p>
-                <ul class="mt-1 flex flex-wrap gap-1"><li v-for="k in criteria5" :key="k" class="text-[11px] rounded-full px-2 py-0.5 border" :class="flags(c)[k] ? 'bg-success/10 text-success border-success/30' : 'bg-bg text-muted border-border'">{{ $t(`investor.nominations.criteria.${k}`) }}</li></ul>
+                <ul class="mt-1 flex flex-wrap gap-1"><li v-for="k in criteria5" :key="k" class="text-xs rounded-full px-2.5 py-0.5 border" :class="flags(c)[k] ? 'bg-success/10 text-success border-success/30' : 'text-muted border-ink/15'">{{ $t(`investor.nominations.criteria.${k}`) }}</li></ul>
               </div>
-              <div class="flex items-center gap-3 shrink-0"><span class="num text-lg font-semibold text-blue">{{ c.match_score }}/5</span><AppButton v-if="!c.already_nominated" size="sm" :loading="busy === c.investor.uuid" @click="sendSummary(c)">{{ $t('admin.dashboard.sendSummary') }}</AppButton><AppBadge v-else kind="generic" value="approved" :label="$t('admin.dashboard.summarySent')" /></div>
+              <div class="flex items-center gap-3 shrink-0"><span class="num font-display text-xl font-extrabold text-accent-text">{{ c.match_score }}/5</span><AppButton v-if="!c.already_nominated" size="sm" :loading="busy === c.investor.uuid" @click="sendSummary(c)">{{ $t('admin.dashboard.sendSummary') }}</AppButton><AppBadge v-else kind="generic" value="approved" :label="$t('admin.dashboard.summarySent')" /></div>
             </li>
           </ul>
           <p v-else class="text-sm text-muted">{{ $t('common.noData') }}</p>
@@ -153,7 +153,7 @@ const criteria5: MatchFlagKey[] = ['sector', 'stage', 'region', 'type', 'range']
       </div>
 
       <SectionCard v-if="myTasks.length" :title="$t('admin.dashboard.myTasks')">
-        <ul class="divide-y divide-border"><li v-for="tk in myTasks" :key="tk.id" class="py-2.5 flex items-center justify-between gap-3 text-sm"><NuxtLink :to="$localePath(tk.href)" class="hover:text-blue">{{ tk.title }}</NuxtLink><span class="text-xs text-muted">{{ tk.due_at ? date(tk.due_at) : '' }}</span></li></ul>
+        <ul class="divide-y divide-border"><li v-for="tk in myTasks" :key="tk.id" class="py-2.5 flex items-center justify-between gap-3 text-sm"><NuxtLink :to="$localePath(tk.href)" class="text-ink hover:text-accent-text">{{ tk.title }}</NuxtLink><span class="text-xs text-muted num">{{ tk.due_at ? date(tk.due_at) : '' }}</span></li></ul>
       </SectionCard>
     </div>
   </div>

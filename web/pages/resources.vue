@@ -45,8 +45,8 @@ useSeo({
         <ul class="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-5" role="list">
           <li v-for="r in list" :key="r.id" class="card card-hover card-pad flex flex-col">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs rounded-full bg-navy-50 text-navy px-2.5 py-0.5 font-medium">{{ $t(`resources.audience.${r.audience ?? 'all'}`) }}</span>
-              <span v-if="r.file?.name" class="text-[11px] font-semibold text-muted num ltr">{{ fileType(r) }}<template v-if="r.file?.size"> · {{ size(r.file.size) }}</template></span>
+              <span class="rounded-full border border-accent/35 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-text">{{ $t(`resources.audience.${r.audience ?? 'all'}`) }}</span>
+              <span v-if="r.file?.name" class="text-xs font-semibold text-muted num ltr">{{ fileType(r) }}<template v-if="r.file?.size"> · {{ size(r.file.size) }}</template></span>
             </div>
             <h2 class="card-title mt-3 leading-8">{{ title(r) }}</h2>
             <p v-if="body(r)" class="mt-2 text-sm text-muted leading-6 line-clamp-4 flex-1">{{ cmsExcerpt(body(r), 240) }}</p>

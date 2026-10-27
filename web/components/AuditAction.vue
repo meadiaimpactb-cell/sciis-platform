@@ -15,7 +15,7 @@ const subject = computed(() => (props.auditableType ? `${te(subjectKey.value) ? 
   <span class="inline-flex flex-col gap-0.5 min-w-0">
     <span class="inline-flex flex-wrap items-center gap-1.5">
       <span v-if="text" class="font-medium" :class="denied && 'text-danger'">{{ text }}</span>
-      <code class="text-[11px] ltr inline-block rounded bg-bg px-1.5 py-0.5">{{ action }}</code>
+      <code class="text-xs ltr inline-block rounded-md bg-ink/5 border border-border px-1.5 py-0.5 text-muted">{{ action }}</code>
     </span>
     <span v-if="denied && after" class="text-xs text-muted ltr text-start break-all">
       <span class="num font-medium text-danger">{{ str(after.status) ?? '403' }}</span> {{ str(after.method) }} {{ str(after.path) }}<template v-if="str(after.route)"> · {{ str(after.route) }}</template><template v-if="str(after.code) && after.code !== 'forbidden'"> · {{ str(after.code) }}</template>

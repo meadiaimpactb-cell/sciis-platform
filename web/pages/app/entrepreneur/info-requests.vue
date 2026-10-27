@@ -20,10 +20,10 @@ const answer = async (r: InfoRequest, text: string) => {
     <EmptyState v-else-if="!data?.length" :title="$t('common.noData')" />
     <div v-else class="space-y-4">
       <article v-for="r in data" :key="r.id" class="card card-pad">
-        <div class="flex flex-wrap items-center gap-2"><AppBadge kind="info" :value="r.status" /><span class="text-xs text-muted">{{ dateTime(r.created_at) }}</span><span class="text-xs text-muted ms-auto">{{ r.opportunity.name }}</span></div>
-        <h2 class="mt-2 font-semibold">{{ r.subject }}</h2>
+        <div class="flex flex-wrap items-center gap-2"><AppBadge kind="info" :value="r.status" /><span class="text-xs text-muted num">{{ dateTime(r.created_at) }}</span><span class="text-xs text-muted ms-auto">{{ r.opportunity.name }}</span></div>
+        <h2 class="mt-2 card-title">{{ r.subject }}</h2>
         <p class="text-sm leading-6 mt-1">{{ r.body }}</p>
-        <div v-if="r.owner_answer" class="mt-3 rounded-lg bg-success/5 border border-success/20 p-3 text-sm"><p class="text-xs text-muted mb-1">{{ $t('entrepreneur.infoRequests.answer') }}</p>{{ r.owner_answer }}</div>
+        <div v-if="r.owner_answer" class="mt-3 rounded-xl bg-success/10 border border-success/30 p-3 text-sm"><p class="text-xs text-muted mb-1">{{ $t('entrepreneur.infoRequests.answer') }}</p>{{ r.owner_answer }}</div>
         <!-- §6.3 — a request the council closed takes no more answers -->
         <p v-else-if="r.status === 'closed'" class="mt-3 text-sm text-muted">{{ $t('entrepreneur.infoRequests.closedByCouncil') }}</p>
         <TextReplyForm

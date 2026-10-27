@@ -141,7 +141,7 @@ const historyLabel = (action: string) => { const k = `followUp.history.actions.$
         </FollowUpStatusPanel>
 
         <SectionCard v-if="fu?.remediation_plan || data.execution_status === 'delayed' || data.execution_status === 'stalled'" :title="$t('followUp.remediation.title')">
-          <p v-if="fu?.remediation_plan" class="text-sm whitespace-pre-line">{{ fu.remediation_plan }}</p>
+          <p v-if="fu?.remediation_plan" class="text-sm leading-6 text-text whitespace-pre-line">{{ fu.remediation_plan }}</p>
           <p v-else class="text-sm text-muted">{{ $t('followUp.remediation.empty') }}</p>
           <p v-if="fu?.remediation_updated_at" class="mt-2 text-xs text-muted num">{{ $t('followUp.remediation.updatedAt', { date: dateTime(fu.remediation_updated_at) }) }}</p>
         </SectionCard>
@@ -206,7 +206,7 @@ const historyLabel = (action: string) => { const k = `followUp.history.actions.$
           <div v-show="tab === 'impact'" id="panel-impact" role="tabpanel" aria-labelledby="tab-impact" class="mt-5">
             <SectionCard :title="$t('followUp.impact.title')" :sub="$t('followUp.impact.sub')">
               <div v-if="data.indicators.length" class="space-y-5">
-                <BarChart v-if="data.indicators.length > 1" :series="data.indicators.map((i) => ({ label: i.name, value: Math.max(0, i.progress_percent ?? 0), color: '#58B4A8' }))" :max="100" unit="%" />
+                <BarChart v-if="data.indicators.length > 1" :series="data.indicators.map((i) => ({ label: i.name, value: Math.max(0, i.progress_percent ?? 0), color: 'var(--accent-hi)' }))" :max="100" unit="%" />
                 <FollowUpIndicatorCard v-for="i in data.indicators" :key="i.id" :indicator="i" :download-base="DOCS">
                   <template #value-actions="{ value }">
                     <div v-if="value.status === 'entered'" class="inline-flex gap-1.5">

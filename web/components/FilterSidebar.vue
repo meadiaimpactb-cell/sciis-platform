@@ -24,10 +24,10 @@ const set = (k: string, v: string | null) => emit('update:modelValue', { ...prop
       <button type="button" class="lg:hidden inline-flex items-center gap-2 font-medium kbd-focus rounded" :aria-expanded="open" aria-controls="filter-body" @click="open = !open">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
         {{ $t('components.filters.title') }}
-        <span v-if="active" class="rounded-full bg-blue text-white text-xs px-1.5 num">{{ active }}</span>
+        <span v-if="active" class="rounded-full bg-accent text-on-accent text-xs px-1.5 num">{{ active }}</span>
       </button>
       <span class="hidden lg:inline font-medium">{{ $t('components.filters.title') }}<span v-if="active" class="text-muted text-xs ms-2">({{ $t('components.filters.active', { n: active }) }})</span></span>
-      <button v-if="active" type="button" class="text-xs text-blue hover:underline kbd-focus rounded" @click="emit('reset')">{{ $t('common.clearAll') }}</button>
+      <button v-if="active" type="button" class="text-xs text-accent-text hover:underline kbd-focus rounded" @click="emit('reset')">{{ $t('common.clearAll') }}</button>
     </div>
     <div id="filter-body" class="divide-y divide-border" :class="open ? 'block' : 'hidden lg:block'">
       <section v-for="g in groups" :key="g.key" class="px-4 py-3">

@@ -19,9 +19,9 @@ const submit = () => form.submit(async (v) => {
 </script>
 
 <template>
-  <div class="card card-pad">
-    <h1 class="text-2xl font-semibold">{{ $t('auth.reset.title') }}</h1>
-    <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
+  <div class="card p-6 sm:p-8 mx-auto max-w-lg">
+    <h1 class="text-2xl">{{ $t('auth.reset.title') }}</h1>
+    <form class="mt-7 space-y-5" novalidate @submit.prevent="submit">
       <FormField v-model="form.values.email" name="email" type="email" :label="$t('common.email')" :error="form.errors.value.email" required ltr autocomplete="email" />
       <div>
         <FormField v-model="form.values.password" name="password" type="password" :label="$t('common.password')" :error="form.errors.value.password" required ltr autocomplete="new-password" />
@@ -31,6 +31,6 @@ const submit = () => form.submit(async (v) => {
       <FormAlert />
       <AppButton type="submit" block size="lg" :loading="form.submitting.value">{{ $t('auth.reset.submit') }}</AppButton>
     </form>
-    <p class="mt-5 text-sm text-center"><NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
+    <p class="mt-6 border-t border-border pt-5 text-sm text-center"><NuxtLink :to="$localePath('/auth/login')" class="link">{{ $t('nav.login') }}</NuxtLink></p>
   </div>
 </template>

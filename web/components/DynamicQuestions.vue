@@ -127,7 +127,7 @@ const asRadios = (q: FormQuestion) => q.type === 'yes_no' || (q.type === 'single
           </legend>
           <div class="flex flex-wrap gap-x-5 gap-y-2">
             <label v-for="o in radioOptions(q)" :key="o.value" class="inline-flex items-center gap-2 text-sm text-ink cursor-pointer" :class="disabled && 'opacity-60 cursor-not-allowed'">
-              <input type="radio" class="h-4 w-4 accent-navy" :name="`${uid}-${q.id}`" :value="o.value" :checked="radioValue(q) === o.value" :disabled="disabled" @change="onRadio(q, o.value)">
+              <input type="radio" class="h-4 w-4 shrink-0 cursor-pointer accent-navy disabled:cursor-not-allowed" :name="`${uid}-${q.id}`" :value="o.value" :checked="radioValue(q) === o.value" :disabled="disabled" @change="onRadio(q, o.value)">
               {{ o.label }}
             </label>
           </div>

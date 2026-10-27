@@ -67,7 +67,7 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'ar', dir: 'rtl' },
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'theme-color', content: '#24306C' },
+        { name: 'theme-color', content: '#182455' },
         { property: 'og:site_name', content: 'SCII' },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'format-detection', content: 'telephone=no' },
@@ -78,11 +78,11 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
       ],
-      // Public theme (design v3): the visitor's saved choice is applied before the first paint, so a reload never
-      // flashes the default dark palette. No attribute = dark (theme-site.css).
+      // Theme (design v3, site and portals): the saved choice is applied before the first paint, so a reload never
+      // flashes the default dark palette. No attribute = dark (tokens.css); 'system' follows the device.
       script: [
         {
-          innerHTML: "try{var t=localStorage.getItem('scii-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
+          innerHTML: "try{var t=localStorage.getItem('scii-theme');if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
           tagPosition: 'head',
         },
       ],

@@ -62,16 +62,16 @@ const messagesFor = ref<Nomination | null>(null)
     <div v-else class="grid md:grid-cols-2 gap-5">
       <article v-for="n in data" :key="n.id" class="card flex flex-col">
         <div class="p-5 flex-1">
-          <div class="flex items-center justify-between gap-2"><span class="text-xs text-muted">{{ date(n.sent_at) }}</span><span class="text-xs rounded-full bg-blue-soft text-blue px-2 py-0.5 font-medium num">{{ $t('investor.detail.matchScore', { n: n.match_score }) }}</span></div>
-          <h2 class="mt-2 text-lg font-semibold"><NuxtLink :to="$localePath(`/app/opportunities/${n.opportunity.uuid}`)" class="hover:text-blue">{{ n.opportunity.name }}</NuxtLink></h2>
+          <div class="flex items-center justify-between gap-2"><span class="text-xs text-muted num">{{ date(n.sent_at) }}</span><span class="text-xs rounded-full border border-accent/35 bg-accent/10 text-accent-text px-2.5 py-0.5 font-medium num">{{ $t('investor.detail.matchScore', { n: n.match_score }) }}</span></div>
+          <h2 class="mt-2 card-title"><NuxtLink :to="$localePath(`/app/opportunities/${n.opportunity.uuid}`)" class="hover:text-accent-text transition">{{ n.opportunity.name }}</NuxtLink></h2>
           <p class="text-sm text-muted">{{ term(n.opportunity.sector) }} · {{ label('stage', n.opportunity.stage) }}</p>
-          <p class="mt-3 text-sm leading-6 text-text/85 line-clamp-3">{{ n.opportunity.teaser_summary }}</p>
+          <p class="mt-3 text-sm leading-6 text-text line-clamp-3">{{ n.opportunity.teaser_summary }}</p>
           <p class="mt-3 text-xs font-medium text-muted">{{ $t('investor.nominations.matched') }}</p>
-          <ul class="mt-1.5 flex flex-wrap gap-1.5"><li v-for="c in criteria" :key="c" class="text-xs rounded-full px-2 py-0.5 border" :class="matched(n, c) ? 'bg-success/10 text-success border-success/30' : 'bg-bg text-muted border-border line-through'">{{ $t(`investor.nominations.criteria.${c}`) }}</li></ul>
+          <ul class="mt-1.5 flex flex-wrap gap-1.5"><li v-for="c in criteria" :key="c" class="text-xs rounded-full px-2.5 py-0.5 border" :class="matched(n, c) ? 'bg-success/10 text-success border-success/30' : 'bg-transparent text-muted border-ink/15 line-through'">{{ $t(`investor.nominations.criteria.${c}`) }}</li></ul>
           <p class="mt-3 text-xs font-medium text-muted">{{ $t('investor.nominations.rationale') }}</p>
           <p class="text-sm leading-6">{{ n.rationale }}</p>
         </div>
-        <div class="px-5 py-3 border-t border-border bg-bg/40 rounded-b-xl flex items-center justify-between gap-2">
+        <div class="px-5 py-3 border-t border-border bg-glass rounded-b-2xl flex items-center justify-between gap-2">
           <AppButton variant="ghost" size="sm" @click="messagesFor = n">{{ $t('collab.messages.button') }}</AppButton>
           <template v-if="n.response"><AppBadge kind="generic" :value="n.response" :label="$t('investor.nominations.responded', { response: label('nominationResponse', n.response) })" size="md" /></template>
           <template v-else-if="canAct"><span class="flex gap-2"><AppButton variant="ghost" size="sm" @click="openDecline(n)">{{ $t('investor.nominations.decline') }}</AppButton><AppButton size="sm" :loading="busy === n.id" @click="interested(n)">{{ $t('investor.nominations.interested') }}</AppButton></span></template>

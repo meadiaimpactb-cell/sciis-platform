@@ -27,7 +27,7 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
 
 <template>
   <div>
-    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath(listPath)" class="hover:text-blue">{{ listTitle }}</NuxtLink> / <span class="num">#{{ id }}</span></nav>
+    <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath(listPath)" class="hover:text-accent-text">{{ listTitle }}</NuxtLink> / <span class="num">#{{ id }}</span></nav>
     <div v-if="loading && !u" class="text-muted">{{ $t('common.loading') }}</div>
     <EmptyState v-else-if="failed" :title="failed === 403 ? $t('admin.userFile.forbidden') : $t('admin.userFile.loadFailed')" />
     <template v-else-if="u">
@@ -58,7 +58,7 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
           <SectionCard v-if="isInvestor" :title="$t('admin.userFile.membershipHistory')">
             <ol class="relative border-s border-border ms-2 space-y-4">
               <li v-for="h in [...u.membership_history].reverse()" :key="h.id" class="ms-5">
-                <span class="absolute -start-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-teal" aria-hidden="true" />
+                <span class="absolute -start-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-accent-hi ring-2 ring-surface" aria-hidden="true" />
                 <div class="flex flex-wrap items-center gap-2 text-sm">
                   <AppBadge v-if="h.from" kind="membership" :value="h.from" /><span v-if="h.from" class="text-muted" aria-hidden="true">→</span><AppBadge v-if="h.to" kind="membership" :value="h.to" />
                   <span v-if="h.action === 'membership.submitted'" class="text-xs text-muted">{{ $t('admin.userFile.submittedByInvestor') }}</span>
@@ -85,14 +85,14 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
             <SectionCard :title="$t('admin.interests.title')">
               <p v-if="!u.can.view_matching" class="text-sm text-muted">{{ $t('admin.userFile.noPermission') }}</p>
               <ul v-else class="space-y-2 text-sm">
-                <li v-for="i in u.interests" :key="i.id" class="rounded-lg bg-bg p-3 flex justify-between gap-2"><span class="min-w-0"><NuxtLink v-if="i.opportunity" :to="$localePath(`/app/admin/opportunities/${i.opportunity.uuid}`)" class="font-medium hover:text-blue">{{ i.opportunity.name }}</NuxtLink><span class="block text-xs text-muted num">{{ i.opportunity?.reference_no ?? '' }} · {{ date(i.created_at) }}</span></span><AppBadge kind="interest" :value="i.status" /></li>
+                <li v-for="i in u.interests" :key="i.id" class="rounded-xl border border-border bg-ink/[0.03] p-3 flex justify-between gap-2"><span class="min-w-0"><NuxtLink v-if="i.opportunity" :to="$localePath(`/app/admin/opportunities/${i.opportunity.uuid}`)" class="font-medium hover:text-blue">{{ i.opportunity.name }}</NuxtLink><span class="block text-xs text-muted num">{{ i.opportunity?.reference_no ?? '' }} · {{ date(i.created_at) }}</span></span><AppBadge kind="interest" :value="i.status" /></li>
                 <li v-if="!u.interests.length" class="text-muted">{{ $t('common.noData') }}</li>
               </ul>
             </SectionCard>
             <SectionCard :title="$t('admin.opportunity.tabs.nominations')">
               <p v-if="!u.can.view_matching" class="text-sm text-muted">{{ $t('admin.userFile.noPermission') }}</p>
               <ul v-else class="space-y-2 text-sm">
-                <li v-for="n in u.nominations" :key="n.id" class="rounded-lg bg-bg p-3"><div class="flex justify-between gap-2"><NuxtLink v-if="n.opportunity" :to="$localePath(`/app/admin/opportunities/${n.opportunity.uuid}`)" class="font-medium hover:text-blue">{{ n.opportunity.name }}</NuxtLink><AppBadge kind="generic" :value="n.response ?? 'pending'" :label="n.response ? label('nominationResponse', n.response) : $t('common.new')" /></div><p class="text-xs text-muted mt-1"><span class="num">{{ date(n.sent_at) }}</span> · {{ $t('investor.detail.matchScore', { n: n.match_score }) }}</p></li>
+                <li v-for="n in u.nominations" :key="n.id" class="rounded-xl border border-border bg-ink/[0.03] p-3"><div class="flex justify-between gap-2"><NuxtLink v-if="n.opportunity" :to="$localePath(`/app/admin/opportunities/${n.opportunity.uuid}`)" class="font-medium hover:text-blue">{{ n.opportunity.name }}</NuxtLink><AppBadge kind="generic" :value="n.response ?? 'pending'" :label="n.response ? label('nominationResponse', n.response) : $t('common.new')" /></div><p class="text-xs text-muted mt-1"><span class="num">{{ date(n.sent_at) }}</span> · {{ $t('investor.detail.matchScore', { n: n.match_score }) }}</p></li>
                 <li v-if="!u.nominations.length" class="text-muted">{{ $t('common.noData') }}</li>
               </ul>
             </SectionCard>
@@ -117,7 +117,7 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
 
         <aside class="space-y-4 lg:sticky lg:top-6">
           <div class="card card-pad">
-            <h3 class="font-semibold">{{ $t('admin.userFile.security') }}</h3>
+            <h3 class="card-title">{{ $t('admin.userFile.security') }}</h3>
             <KeyValue class="mt-3" :cols="1" :items="[
               { label: $t('admin.userFile.emailVerified'), value: verified(u.email_verified_at) },
               { label: $t('admin.userFile.phoneVerified'), value: verified(u.phone_verified_at) },
@@ -125,11 +125,11 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
             ]" />
             <template v-if="u.roles.length">
               <p class="mt-4 text-xs text-muted">{{ $t('admin.users.roles') }}</p>
-              <ul class="mt-1 flex flex-wrap gap-1"><li v-for="r in u.roles" :key="r" class="text-xs rounded-full bg-bg px-2 py-0.5">{{ roleLabel(r) }}</li></ul>
+              <ul class="mt-1.5 flex flex-wrap gap-1.5"><li v-for="r in u.roles" :key="r" class="text-xs rounded-full border border-ink/15 bg-ink/5 text-text px-2.5 py-0.5">{{ roleLabel(r) }}</li></ul>
             </template>
           </div>
           <div v-if="isInvestor" class="card card-pad">
-            <div class="flex items-center justify-between gap-2"><h3 class="font-semibold">{{ $t('admin.userFile.membership') }}</h3><AppBadge v-if="u.membership" kind="membership" :value="u.membership.status" /></div>
+            <div class="flex items-center justify-between gap-2"><h3 class="card-title">{{ $t('admin.userFile.membership') }}</h3><AppBadge v-if="u.membership" kind="membership" :value="u.membership.status" /></div>
             <KeyValue v-if="u.membership" class="mt-3" :cols="1" :items="[
               { label: $t('admin.memberships.columns.submitted'), value: date(u.membership.submitted_at), num: true },
               { label: $t('admin.userFile.approvedAt'), value: date(u.membership.approved_at), num: true },
@@ -138,7 +138,7 @@ const activity = computed(() => (u.value?.activity ?? []).filter((a) => activity
               { label: $t('admin.memberships.columns.completion'), value: percent(u.completion_percent), num: true },
             ]" />
             <p v-else class="mt-2 text-sm text-muted">{{ $t('common.noData') }}</p>
-            <p v-if="u.membership?.decision_note" class="mt-3 text-sm text-muted rounded-lg bg-bg p-2"><span class="block text-xs">{{ $t('admin.memberships.decisionNote') }}</span>{{ u.membership.decision_note }}</p>
+            <p v-if="u.membership?.decision_note" class="mt-3 text-sm text-text rounded-xl border border-border bg-ink/5 px-3 py-2"><span class="block text-xs text-muted">{{ $t('admin.memberships.decisionNote') }}</span>{{ u.membership.decision_note }}</p>
           </div>
         </aside>
       </div>

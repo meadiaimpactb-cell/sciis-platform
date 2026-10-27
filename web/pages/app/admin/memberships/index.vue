@@ -42,7 +42,7 @@ const userId = (m: Membership) => m.user_id ?? (m.user as { id?: number } | unde
         <select v-model="f.status" class="input" :aria-label="$t('common.status')"><option value="">{{ $t('common.status') }}: {{ $t('common.all') }}</option><option v-for="s in MEMBERSHIP_STATUSES" :key="s" :value="s">{{ label('membershipStatus', s) }}</option></select>
         <select v-model="f.investor_type" class="input" :aria-label="$t('admin.listFilters.investorType')"><option value="">{{ $t('admin.listFilters.investorType') }}: {{ $t('common.all') }}</option><option value="individual">{{ label('userType', 'investor_individual') }}</option><option value="institutional">{{ label('userType', 'investor_institutional') }}</option></select>
         <div class="flex gap-1 justify-end">
-          <AppButton variant="ghost" size="sm" :aria-expanded="more" @click="more = !more">{{ $t('admin.listFilters.moreFilters') }}<span v-if="active" class="num ms-1 rounded-full bg-blue-soft text-blue px-1.5 text-[11px]">{{ active }}</span></AppButton>
+          <AppButton variant="ghost" size="sm" :aria-expanded="more" @click="more = !more">{{ $t('admin.listFilters.moreFilters') }}<span v-if="active" class="num ms-1 rounded-full bg-accent text-on-accent px-1.5 text-xs">{{ active }}</span></AppButton>
           <AppButton v-if="active" variant="ghost" size="sm" @click="clear">{{ $t('common.reset') }}</AppButton>
         </div>
       </div>

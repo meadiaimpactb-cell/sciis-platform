@@ -80,12 +80,12 @@ const recordLink = (s: ThreadSummary) => {
       <div v-else-if="!rows.length" class="p-4"><EmptyState compact :title="$t(filter === 'unread' ? 'collab.messages.noUnread' : 'collab.messages.noThreads')" :text="$t('collab.messages.noThreadsText')" /></div>
       <ul v-else class="divide-y divide-border max-h-[36rem] overflow-y-auto scrollbar-thin">
         <li v-for="s in rows" :key="s.uuid">
-          <button type="button" class="w-full text-start px-4 py-3 transition kbd-focus" :class="selected?.uuid === s.uuid ? 'bg-navy-50' : 'hover:bg-bg/70'" :aria-current="selected?.uuid === s.uuid ? 'true' : undefined" @click="open(s)">
+          <button type="button" class="w-full text-start px-4 py-3 transition kbd-focus" :class="selected?.uuid === s.uuid ? 'bg-accent/10 shadow-[inset_3px_0_0_rgb(var(--c-accent-hi))] rtl:shadow-[inset_-3px_0_0_rgb(var(--c-accent-hi))]' : 'hover:bg-ink/5'" :aria-current="selected?.uuid === s.uuid ? 'true' : undefined" @click="open(s)">
             <span class="flex items-center justify-between gap-2">
               <span class="text-xs text-muted">{{ $t(`collab.messages.subjects.${s.subject.type}`) }}<template v-if="s.subject.reference_no"> · <span class="num">{{ s.subject.reference_no }}</span></template></span>
-              <span v-if="s.unread_count" class="min-w-5 h-5 px-1.5 rounded-full bg-teal text-navy-900 text-[11px] font-semibold flex items-center justify-center num" :aria-label="$t('collab.messages.unreadCount', { n: s.unread_count })">{{ s.unread_count }}</span>
+              <span v-if="s.unread_count" class="min-w-5 h-5 px-1.5 rounded-full bg-accent text-on-accent text-xs font-semibold flex items-center justify-center num" :aria-label="$t('collab.messages.unreadCount', { n: s.unread_count })">{{ s.unread_count }}</span>
             </span>
-            <span class="mt-0.5 block font-medium truncate" :class="s.unread_count ? 'text-ink' : 'text-text/85'">{{ s.subject.title }}</span>
+            <span class="mt-0.5 block font-medium truncate" :class="s.unread_count ? 'text-ink' : 'text-text'">{{ s.subject.title }}</span>
             <span v-if="s.subject.counterpart" class="block text-xs text-muted truncate">{{ s.subject.counterpart }}</span>
             <span v-if="s.last_message" class="mt-1 flex items-center justify-between gap-2 text-xs text-muted">
               <span class="truncate">{{ s.last_message.author_side === 'staff' ? $t('collab.messages.sides.staff') : $t(`collab.messages.sides.${s.subject.type === 'opportunity' ? 'owner' : 'investor'}`) }}: {{ s.last_message.excerpt }}</span>
@@ -94,7 +94,7 @@ const recordLink = (s: ThreadSummary) => {
           </button>
         </li>
       </ul>
-      <div v-if="meta.last_page > 1" class="border-t border-border px-4 py-3 bg-bg/40"><Pagination v-model:page="page" :last-page="meta.last_page" :total="meta.total" /></div>
+      <div v-if="meta.last_page > 1" class="border-t border-border px-4 py-3 bg-glass"><Pagination v-model:page="page" :last-page="meta.last_page" :total="meta.total" /></div>
     </section>
 
     <SectionCard v-if="selected" :key="selected.uuid" :title="selected.subject.title" :sub="selected.subject.counterpart ?? undefined">

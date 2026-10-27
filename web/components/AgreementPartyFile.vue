@@ -66,13 +66,13 @@ const downloadSigned = async () => {
     <div v-if="loading && !a" class="text-muted">{{ $t('common.loading') }}</div>
     <EmptyState v-else-if="loadError || !a" :title="$t('agreements.detail.loadFailed')"><AppButton size="sm" variant="secondary" :to="`/app/${portal}/agreements`">{{ $t('agreements.party.title') }}</AppButton></EmptyState>
     <template v-else>
-      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath(`/app/${portal}/agreements`)" class="hover:text-blue">{{ $t('agreements.party.title') }}</NuxtLink> / <span class="num">{{ a.number }}</span></nav>
+      <nav class="text-xs text-muted mb-3" aria-label="breadcrumb"><NuxtLink :to="$localePath(`/app/${portal}/agreements`)" class="hover:text-accent-text transition">{{ $t('agreements.party.title') }}</NuxtLink> / <span class="num">{{ a.number }}</span></nav>
 
       <header class="card card-pad">
         <div class="flex flex-col lg:flex-row lg:items-start gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex flex-wrap items-center gap-2"><AppBadge kind="agreement" :value="a.status" :soft="false" size="md" /><span class="text-sm text-muted num">{{ a.number }}</span><span v-if="a.version" class="text-sm text-muted num">· v{{ a.version.version }}</span></div>
-            <h1 class="mt-2 text-2xl font-semibold">{{ a.title }}</h1>
+            <h1 class="mt-2 font-display text-2xl md:text-3xl font-extrabold text-ink">{{ a.title }}</h1>
             <p class="text-sm text-muted">{{ a.opportunity?.name }}<template v-if="a.my_party"> · {{ $t('agreements.party.youAre', { party: $t(`enums.agreementParty.${a.my_party}`) }) }}</template></p>
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
@@ -93,7 +93,7 @@ const downloadSigned = async () => {
           </template>
           <template v-if="shown">
             <Tabs v-model="lang" :tabs="langTabs" variant="pills" class="mb-4" />
-            <div class="rounded-xl border border-border bg-surface p-5 lg:p-8">
+            <div class="rounded-2xl border border-border bg-bg/40 p-5 lg:p-8">
               <AgreementText v-if="lang === 'ar'" :text="shown.body" lang="ar" :highlight="false" />
               <AgreementText v-else-if="shown.body_en" :text="shown.body_en" lang="en" :highlight="false" />
               <p v-else class="text-sm text-muted">{{ $t('agreements.text.noEn') }}</p>
@@ -102,9 +102,9 @@ const downloadSigned = async () => {
           </template>
         </SectionCard>
 
-        <div class="space-y-4 lg:sticky lg:top-6">
+        <div class="space-y-4 lg:sticky lg:top-20">
           <!-- AGR-05 click-to-sign -->
-          <section v-if="a.can_sign" class="card card-pad border-teal/60 ring-1 ring-teal/30" aria-labelledby="sign-title">
+          <section v-if="a.can_sign" class="card card-pad border-accent/60 ring-1 ring-accent/30" aria-labelledby="sign-title">
             <h2 id="sign-title" class="card-title">{{ $t('agreements.sign.title') }}</h2>
             <p class="mt-1 text-sm text-muted leading-6">{{ $t('agreements.sign.intro', { version: a.version?.version ?? '' }) }}</p>
             <form class="mt-4 space-y-4" novalidate @submit.prevent="sign">
@@ -117,14 +117,22 @@ const downloadSigned = async () => {
 
           <SectionCard :title="$t('agreements.tabs.signatures')">
             <ul class="space-y-3">
-              <li v-for="p in (['owner', 'investor'] as const)" :key="p" class="flex items-start justify-between gap-3">
-                <div class="min-w-0"><p class="text-xs text-muted">{{ $t(`enums.agreementParty.${p}`) }}</p><p class="font-medium truncate">{{ partyName(p) }}</p></div>
-                <span v-if="a.parties_status[p].signed" class="text-xs text-success text-end num">{{ $t('agreements.signatures.signedAt', { date: dateTime(a.parties_status[p].signed_at) }) }}</span>
-                <span v-else-if="a.signed_document" class="text-xs text-success text-end">{{ $t('agreements.signatures.method.wet') }}</span>
-                <span v-else class="text-xs text-muted text-end">{{ a.status === 'sent_for_signature' ? $t('agreements.signatures.pending') : '—' }}</span>
+              <li v-for="p in (['owner', 'investor'] as const)" :key="p" class="flex items-start gap-3">
+                <!-- same marks as DualConsent: accent check once the party signed, a clock while waiting -->
+                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border" :class="a.parties_status[p].signed || a.signed_document ? 'border-accent bg-accent text-on-accent' : 'border-ink/20 text-t3'" aria-hidden="true">
+                  <svg v-if="a.parties_status[p].signed || a.signed_document" class="h-4 w-4" viewBox="0 0 20 20" fill="none"><path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                  <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" /></svg>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs text-muted">{{ $t(`enums.agreementParty.${p}`) }}</p>
+                  <p class="font-medium text-ink truncate">{{ partyName(p) }}</p>
+                  <p v-if="a.parties_status[p].signed" class="text-xs text-accent-text num">{{ $t('agreements.signatures.signedAt', { date: dateTime(a.parties_status[p].signed_at) }) }}</p>
+                  <p v-else-if="a.signed_document" class="text-xs text-accent-text">{{ $t('agreements.signatures.method.wet') }}</p>
+                  <p v-else class="text-xs text-muted">{{ a.status === 'sent_for_signature' ? $t('agreements.signatures.pending') : '—' }}</p>
+                </div>
               </li>
             </ul>
-            <div v-for="s in a.signatures.filter((x) => x.party === a?.my_party && x.ip)" :key="s.id" class="mt-4 rounded-lg bg-bg p-3 text-xs text-muted space-y-1">
+            <div v-for="s in a.signatures.filter((x) => x.party === a?.my_party && x.ip)" :key="s.id" class="mt-4 rounded-xl border border-border bg-glass p-3 text-xs text-muted space-y-1">
               <p class="font-medium text-ink">{{ $t('agreements.party.yourEvidence') }}</p>
               <p class="num">{{ dateTime(s.signed_at) }} · <span class="ltr inline-block">{{ s.ip }}</span></p>
               <p class="break-all"><code class="ltr inline-block">{{ s.text_hash }}</code></p>
