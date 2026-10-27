@@ -4,6 +4,8 @@ import type { ContentItem } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
 const { t } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('resources')
 const siteUrl = useSiteUrl()
 const { data: resources } = await usePublicResources()
 const { title, body } = useContentText()
@@ -22,7 +24,7 @@ const size = (n?: number | null) => (n ? (n >= 1048576 ? `${(n / 1048576).toFixe
 
 useSeo({
   title: t('resources.metaTitle'),
-  description: t('resources.lead'),
+  description: header.text('lead', 'resources.lead'),
   noindex: !resources.value.length,
   jsonLd: resources.value.length
     ? {
@@ -37,7 +39,7 @@ useSeo({
 
 <template>
   <div>
-    <PageHero :kicker="$t('tools.eyebrow')" :title="$t('resources.title')" :lead="$t('resources.lead')" />
+    <PageHero :kicker="header.text('kicker', 'tools.eyebrow')" :title="header.text('title', 'resources.title')" :lead="header.text('lead', 'resources.lead')" />
 
     <section class="container-x section-y">
       <template v-if="resources.length">

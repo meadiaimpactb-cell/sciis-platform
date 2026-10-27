@@ -352,8 +352,8 @@
   },
   "about": {
     "metaTitle": "About",
-    "title": "About the Saudi Council for Impact Investors",
-    "lead": "A body uniting impact investors in the Kingdom around one vision: directing capital toward measurable solutions to real social challenges.",
+    "title": "Bringing investors together around measurable impact",
+    "lead": "The Saudi Council for Impact Investors unites investors across the Kingdom to direct capital toward measurable solutions to real social and environmental challenges.",
     "vision": "Vision",
     "visionText": "Impact investing becomes a primary choice for private capital in the Kingdom, contributing to Vision 2030 targets in quality of life and nonprofit-sector growth.",
     "mission": "Mission",
@@ -373,8 +373,8 @@
   },
   "impactInvesting": {
     "metaTitle": "Impact investing",
-    "title": "What is impact investing?",
-    "lead": "Investment made with the intention to generate positive, measurable social or environmental impact alongside a financial return.",
+    "title": "Investment measured by its return and its impact",
+    "lead": "Impact investing is investment made with the intention to generate positive, measurable social or environmental impact alongside a financial return.",
     "definition": "Definition",
     "definitionText": "Impact investing directs capital to projects and organisations that create positive change in society or the environment, with an explicit commitment to measure and report that change, and a financial return ranging from capital preservation to market rate depending on the opportunity.",
     "characteristics": "Four characteristics",
@@ -397,8 +397,8 @@
   },
   "forInvestors": {
     "metaTitle": "For investors",
-    "title": "For impact investors",
-    "lead": "Join a network of investors directing capital toward measurable impact.",
+    "title": "Invest in impact you can see and measure",
+    "lead": "Opportunities evaluated against published criteria, nominations matched to your interests and impact follow-up after connection — within a network of impact investors.",
     "whyTitle": "Why the platform?",
     "why": [
       { "title": "Evaluated opportunities", "text": "Every opportunity passes initial screening and independent scoring by two evaluators on readiness, feasibility and impact." },
@@ -424,8 +424,8 @@
   },
   "forEntrepreneurs": {
     "metaTitle": "For entrepreneurs",
-    "title": "For social project owners",
-    "lead": "Submit your project, receive a professional evaluation and connect with impact investors genuinely interested in your field.",
+    "title": "From a project with impact to an investor who believes in it",
+    "lead": "Submit your project through one unified form, receive a professional evaluation with clear feedback and connect with investors genuinely interested in your field — with your consent first.",
     "criteriaTitle": "Acceptance criteria",
     "criteria": [
       "Clear, measurable social or environmental impact",
@@ -490,7 +490,7 @@
   },
   "events": {
     "metaTitle": "Events",
-    "title": "Council events",
+    "title": "Meetings that build partnerships",
     "lead": "Forums, workshops and meetups bringing impact investors and project owners together.",
     "empty": "No events announced at the moment",
     "emptyText": "Follow us to learn about upcoming events.",
@@ -1444,7 +1444,7 @@
   "tools": {
     "eyebrow": "Council tools",
     "metaTitle": "Self-assessment tools",
-    "title": "Self-assessment tools",
+    "title": "Know how ready you are before you start",
     "lead": "Short, free quizzes that show how ready you are before registering — scored in your browser, with no data sent anywhere.",
     "breadcrumb": "Breadcrumb",
     "start": "Start the quiz",
@@ -1512,7 +1512,7 @@
   "stories": {
     "eyebrow": "Impact",
     "metaTitle": "Impact stories",
-    "title": "Impact stories",
+    "title": "Impact stories from the field",
     "lead": "Examples of social ventures and investors brought together by the council, and the impact achieved for beneficiaries.",
     "homeSub": "Examples of the impact social investment creates through the council.",
     "viewAll": "All stories",

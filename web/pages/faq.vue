@@ -2,11 +2,13 @@
 import type { PublicFaq } from '~/types/api'
 definePageMeta({ layout: 'default' })
 const { t } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('faq')
 const api = useApi()
 const { data: faqs } = await useAsyncData('faqs', () => api.get<{ data: PublicFaq[] }>('/public/faqs').then((r) => r.data).catch(() => []))
 useSeo({
   title: t('faq.metaTitle'),
-  description: t('faq.lead'),
+  description: header.text('lead', 'faq.lead'),
   jsonLd: { '@type': 'FAQPage', mainEntity: (faqs.value ?? []).map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) },
 })
 const cat = ref<string>('all')
@@ -19,7 +21,7 @@ const tabs = computed(() => cats.map((c) => ({ key: c, label: c === 'all' ? t('c
 
 <template>
   <div>
-    <PageHero :title="$t('faq.title')" :lead="$t('faq.lead')" />
+    <PageHero :title="header.text('title', 'faq.title')" :lead="header.text('lead', 'faq.lead')" />
     <section class="container-x section-y max-w-3xl">
       <label class="sr-only" for="faq-q">{{ $t('common.search') }}</label>
       <input id="faq-q" v-model="q" type="search" class="input mb-4" :placeholder="$t('faq.searchPlaceholder')" />

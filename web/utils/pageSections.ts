@@ -30,7 +30,9 @@ export interface PublicPageDef {
   sections: PageSectionDef[]
 }
 
-export type PublicPageSlug = 'home' | 'about' | 'impact-investing' | 'for-investors' | 'for-entrepreneurs'
+export type PublicPageSlug =
+  | 'home' | 'about' | 'impact-investing' | 'for-investors' | 'for-entrepreneurs'
+  | 'news' | 'events' | 'stories' | 'resources' | 'tools' | 'faq' | 'contact'
 
 export type SectionScalar = string | boolean | number | null
 export type SectionItem = Record<string, SectionScalar>
@@ -151,5 +153,27 @@ export const PUBLIC_PAGE_SECTIONS: PublicPageDef[] = [
     ],
   },
 ]
+
+/** Page header (label above the title, title, lead) of a listing / utility page whose items are managed elsewhere in the CMS. */
+const header = (slug: PublicPageSlug, label: string, path: string, ns: string, kicker?: string): PublicPageDef => ({
+  slug,
+  label,
+  path,
+  sections: [
+    ...(kicker ? [{ key: 'kicker', label: 'الشارة أعلى العنوان', type: 'text' as const, i18nKey: kicker }] : []),
+    { key: 'title', label: 'عنوان الصفحة', type: 'text', i18nKey: `${ns}.title` },
+    { key: 'lead', label: 'المقدمة', type: 'textarea', i18nKey: `${ns}.lead` },
+  ],
+})
+
+PUBLIC_PAGE_SECTIONS.push(
+  header('news', 'الأخبار', '/news', 'news', 'nav.news'),
+  header('events', 'الفعاليات', '/events', 'events', 'nav.events'),
+  header('stories', 'قصص الأثر', '/stories', 'stories', 'stories.eyebrow'),
+  header('resources', 'الأدلة والمراجع', '/resources', 'resources', 'tools.eyebrow'),
+  header('tools', 'أدوات التقييم الذاتي', '/tools', 'tools', 'tools.eyebrow'),
+  header('faq', 'الأسئلة الشائعة', '/faq', 'faq'),
+  header('contact', 'تواصل معنا', '/contact', 'contact'),
+)
 
 export const publicPageDef = (slug: string) => PUBLIC_PAGE_SECTIONS.find((p) => p.slug === slug)

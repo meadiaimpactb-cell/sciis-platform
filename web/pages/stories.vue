@@ -2,6 +2,8 @@
 /** «قصص أثر» — published impact stories (CMS `stories`), ItemList JSON-LD; noindex while empty. */
 definePageMeta({ layout: 'default' })
 const { t } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('stories')
 const route = useRoute()
 const siteUrl = useSiteUrl()
 const { data: stories } = await usePublicStories()
@@ -10,7 +12,7 @@ const { title } = useContentText()
 const pageUrl = `${siteUrl}${route.path.replace(/\/$/, '')}`
 useSeo({
   title: t('stories.metaTitle'),
-  description: t('stories.lead'),
+  description: header.text('lead', 'stories.lead'),
   image: stories.value.find((s) => s.meta?.cover?.url)?.meta?.cover?.url ?? undefined,
   noindex: !stories.value.length,
   jsonLd: stories.value.length
@@ -26,7 +28,7 @@ useSeo({
 
 <template>
   <div>
-    <PageHero :kicker="$t('stories.eyebrow')" :title="$t('stories.title')" :lead="$t('stories.lead')" />
+    <PageHero :kicker="header.text('kicker', 'stories.eyebrow')" :title="header.text('title', 'stories.title')" :lead="header.text('lead', 'stories.lead')" />
 
     <section class="container-x section-y">
       <div v-if="stories.length" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">

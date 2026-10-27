@@ -5,6 +5,8 @@ import { emailField, messageField, optionalPhoneField, requiredChoice, requiredS
 import { toastSuccess } from '~/utils/notify'
 definePageMeta({ layout: 'default' })
 const { t } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('contact')
 useSeo({
   title: t('contact.metaTitle'),
   description: t('contact.metaDescription'),
@@ -27,7 +29,7 @@ const again = () => { reference.value = null; form.reset() }
 
 <template>
   <div>
-    <PageHero :title="$t('contact.title')" :lead="$t('contact.lead')" />
+    <PageHero :title="header.text('title', 'contact.title')" :lead="header.text('lead', 'contact.lead')" />
     <section class="container-x section-y grid lg:grid-cols-[1.3fr_1fr] gap-8">
       <div class="card card-pad">
         <div v-if="reference" class="text-center py-8">

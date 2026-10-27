@@ -4,6 +4,8 @@ import type { ContentItem, Paginated } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
 const { t, locale } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('news')
 const api = useApi()
 const route = useRoute()
 const router = useRouter()
@@ -22,12 +24,12 @@ const meta = computed(() => data.value?.meta)
 const alt = (c: ContentItem) => (locale.value === 'en' && c.meta?.cover?.alt_en ? c.meta.cover.alt_en : c.meta?.cover?.alt_ar) || c.title || c.title_ar
 const goPage = (p: number) => router.push({ query: { ...route.query, page: p > 1 ? String(p) : undefined } })
 
-useSeo({ title: t('news.metaTitle'), description: t('news.lead'), image: items.value[0]?.meta?.cover?.url ?? undefined })
+useSeo({ title: t('news.metaTitle'), description: header.text('lead', 'news.lead'), image: items.value[0]?.meta?.cover?.url ?? undefined })
 </script>
 
 <template>
   <div>
-    <PageHero :kicker="$t('nav.news')" :title="$t('news.title')" :lead="$t('news.lead')" />
+    <PageHero :kicker="header.text('kicker', 'nav.news')" :title="header.text('title', 'news.title')" :lead="header.text('lead', 'news.lead')" />
 
     <section class="container-x section-y">
       <div v-if="pending && !items.length" class="text-muted">{{ $t('common.loading') }}</div>

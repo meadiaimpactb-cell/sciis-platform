@@ -97,61 +97,48 @@ class PublicPagesContentSeeder extends Seeder
     public static function sections(): array
     {
         return [
+            // Design v3 (web utils/pageSections.ts → landing.* texts); generated, keep in step with the web schema.
             'home' => [
-                'hero_eyebrow' => ['ar' => 'منصة وطنية للاستثمار الاجتماعي', 'en' => 'A national impact-investing platform'],
-                'hero_title' => ['ar' => 'فرص استثمار اجتماعي مُراجَعة، لمستثمرين يقيسون الأثر كما يقيسون العائد', 'en' => 'Reviewed impact-investment opportunities, for investors who measure impact as rigorously as returns'],
-                'hero_text' => ['ar' => 'منصة المجلس السعودي للمستثمرين الاجتماعيين تربط المستثمرين المعتمدين بفرص اجتماعية مُقيَّمة بمعايير واضحة، وتدير رحلة الربط من أول اهتمام حتى التواصل المباشر — بشفافية، وبدون وساطة مالية.', 'en' => 'The SCII platform connects accredited investors with impact opportunities evaluated against clear criteria, and manages the journey from first interest to direct connection — transparently and without financial intermediation.'],
-                'paths_title' => ['ar' => 'مساران، منصة واحدة', 'en' => 'Two paths, one platform'],
-                'paths_sub' => ['ar' => 'اختر المسار المناسب لك — ولكل مسار رحلة واضحة ومتطلبات محددة.', 'en' => 'Choose your path — each has a clear journey and defined requirements.'],
-                'investor_path_title' => ['ar' => 'أنا مستثمر اجتماعي', 'en' => 'I am an impact investor'],
-                'investor_path_text' => ['ar' => 'سجّل، أكمل ملفك الاستثماري، واحصل على العضوية لتصفح الفرص المؤهّلة أو تلقّي ترشيحات مطابقة لاهتماماتك.', 'en' => 'Register, complete your investment profile, and get membership to browse eligible opportunities or receive nominations matched to your interests.'],
-                'investor_path_points' => [
+                'hero_badge' => ['ar' => 'المنصة الوطنية للاستثمار الاجتماعي', 'en' => 'Saudi Arabia\'s national impact-investing platform'],
+                'headline' => ['ar' => 'حيث يلتقي رأس المال الصبور بالأثر القابل للقياس', 'en' => 'Where patient capital meets measurable impact'],
+                'headline_lead' => ['ar' => 'منصة المجلس السعودي للمستثمرين الاجتماعيين تدير رحلة الربط بين الطرفين من أول اهتمام حتى اللقاء المباشر، بشفافية وبدون وساطة مالية.', 'en' => 'The SCII platform manages the connection between both sides, from first interest to a direct meeting, transparently and with no financial intermediation.'],
+                'investors_label' => ['ar' => 'للمستثمرين الاجتماعيين', 'en' => 'For impact investors'],
+                'investors_title' => ['ar' => 'فرص مُقيَّمة، لا عروض', 'en' => 'Evaluated opportunities, not pitches'],
+                'investors_text' => ['ar' => 'مشاريع مرّت بتقييم مهني وفق معايير معلنة، تصلك بحسب قطاعاتك ومراحلك المفضلة.', 'en' => 'Projects that passed a professional evaluation against published criteria, matched to your preferred sectors and stages.'],
+                'investors_cta' => ['ar' => 'استكشف الفرص', 'en' => 'Explore opportunities'],
+                'projects_label' => ['ar' => 'لأصحاب المشاريع', 'en' => 'For project owners'],
+                'projects_title' => ['ar' => 'تقييم مهني، وموافقتك أولًا', 'en' => 'Professional evaluation, your consent first'],
+                'projects_text' => ['ar' => 'نموذج موحّد، ملاحظات واضحة في كل مرحلة، ولا تواصل مع أي مستثمر قبل إذنك.', 'en' => 'One unified form, clear feedback at every stage, and no contact with any investor before you allow it.'],
+                'projects_cta' => ['ar' => 'قدّم مشروعك', 'en' => 'Submit your project'],
+                'stages_label' => ['ar' => 'رحلة من 9 مراحل معلنة لكل مشروع', 'en' => 'A published 9-stage journey for every project'],
+                'stages_list' => [
                     'ar' => [
-                        'فرص مُقيَّمة بمعيارين مستقلين',
-                        'ترشيحات مبنية على قواعد مطابقة شفافة',
-                        'تحكّم كامل في بياناتك وتفاعلاتك',
+                        'التسجيل',
+                        'التحقق',
+                        'اكتمال الملف',
+                        'المراجعة والتقييم',
+                        'التأهيل والنشر',
+                        'إبداء الاهتمام',
+                        'الموافقة المزدوجة',
+                        'اجتماع التعارف',
+                        'المتابعة وتقارير الأثر',
                     ],
                     'en' => [
-                        'Opportunities scored by two independent evaluators',
-                        'Nominations based on transparent matching rules',
-                        'Full control over your data and interactions',
+                        'Registration',
+                        'Verification',
+                        'Profile completion',
+                        'Review & evaluation',
+                        'Eligibility & listing',
+                        'Expression of interest',
+                        'Dual consent',
+                        'Introduction meeting',
+                        'Follow-up & impact reports',
                     ],
                 ],
-                'entrepreneur_path_title' => ['ar' => 'أنا صاحب مشروع', 'en' => 'I am a project owner'],
-                'entrepreneur_path_text' => ['ar' => 'قدّم مشروعك عبر نموذج موحّد، واحصل على تقييم مهني، وتواصل مع مستثمرين مهتمين فعلًا بمجالك.', 'en' => 'Submit your project through a unified form, get a professional evaluation, and connect with investors genuinely interested in your field.'],
-                'entrepreneur_path_points' => [
-                    'ar' => [
-                        'رحلة من 9 مراحل واضحة',
-                        'تحكّم في ما يُشارك من بياناتك',
-                        'موافقة مزدوجة قبل أي تواصل',
-                    ],
-                    'en' => [
-                        'A clear 9-stage journey',
-                        'Control over what is shared',
-                        'Dual consent before any contact',
-                    ],
-                ],
-                'how_title' => ['ar' => 'كيف تعمل المنصة', 'en' => 'How the platform works'],
-                'how_sub' => ['ar' => 'رحلة واضحة من التسجيل حتى الربط، بخطوات محددة ومُدد زمنية معلنة.', 'en' => 'A clear journey from registration to connection, with defined steps and published timelines.'],
-                'how_steps' => [
-                    'ar' => [
-                        ['title' => 'التسجيل والتحقق', 'text' => 'أنشئ حسابك وتحقّق من بريدك ورقم جوالك.'],
-                        ['title' => 'الملف والعضوية', 'text' => 'أكمل ملفك ليراجعه فريق العضوية خلال أيام.'],
-                        ['title' => 'الاستكشاف أو الترشيح', 'text' => 'تصفّح الفرص المؤهّلة أو استقبل ترشيحات مطابقة.'],
-                        ['title' => 'إبداء الاهتمام', 'text' => 'أبدِ اهتمامك؛ يوافق صاحب المشروع على مشاركة ملفه الكامل.'],
-                        ['title' => 'الربط والمتابعة', 'text' => 'اجتماع تعارف منظّم، ثم متابعة التقدم والأثر.'],
-                    ],
-                    'en' => [
-                        ['title' => 'Register & verify', 'text' => 'Create your account and verify email and mobile.'],
-                        ['title' => 'Profile & membership', 'text' => 'Complete your profile for the membership team to review.'],
-                        ['title' => 'Explore or get nominated', 'text' => 'Browse eligible opportunities or receive matched nominations.'],
-                        ['title' => 'Express interest', 'text' => 'Express interest; the owner approves sharing the full file.'],
-                        ['title' => 'Connect & follow up', 'text' => 'A structured introduction meeting, then progress and impact follow-up.'],
-                    ],
-                ],
-                'impact_title' => ['ar' => 'ما الذي نعنيه بالأثر؟', 'en' => 'What do we mean by impact?'],
-                'impact_text' => ['ar' => 'الأثر هو التغيّر الإيجابي القابل للقياس في حياة المستفيدين أو المجتمع، الناتج عن نشاط المشروع، والمُثبت بمؤشرات لها خط أساس ومستهدف ومصدر بيانات واضح. لا نعدّ الأثر نيّة أو شعارًا، بل نتيجة تُقاس وتُتابع وتُتحقّق منها.', 'en' => 'Impact is the measurable positive change in the lives of beneficiaries or the community caused by the project, evidenced by indicators with a baseline, a target and a clear data source. Impact is not an intention or a slogan — it is a result that is measured, tracked and verified.'],
-                'impact_points' => [
+                'impact_label' => ['ar' => 'ما الذي نعنيه بالأثر؟', 'en' => 'What we mean by impact'],
+                'impact_heading' => ['ar' => 'الأثر تغيّر إيجابي قابل للقياس في حياة المستفيدين، لا نيّة ولا شعار.', 'en' => 'Impact is measurable positive change in beneficiaries\' lives. Not an intention, not a slogan.'],
+                'impact_body' => ['ar' => 'نعدّه نتيجة تُقاس وتُتابع ويُتحقّق منها، بمؤشرات لها خط أساس ومستهدف ومصدر بيانات واضح.', 'en' => 'We treat it as a result that is measured, tracked and verified, through indicators with a baseline, a target and a clear data source.'],
+                'impact_criteria' => [
                     'ar' => [
                         'نيّة واضحة للأثر منذ التصميم',
                         'مؤشرات بخط أساس ومستهدف',
@@ -159,42 +146,89 @@ class PublicPagesContentSeeder extends Seeder
                         'التوازن بين العائد المالي والاجتماعي',
                     ],
                     'en' => [
-                        'Clear intent from design',
-                        'Indicators with baseline and target',
+                        'Clear impact intent from the design stage',
+                        'Indicators with a baseline and a target',
                         'Verifiable through data sources',
-                        'Balance of financial and social return',
+                        'Balance between financial and social return',
                     ],
                 ],
-                'benefits_title' => ['ar' => 'مزايا العضوية', 'en' => 'Membership benefits'],
-                'benefits_sub' => ['ar' => 'العضوية في المرحلة التأسيسية مجانية، وتمنحك:', 'en' => 'Membership is free in the founding phase and gives you:'],
-                'benefits' => [
+                'path_investor_title' => ['ar' => 'أنا مستثمر اجتماعي', 'en' => 'I am an impact investor'],
+                'path_investor_text' => ['ar' => 'أكمل ملفك الاستثماري واحصل على العضوية، لتصلك فرص مُقيَّمة تطابق قطاعاتك ومراحلك المفضلة.', 'en' => 'Complete your investor profile and get membership, then receive evaluated opportunities matching your preferred sectors and stages.'],
+                'path_investor_points' => [
                     'ar' => [
-                        'الوصول إلى فرص اجتماعية مؤهّلة ومُقيَّمة',
+                        'فرص مُقيَّمة بمعايير معلنة',
+                        'ترشيحات حسب القطاع والمرحلة',
+                        'بياناتك لا تُشارك إلا بإذنك',
+                    ],
+                    'en' => [
+                        'Opportunities evaluated against published criteria',
+                        'Recommendations by sector and stage',
+                        'Your data is shared only with your permission',
+                    ],
+                ],
+                'path_investor_cta' => ['ar' => 'ابدأ رحلة العضوية', 'en' => 'Start the membership journey'],
+                'path_investor_tool' => ['ar' => 'اختبر جاهزيتك كمستثمر', 'en' => 'Test your investor readiness'],
+                'path_project_title' => ['ar' => 'أنا صاحب مشروع', 'en' => 'I have a project'],
+                'path_project_text' => ['ar' => 'قدّم مشروعك عبر نموذج موحّد، واحصل على تقييم مهني، وتواصل مع مستثمرين مهتمين فعلًا.', 'en' => 'Submit your project through a unified form, receive a professional evaluation, and talk to investors who are genuinely interested.'],
+                'path_project_points' => [
+                    'ar' => [
+                        'رحلة من 9 مراحل بمُدد معلنة',
+                        'ملاحظات تقييم واضحة في كل مرحلة',
+                        'موافقتك مطلوبة قبل أي تواصل',
+                    ],
+                    'en' => [
+                        'A 9-stage journey with published timelines',
+                        'Clear evaluation feedback at every stage',
+                        'Your consent is required before any contact',
+                    ],
+                ],
+                'path_project_cta' => ['ar' => 'قدّم مشروعك الآن', 'en' => 'Submit your project now'],
+                'path_project_tool' => ['ar' => 'اختبر جاهزية مشروعك', 'en' => 'Test your project\'s readiness'],
+                'how_label' => ['ar' => 'كيف تعمل المنصة', 'en' => 'How the platform works'],
+                'how_heading' => ['ar' => 'رحلة واضحة من التسجيل حتى الربط', 'en' => 'A clear journey from registration to connection'],
+                'how_steps_list' => [
+                    'ar' => [
+                        ['title' => 'التسجيل والتحقق', 'text' => 'أنشئ حسابك وتحقق من بريدك ورقم جوالك.', 'meta' => 'يستغرق أقل من 5 دقائق'],
+                        ['title' => 'الملف والعضوية', 'text' => 'أكمل ملفك ليراجعه فريق المجلس وتُمنح العضوية.', 'meta' => 'مراجعة من فريق المجلس'],
+                        ['title' => 'الاستكشاف أو الترشيح', 'text' => 'تصفّح الفرص المؤهلة أو استقبل ترشيحات مطابقة لاهتماماتك.', 'meta' => 'ترشيحات حسب القطاع والمرحلة'],
+                        ['title' => 'إبداء الاهتمام', 'text' => 'عبّر عن اهتمامك، ويوافق صاحب المشروع على مشاركة ملفه الكامل.', 'meta' => 'موافقة مزدوجة قبل أي مشاركة'],
+                        ['title' => 'الربط والمتابعة', 'text' => 'اجتماع تعارف منظّم يديره فريق المجلس، ثم تقارير متابعة للأثر.', 'meta' => 'تقارير أثر دورية بعد الربط'],
+                    ],
+                    'en' => [
+                        ['title' => 'Register & verify', 'text' => 'Create your account and verify your email and mobile number.', 'meta' => 'Takes under 5 minutes'],
+                        ['title' => 'Profile & membership', 'text' => 'Complete your profile for the Council team to review and grant membership.', 'meta' => 'Reviewed by the Council team'],
+                        ['title' => 'Discover or get matched', 'text' => 'Browse eligible opportunities or receive recommendations matching your interests.', 'meta' => 'Matched by sector and stage'],
+                        ['title' => 'Express interest', 'text' => 'Signal your interest; the project owner consents to share the full file.', 'meta' => 'Dual consent before anything is shared'],
+                        ['title' => 'Connect & follow up', 'text' => 'A structured introduction meeting run by the Council team, then impact follow-up reports.', 'meta' => 'Periodic impact reports after connection'],
+                    ],
+                ],
+                'how_note' => ['ar' => 'المُدد الزمنية لكل مرحلة معلنة داخل المنصة.', 'en' => 'Timelines for every stage are published inside the platform.'],
+                'benefits_label' => ['ar' => 'مزايا العضوية', 'en' => 'Membership benefits'],
+                'benefits_heading' => ['ar' => 'العضوية مجانية في المرحلة التأسيسية، وتمنحك:', 'en' => 'Membership is free during the founding phase and gives you:'],
+                'benefits_list' => [
+                    'ar' => [
+                        'الوصول إلى فرص اجتماعية مؤهلة ومُقيَّمة',
                         'ترشيحات مطابقة لقطاعاتك ومراحلك المفضلة',
                         'ملخصات تنفيذية معتمدة من أصحاب المشاريع',
                         'اجتماعات تعارف منظّمة يديرها فريق المجلس',
                         'تقارير متابعة للأثر بعد الربط',
-                        'شبكة من المستثمرين الاجتماعيين في المملكة',
-                        'فعاليات وورش عمل متخصصة',
                         'تحكّم كامل في خصوصيتك وبياناتك',
                     ],
                     'en' => [
                         'Access to eligible, evaluated impact opportunities',
-                        'Nominations matched to your sectors and stages',
+                        'Recommendations matching your preferred sectors and stages',
                         'Executive summaries approved by project owners',
-                        'Structured introduction meetings run by the Council',
+                        'Structured introduction meetings run by the Council team',
                         'Impact follow-up reports after connection',
-                        'A network of impact investors in the Kingdom',
-                        'Specialised events and workshops',
                         'Full control over your privacy and data',
                     ],
                 ],
-                'cta_band_title' => ['ar' => 'جاهز للانضمام؟', 'en' => 'Ready to join?'],
-                'cta_band_text' => ['ar' => 'التسجيل يستغرق أقل من عشر دقائق، والعضوية مجانية في المرحلة التأسيسية.', 'en' => 'Registration takes under ten minutes and membership is free in the founding phase.'],
+                'join_title' => ['ar' => 'جاهز للانضمام؟', 'en' => 'Ready to join?'],
+                'join_text' => ['ar' => 'التسجيل يستغرق أقل من عشر دقائق.', 'en' => 'Registration takes under ten minutes.'],
             ],
             'about' => [
-                'title' => ['ar' => 'عن المجلس السعودي للمستثمرين الاجتماعيين', 'en' => 'About the Saudi Council for Impact Investors'],
-                'lead' => ['ar' => 'كيان يجمع المستثمرين الاجتماعيين في المملكة حول رؤية واحدة: توجيه رأس المال نحو حلول قابلة للقياس لتحديات اجتماعية حقيقية.', 'en' => 'A body uniting impact investors in the Kingdom around one vision: directing capital toward measurable solutions to real social challenges.'],
+                'title' => ['ar' => 'نجمع المستثمرين حول أثرٍ يُقاس', 'en' => 'Bringing investors together around measurable impact'],
+                'lead' => ['ar' => 'المجلس السعودي للمستثمرين الاجتماعيين يوحّد جهود المستثمرين في المملكة لتوجيه رأس المال نحو حلول قابلة للقياس لتحديات اجتماعية وبيئية حقيقية.', 'en' => 'The Saudi Council for Impact Investors unites investors across the Kingdom to direct capital toward measurable solutions to real social and environmental challenges.'],
                 'vision_text' => ['ar' => 'أن يكون الاستثمار الاجتماعي خيارًا رئيسيًا لرأس المال الخاص في المملكة، بما يسهم في تحقيق مستهدفات رؤية 2030 في جودة الحياة وتنمية القطاع غير الربحي.', 'en' => 'Impact investing becomes a primary choice for private capital in the Kingdom, contributing to Vision 2030 targets in quality of life and nonprofit-sector growth.'],
                 'mission_text' => ['ar' => 'بناء منظومة موثوقة تربط المستثمرين بالمشاريع ذات الأثر عبر معايير تقييم واضحة، وحوكمة شفافة، وأدوات متابعة للأثر.', 'en' => 'Build a trusted ecosystem connecting investors with high-impact projects through clear evaluation criteria, transparent governance and impact-tracking tools.'],
                 'goals' => [
@@ -216,8 +250,8 @@ class PublicPagesContentSeeder extends Seeder
                 'governance_text' => ['ar' => 'يتألف المجلس من جمعية عمومية ومجلس إدارة ولجان متخصصة (العضوية، التقييم، الربط، الأثر)، إضافة إلى لجنة استشارية. تفاصيل الهيكل والأسماء ستُنشر بعد اعتمادها.', 'en' => 'The Council comprises a general assembly, a board, specialised committees (membership, evaluation, matching, impact) and an advisory committee. Details will be published once approved.'],
             ],
             'impact-investing' => [
-                'title' => ['ar' => 'ما هو الاستثمار الاجتماعي (المؤثر)؟', 'en' => 'What is impact investing?'],
-                'lead' => ['ar' => 'استثمار يُقصد به تحقيق أثر اجتماعي أو بيئي إيجابي قابل للقياس إلى جانب عائد مالي.', 'en' => 'Investment made with the intention to generate positive, measurable social or environmental impact alongside a financial return.'],
+                'title' => ['ar' => 'استثمارٌ يُقاس بعائده وأثره', 'en' => 'Investment measured by its return and its impact'],
+                'lead' => ['ar' => 'الاستثمار الاجتماعي (المؤثر) استثمارٌ يُقصد به تحقيق أثر اجتماعي أو بيئي إيجابي قابل للقياس، إلى جانب عائد مالي.', 'en' => 'Impact investing is investment made with the intention to generate positive, measurable social or environmental impact alongside a financial return.'],
                 'definition_text' => ['ar' => 'الاستثمار الاجتماعي هو توجيه رأس المال نحو مشاريع ومنظمات تُحدث تغييرًا إيجابيًا في المجتمع أو البيئة، مع التزام صريح بقياس هذا التغيير والإبلاغ عنه، وبعائد مالي يتراوح بين الحفاظ على رأس المال والعائد السوقي بحسب طبيعة الفرصة.', 'en' => 'Impact investing directs capital to projects and organisations that create positive change in society or the environment, with an explicit commitment to measure and report that change, and a financial return ranging from capital preservation to market rate depending on the opportunity.'],
                 'impact_def_text' => ['ar' => 'الأثر هو النتيجة النهائية للتغيّر في حياة المستفيدين، ويُقاس بمؤشرات تمتلك: تعريفًا، وحدة، خط أساس، مستهدفًا، مصدر بيانات، وتكرارًا للقياس.', 'en' => 'Impact is the ultimate change in beneficiaries\' lives, measured by indicators that have a definition, unit, baseline, target, data source and measurement frequency.'],
                 'characteristics' => [
@@ -251,8 +285,8 @@ class PublicPagesContentSeeder extends Seeder
                 ],
             ],
             'for-investors' => [
-                'title' => ['ar' => 'للمستثمرين الاجتماعيين', 'en' => 'For impact investors'],
-                'lead' => ['ar' => 'انضم إلى شبكة من المستثمرين الذين يوجّهون رأس المال نحو أثر قابل للقياس.', 'en' => 'Join a network of investors directing capital toward measurable impact.'],
+                'title' => ['ar' => 'استثمر في أثرٍ تراه وتقيسه', 'en' => 'Invest in impact you can see and measure'],
+                'lead' => ['ar' => 'فرص مُقيَّمة بمعايير معلنة، وترشيحات تطابق اهتماماتك، ومتابعة للأثر بعد الربط — ضمن شبكة من المستثمرين الاجتماعيين.', 'en' => 'Opportunities evaluated against published criteria, nominations matched to your interests and impact follow-up after connection — within a network of impact investors.'],
                 'why' => [
                     'ar' => [
                         ['title' => 'فرص مُقيَّمة', 'text' => 'كل فرصة تمر بفرز أولي وتقييم مستقل من مقيّمَين على ثلاثة محاور: الجاهزية، الجدوى، الأثر.'],
@@ -297,8 +331,8 @@ class PublicPagesContentSeeder extends Seeder
                 ],
             ],
             'for-entrepreneurs' => [
-                'title' => ['ar' => 'لأصحاب المشاريع الاجتماعية', 'en' => 'For social project owners'],
-                'lead' => ['ar' => 'قدّم مشروعك واحصل على تقييم مهني وفرصة للتواصل مع مستثمرين اجتماعيين مهتمين فعلًا بمجالك.', 'en' => 'Submit your project, receive a professional evaluation and connect with impact investors genuinely interested in your field.'],
+                'title' => ['ar' => 'من مشروعٍ ذي أثر إلى مستثمرٍ يؤمن به', 'en' => 'From a project with impact to an investor who believes in it'],
+                'lead' => ['ar' => 'قدّم مشروعك عبر نموذج موحّد، واحصل على تقييم مهني بملاحظات واضحة، وتواصل مع مستثمرين مهتمين فعلًا بمجالك — بموافقتك أولًا.', 'en' => 'Submit your project through one unified form, receive a professional evaluation with clear feedback and connect with investors genuinely interested in your field — with your consent first.'],
                 'criteria' => [
                     'ar' => [
                         'مشروع ذو أثر اجتماعي أو بيئي واضح وقابل للقياس',

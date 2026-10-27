@@ -4,6 +4,8 @@ import { investorReadiness, projectReadiness } from '~/utils/assessments'
 
 definePageMeta({ layout: 'default' })
 const { t } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('tools')
 const localePath = useLocalePath()
 const siteUrl = useSiteUrl()
 const { data: resources } = await usePublicResources()
@@ -15,11 +17,11 @@ const tools = [
 
 useSeo({
   title: t('tools.metaTitle'),
-  description: t('tools.lead'),
+  description: header.text('lead', 'tools.lead'),
   jsonLd: {
     '@type': 'CollectionPage',
     name: t('tools.title'),
-    description: t('tools.lead'),
+    description: header.text('lead', 'tools.lead'),
     isPartOf: { '@id': `${siteUrl}/#website` },
     mainEntity: {
       '@type': 'ItemList',
@@ -31,7 +33,7 @@ useSeo({
 
 <template>
   <div>
-    <PageHero :kicker="$t('tools.eyebrow')" :title="$t('tools.title')" :lead="$t('tools.lead')" />
+    <PageHero :kicker="header.text('kicker', 'tools.eyebrow')" :title="header.text('title', 'tools.title')" :lead="header.text('lead', 'tools.lead')" />
 
     <section class="container-x section-y">
       <ul class="grid md:grid-cols-2 gap-5" role="list">

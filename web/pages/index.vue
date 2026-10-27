@@ -4,10 +4,10 @@
  * the headline, the nine-stage strip; below the first screen (HomeBelowFold): what impact means, the two paths,
  * how the platform works, membership benefits and the call to join, the latest news.
  */
-import type { ContentItem } from '~/types/api'
+import type { ContentItem, HeroImage } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
-const { t } = useI18n()
+const { t, locale } = useI18n()
 useSeo({
   title: t('home.seoTitle'),
   description: t('home.seoDescription'),
@@ -15,14 +15,49 @@ useSeo({
 })
 const api = useApi()
 // Copy from the CMS (home → meta.sections, editable in admin → content) with the landing.* texts as the fallback.
-const { text, list, items } = await usePageContent('home')
+const { page: homePage, text, list, items } = await usePageContent('home')
 const emblem = { dark: heroEmblemSrc('dark'), light: heroEmblemSrc('light') }
 const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ data: ContentItem[] }>('/public/news').then((r) => r.data[0] ?? null).catch(() => null))
+
+// BRD-03 — hero photos managed in admin → content (home → meta.hero_images, max 3): a slow cross-fade behind the glow.
+// Mounted only after the first paint (client, idle), so they never delay the page or compete with the emblem for LCP.
+const heroImages = computed<HeroImage[]>(() => ((homePage.value?.meta?.hero_images ?? []) as HeroImage[]).filter((i) => !!i?.url).slice(0, 3))
+const heroAlt = (img: HeroImage) => (locale.value === 'en' && img.alt_en ? img.alt_en : img.alt_ar) || ''
+const photosOn = ref(false)
+const slide = ref(0)
+const paused = ref(false)
+let timer: ReturnType<typeof setInterval> | undefined
+const stopSlides = () => { clearInterval(timer); timer = undefined }
+const startSlides = () => {
+  stopSlides()
+  if (paused.value || heroImages.value.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  timer = setInterval(() => { slide.value = (slide.value + 1) % heroImages.value.length }, 6000)
+}
+const togglePause = () => { paused.value = !paused.value; if (paused.value) stopSlides(); else startSlides() }
+onMounted(() => {
+  if (!heroImages.value.length) return
+  const show = () => { photosOn.value = true; startSlides() }
+  if ('requestIdleCallback' in window) requestIdleCallback(show, { timeout: 2500 })
+  else setTimeout(show, 1500)
+})
+onBeforeUnmount(stopSlides)
 </script>
 
 <template>
   <div class="site-surface">
     <section class="hero" aria-labelledby="home-title">
+      <div v-if="photosOn" class="hero__photos" role="group" aria-roledescription="carousel" :aria-label="$t('home.heroGalleryLabel')">
+        <img
+          v-for="(img, i) in heroImages" :key="img.url"
+          class="hero__photo" :class="i === slide && 'hero__photo--on'"
+          :src="img.url" :alt="heroAlt(img)" :width="img.width ?? 1600" :height="img.height ?? 1200"
+          :aria-hidden="i === slide ? undefined : 'true'" decoding="async" fetchpriority="low"
+        >
+        <button v-if="heroImages.length > 1" type="button" class="site-icon-btn hero__pause kbd-focus" :aria-pressed="paused" :aria-label="$t('platform.a11y.pauseSlides')" :title="$t('platform.a11y.pauseSlides')" @click="togglePause">
+          <svg v-if="paused" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4l10 6-10 6V4z" /></svg>
+          <svg v-else width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4h3v12H6zM11 4h3v12h-3z" /></svg>
+        </button>
+      </div>
       <div class="hero__stars site-stars" aria-hidden="true" />
       <div class="site-wrap hero__inner">
         <p class="hero__eyebrow"><span class="hero__eyebrow-dot" aria-hidden="true" />{{ text('hero_badge', 'landing.hero.eyebrow') }}</p>
@@ -84,6 +119,26 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
   overflow: hidden;
   background: radial-gradient(1100px 760px at 50% 48%, var(--glow) 0%, var(--bg1) 50%, var(--bg0) 100%);
 }
+/* BRD-03 — admin photos under the glow: low opacity and a gradient to the page colour keep the text contrast intact */
+.hero__photos { position: absolute; inset: 0; }
+.hero__photos::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(900px 600px at 50% 45%, rgba(var(--bg0-rgb), 0.55), rgba(var(--bg0-rgb), 0.9) 70%);
+  pointer-events: none;
+}
+.hero__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.hero__photo--on { opacity: 0.38; }
+.hero__pause { position: absolute; z-index: 2; inset-inline-end: 24px; bottom: 96px; background: rgba(var(--bg0-rgb), 0.6); }
 .hero__stars {
   background-image:
     radial-gradient(1.5px 1.5px at 10% 22%, rgba(var(--fg-rgb), 0.9), transparent 60%),
@@ -210,5 +265,6 @@ const { data: latestNews } = await useAsyncData('home-news', () => api.get<{ dat
 }
 @media (prefers-reduced-motion: reduce) {
   .hero__pulse { animation: none; }
+  .hero__photo { transition: none; }
 }
 </style>

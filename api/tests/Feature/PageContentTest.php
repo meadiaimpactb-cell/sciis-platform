@@ -21,10 +21,10 @@ it('serves the seeded sections of every public page', function (): void {
     }
 
     $home = $this->getJson('/api/v1/public/pages/home')->assertOk();
-    expect($home->json('data.meta.sections.hero_eyebrow.ar'))->toBe('منصة وطنية للاستثمار الاجتماعي')
-        ->and($home->json('data.meta.sections.hero_eyebrow.en'))->toBe('A national impact-investing platform')
-        ->and($home->json('data.meta.sections.how_steps.ar'))->toHaveCount(5)
-        ->and($home->json('data.meta.sections.benefits.en'))->toHaveCount(8)
+    expect($home->json('data.meta.sections.hero_badge.ar'))->toBe('المنصة الوطنية للاستثمار الاجتماعي')
+        ->and($home->json('data.meta.sections.hero_badge.en'))->toBe("Saudi Arabia's national impact-investing platform")
+        ->and($home->json('data.meta.sections.how_steps_list.ar'))->toHaveCount(5)
+        ->and($home->json('data.meta.sections.benefits_list.en'))->toHaveCount(6)
         ->and($home->json('data.meta.hero_images'))->toBe([]);
 
     $ent = $this->getJson('/api/v1/public/pages/for-entrepreneurs')->assertOk();
@@ -35,16 +35,16 @@ it('serves the seeded sections of every public page', function (): void {
 it('re-seeding never overwrites admin edits and preserves hero images', function (): void {
     $home = Page::query()->where('slug', 'home')->firstOrFail();
     $meta = $home->meta;
-    $meta['sections']['hero_title']['ar'] = 'عنوان معدّل';
-    unset($meta['sections']['hero_text']);
+    $meta['sections']['headline']['ar'] = 'عنوان معدّل';
+    unset($meta['sections']['headline_lead']);
     $meta['hero_images'] = [['url' => '/storage/a.webp']];
     $home->forceFill(['meta' => $meta])->save();
 
     $this->seed(PublicPagesContentSeeder::class);
 
     $fresh = Page::query()->where('slug', 'home')->firstOrFail()->meta;
-    expect($fresh['sections']['hero_title']['ar'])->toBe('عنوان معدّل')
-        ->and($fresh['sections']['hero_text']['ar'])->not->toBeEmpty()
+    expect($fresh['sections']['headline']['ar'])->toBe('عنوان معدّل')
+        ->and($fresh['sections']['headline_lead']['ar'])->not->toBeEmpty()
         ->and($fresh['hero_images'])->toBe([['url' => '/storage/a.webp']]);
 });
 
@@ -54,23 +54,23 @@ it('lets staff save sections via PATCH while keeping hero images', function (): 
     $this->actingAs($this->admin)->patchJson("/api/v1/admin/content/pages/{$home->id}", ['meta' => ['hero_images' => $images]])->assertOk();
 
     $sections = $home->fresh()->meta['sections'];
-    $sections['hero_title'] = ['ar' => 'عنوان جديد', 'en' => 'New title'];
-    $sections['benefits'] = ['ar' => ['ميزة 1', 'ميزة 2'], 'en' => ['Benefit 1', 'Benefit 2']];
+    $sections['headline'] = ['ar' => 'عنوان جديد', 'en' => 'New title'];
+    $sections['benefits_list'] = ['ar' => ['ميزة 1', 'ميزة 2'], 'en' => ['Benefit 1', 'Benefit 2']];
 
     // sections-only payload: hero_images must survive (server merges top-level meta keys)
     $this->actingAs($this->admin)->patchJson("/api/v1/admin/content/pages/{$home->id}", ['meta' => ['sections' => $sections]])
         ->assertOk()
-        ->assertJsonPath('data.meta.sections.hero_title.en', 'New title')
+        ->assertJsonPath('data.meta.sections.headline.en', 'New title')
         ->assertJsonPath('data.meta.hero_images.0.alt_ar', 'صورة');
 
     $public = $this->getJson('/api/v1/public/pages/home')->assertOk();
-    expect($public->json('data.meta.sections.hero_title.ar'))->toBe('عنوان جديد')
-        ->and($public->json('data.meta.sections.benefits.en'))->toBe(['Benefit 1', 'Benefit 2'])
+    expect($public->json('data.meta.sections.headline.ar'))->toBe('عنوان جديد')
+        ->and($public->json('data.meta.sections.benefits_list.en'))->toBe(['Benefit 1', 'Benefit 2'])
         ->and($public->json('data.meta.hero_images.0.url'))->toBe('/storage/content/h.webp');
 
     // and a hero-images-only payload keeps the sections
     $this->actingAs($this->admin)->patchJson("/api/v1/admin/content/pages/{$home->id}", ['meta' => ['hero_images' => []]])->assertOk();
-    expect($home->fresh()->meta['sections']['hero_title']['en'])->toBe('New title');
+    expect($home->fresh()->meta['sections']['headline']['en'])->toBe('New title');
 });
 
 it('validates section shapes and limits', function (): void {
@@ -93,10 +93,26 @@ it('validates section shapes and limits', function (): void {
 
 it('forbids non-staff users from editing page sections', function (): void {
     $page = Page::query()->where('slug', 'home')->firstOrFail();
-    $payload = ['meta' => ['sections' => ['hero_title' => ['ar' => 'اختراق']]]];
+    $payload = ['meta' => ['sections' => ['headline' => ['ar' => 'اختراق']]]];
 
     $this->actingAs($this->approvedInvestor())->patchJson("/api/v1/admin/content/pages/{$page->id}", $payload)->assertForbidden();
     $this->actingAs($this->entrepreneur())->patchJson("/api/v1/admin/content/pages/{$page->id}", $payload)->assertForbidden();
 
-    expect($page->fresh()->meta['sections']['hero_title']['ar'])->not->toBe('اختراق');
+    expect($page->fresh()->meta['sections']['headline']['ar'])->not->toBe('اختراق');
+});
+
+it('refreshes the default page headers without touching edited copy', function (): void {
+    $migration = require database_path('migrations/2026_10_27_000001_refresh_default_page_headers.php');
+    $about = Page::query()->where('slug', 'about')->firstOrFail();
+    $meta = $about->meta;
+    $meta['sections']['title'] = ['ar' => 'عن المجلس السعودي للمستثمرين الاجتماعيين', 'en' => 'Edited by the team'];
+    $about->forceFill(['meta' => $meta])->save();
+
+    $migration->up();
+    $sections = $about->fresh()->meta['sections'];
+    expect($sections['title']['ar'])->toBe('نجمع المستثمرين حول أثرٍ يُقاس')
+        ->and($sections['title']['en'])->toBe('Edited by the team');
+
+    $migration->down();
+    expect($about->fresh()->meta['sections']['title']['ar'])->toBe('عن المجلس السعودي للمستثمرين الاجتماعيين');
 });

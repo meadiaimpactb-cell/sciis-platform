@@ -4,6 +4,8 @@ import type { ContentItem } from '~/types/api'
 
 definePageMeta({ layout: 'default' })
 const { t, locale } = useI18n()
+// CMS — the page header (label, title, lead) is editable in admin → content (utils/pageSections.ts).
+const header = await usePageContent('events')
 const api = useApi()
 const localePath = useLocalePath()
 const { date, dateTime } = useFormat()
@@ -21,12 +23,12 @@ const upcoming = computed(() => items.value.filter((e) => !isPast(e)))
 const past = computed(() => items.value.filter(isPast).sort((a, b) => new Date(b.starts_at ?? 0).getTime() - new Date(a.starts_at ?? 0).getTime()))
 const alt = (c: ContentItem) => (locale.value === 'en' && c.meta?.cover?.alt_en ? c.meta.cover.alt_en : c.meta?.cover?.alt_ar) || c.title || c.title_ar
 
-useSeo({ title: t('events.metaTitle'), description: t('events.lead'), image: upcoming.value[0]?.meta?.cover?.url ?? undefined })
+useSeo({ title: t('events.metaTitle'), description: header.text('lead', 'events.lead'), image: upcoming.value[0]?.meta?.cover?.url ?? undefined })
 </script>
 
 <template>
   <div>
-    <PageHero :kicker="$t('nav.events')" :title="$t('events.title')" :lead="$t('events.lead')" />
+    <PageHero :kicker="header.text('kicker', 'nav.events')" :title="header.text('title', 'events.title')" :lead="header.text('lead', 'events.lead')" />
 
     <section class="container-x section-y">
       <div v-if="pending && !items.length" class="text-muted">{{ $t('common.loading') }}</div>
